@@ -1,5 +1,3 @@
-#失敗
-
 import os
 import re
 import sys
@@ -8,10 +6,8 @@ from distutils.core import Command
 from setuptools import find_packages, setup
 
 
-
 _deps = [
     "Pillow",
-    "accelerate",
     "huggingface-hub",
     "python>=3.8.0",
     "requests",
@@ -70,18 +66,6 @@ class DepsTableUpdateCommand(Command):
             f.write("\n".join(content))
 
 
-extras = {}
-
-#extras["torch"] = deps_list("torch", "accelerate")
-
-#if os.name == "nt":  # windows
-#    extras["flax"] = []  # jax is not supported on windows
-#else:
-#    extras["flax"] = deps_list("jax", "jaxlib", "flax")
-
-#extras["dev"] = (
-#    extras["torch"] + extras["flax"]
-#)
 
 
 install_requires = [
@@ -101,7 +85,7 @@ version_range_max = max(sys.version_info[1], 10) + 1
 
 setup(
     name="Diffusers_API",
-    version="0.1.0",  # expected format is one of x.y.z.dev0, or x.y.z.rc1 or x.y.z (no to dashes, yes to dots)
+    version="0.1.0",
     description="API version of diffusers_in_colab",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -115,7 +99,6 @@ setup(
     package_data={"": ["py.typed"]},
     include_package_data=True,
     install_requires=list(install_requires),
-    extras_require=extras,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
