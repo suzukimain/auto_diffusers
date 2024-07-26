@@ -7,6 +7,7 @@ def custom_logger(DEBUG=False):
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+        
     if DEBUG:
         logger.setLevel(logging.DEBUG)
     else:
