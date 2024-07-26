@@ -41,24 +41,6 @@ warnings.filterwarnings("ignore")
 
 device="cuda" if torch.cuda.is_available() else "cpu"
 
-def key_check(keyword) -> bool:
-    """
-    Determine if the value has been updated
-    Example:
-    a=1 -> a=2 True
-    b=1 -> b=1 False
-    <undefined> -> c=1 False
-    """
-    global key_dict
-    if "key_dict" not in globals():
-        key_dict = {}
-    key = str(keyword)
-    key_in = False
-    if key in key_dict:
-        if keyword == key_dict[key]:
-          key_in = True
-    key_dict[key] = keyword
-    return key_in
 
 def check_url(url) -> bool:
     "Determine if URL is valid"
