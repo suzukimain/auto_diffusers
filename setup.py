@@ -28,7 +28,7 @@ setup(
     license="BSD 3-Clause License",
     author="suzukimain(https://github.com/suzukimain)",
     author_email="subarucosmosmain@gmail.com",
-    url="https://github.com/suzukimain/auto-diffusers",
+    url="https://github.com/suzukimain/auto_diffusers",
     package_dir={"": "src"},
     packages=find_packages("src"),
     package_data={"": ["py.typed"]},
