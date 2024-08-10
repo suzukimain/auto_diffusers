@@ -19,7 +19,7 @@ def deps_list(*pkgs):
 version_range_max = max(sys.version_info[1], 10) + 1
 
 setup(
-    name="auto-diffusers",
+    name="auto_diffusers",
     version="0.2.0",
     description="Customized diffusers with model search and other functions.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
