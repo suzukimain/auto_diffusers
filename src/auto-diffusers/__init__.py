@@ -34,6 +34,9 @@ from multiprocessing import Process, Manager
 from diffusers import logging as df_logging
 from transformers import logging as tf_logging
 
+from model_path import pipeline_setup as pipe_set
+import pipe_set.model_set as path_set
+
 from utils.device_config import device_set
 
 df_logging.set_verbosity_error()

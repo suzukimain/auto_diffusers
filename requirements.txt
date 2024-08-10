@@ -3,6 +3,7 @@ transformers
 huggingface-hub
 Pillow
 requests
+imageio
 torch
 jax
 urllib3

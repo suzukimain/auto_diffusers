@@ -68,12 +68,14 @@ class pipeline_setup(Config_Mix):
 
     def model_set(self,
                   model_select,
-                  auto = False,
+                  auto = True,
                   model_type = "Checkpoint",
                   branch = "main",
-                  download: bool = False) -> list:
+                  download: bool = False,
+                  path_only: bool=True):
         """
         return:
+        if path_only is false
         [model_path:str, {base_model_path: str,from_single_file: bool}]
         """
 
@@ -199,8 +201,11 @@ class pipeline_setup(Config_Mix):
 
         if not return_dict["model_url"]:
             return_dict["model_url"] = model_path
-
-        return [model_path,return_dict]
+        
+        if path_only:
+            return model_path
+        else:
+            return [model_path,return_dict]
 
 
 
