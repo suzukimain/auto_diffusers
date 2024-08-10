@@ -19,8 +19,8 @@ def deps_list(*pkgs):
 version_range_max = max(sys.version_info[1], 10) + 1
 
 setup(
-    name="auto_diffusers",
-    version="0.1.0",
+    name="auto-diffusers",
+    version="0.2.0",
     description="Customized diffusers with model search and other functions.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -28,7 +28,7 @@ setup(
     license="BSD 3-Clause License",
     author="suzukimain(https://github.com/suzukimain)",
     author_email="subarucosmosmain@gmail.com",
-    url="https://github.com/suzukimain/Auto_diffusers",
+    url="https://github.com/suzukimain/auto-diffusers",
     package_dir={"": "src"},
     packages=find_packages("src"),
     package_data={"": ["py.typed"]},

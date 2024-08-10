@@ -1,9 +1,0 @@
-diffusers
-transformers
-huggingface-hub
-Pillow
-requests
-torch
-jax
-urllib3
-numpy
