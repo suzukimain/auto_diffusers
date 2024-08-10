@@ -15,7 +15,7 @@ import difflib
 import threading
 import importlib
 import diffusers
-import accelerate
+import urllib
 import safetensors
 import transformers
 import numpy as np
@@ -34,13 +34,15 @@ from multiprocessing import Process, Manager
 from diffusers import logging as df_logging
 from transformers import logging as tf_logging
 
+from utils.device_config import device_set
+
 df_logging.set_verbosity_error()
 tf_logging.set_verbosity_error()
 
 warnings.filterwarnings("ignore")
 
-device="cuda" if torch.cuda.is_available() else "cpu"
 
+device = device_set.device_type_check()
 
 def check_url(url) -> bool:
     "Determine if URL is valid"

@@ -1,8 +1,6 @@
 import diffusers
-from utils import basic_config
 
-
-class Pipeline_status(basic_config):
+class Pipeline_status:
     def pipe_class_type(
             self,
             class_name

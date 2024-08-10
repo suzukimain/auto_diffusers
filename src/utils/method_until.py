@@ -2,7 +2,9 @@ import inspect
 import diffusers
 from natsort import natsorted
 
-class Get_method:
+from device_config import device_set
+
+class basic_config(device_set):
     def __init__(self):
         pass
         
@@ -67,24 +69,6 @@ class Get_method:
                 key_in = True
         key_dict[key] = keyword
         return key_in
-
-
-    def get_call_method(
-            self,
-            class_name,
-            method_name : str = '__call__'
-            ) ->list:
-        """
-        Acquire the arguments of the function specified by 'method_name'
-        for the class specified by 'class_name'
-        """
-        if isinstance(class_name,str):
-            class_name = getattr(getattr(diffusers, class_name),method_name)
-        parameters = inspect.signature(class_name).parameters
-        arg_names = []
-        for param in parameters.values():
-            arg_names.append(param.name)
-        return arg_names
 
 
     def get_class_elements(
