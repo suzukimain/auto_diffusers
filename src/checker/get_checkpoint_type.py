@@ -1,4 +1,19 @@
-def checkpoint_type_get(
+import os
+import torch
+import requests
+import yaml
+from io import BytesIO
+from utils.get_custom_logger import logger
+from utils import basic_config
+
+
+class checkpoint_type(basic_config):
+    def __init__(self):
+        pass
+
+    
+    def checkpoint_type_get(
+            self,
             checkpoint_path_or_dict,
             config_files = None,
             original_config_file = None,

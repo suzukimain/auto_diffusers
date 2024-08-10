@@ -1,3 +1,7 @@
+import jax
+from get_custom_logger import logger
+
+
 class device_set:
     def __init__(self):
         self.device_type = self.device_type_check()
@@ -14,6 +18,7 @@ class device_set:
 
 
     def device_set(self):
+        device_type = self.device_type_check()
         logger.debug(f"device_type: {self.device_type}")
         if device_type == "TPU":
             #import torch_xla.core.xla_model as xm
