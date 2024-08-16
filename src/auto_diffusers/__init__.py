@@ -34,10 +34,10 @@ from multiprocessing import Process, Manager
 from diffusers import logging as df_logging
 from transformers import logging as tf_logging
 
-from model_path import pipeline_setup as pipe_set
-import pipe_set.model_set as path_set
+#from model_path import pipeline_setup as pipe_set
+#import pipe_set.model_set as path_set
 
-from utils.device_config import device_set
+#from utils.device_config import device_set
 
 df_logging.set_verbosity_error()
 tf_logging.set_verbosity_error()
@@ -45,7 +45,7 @@ tf_logging.set_verbosity_error()
 warnings.filterwarnings("ignore")
 
 
-device = device_set.device_type_check()
+#device = device_set.device_type_check()
 
 def check_url(url) -> bool:
     "Determine if URL is valid"
