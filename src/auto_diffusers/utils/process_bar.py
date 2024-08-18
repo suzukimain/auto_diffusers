@@ -51,7 +51,6 @@ class ProcessBarRun:
         self.fin_pofix = fin_pofix
         self.desc_dot = desc_dot
         self.pofix_dot = pofix_dot
-        self.ex_word = ex_word
         self.queue_obj = queue.Queue()
         self._count = 0
         self._run_count = 0

@@ -1,6 +1,12 @@
+import os
 import logging
 
-def custom_logger(debug=False):
+
+def custom_logger():
+    """
+    When debugging, put “DEBUG” in the environment variable.
+    """
+    debug = os.environ.get("DEBUG",False)
     format = '%(levelname)s:<cell line: %(lineno)d> <funcName: %(funcName)s>: %(message)s'
     logger = logging.getLogger(__name__)
     logger.propagate = False
