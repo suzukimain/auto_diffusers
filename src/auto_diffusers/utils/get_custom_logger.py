@@ -1,6 +1,8 @@
+import os
 import logging
 
-def custom_logger(debug=False):
+
+def custom_logger(debug:bool):
     format = '%(levelname)s:<cell line: %(lineno)d> <funcName: %(funcName)s>: %(message)s'
     logger = logging.getLogger(__name__)
     logger.propagate = False
@@ -14,5 +16,6 @@ def custom_logger(debug=False):
     else:
         logger.setLevel(logging.WARNING)
     return logger
+
 
 logger = custom_logger()

@@ -2,7 +2,7 @@ import inspect
 import diffusers
 from natsort import natsorted
 
-from device_config import device_set
+from auto_diffusers.setup.device_config import device_set
 
 class basic_config(device_set):
     def __init__(self):
@@ -71,8 +71,5 @@ class basic_config(device_set):
         return key_in
 
 
-    def get_class_elements(
-            self,
-            search
-            ):
+    def get_class_elements(self,search):
         return list(search.__class__.__annotations__.keys())
