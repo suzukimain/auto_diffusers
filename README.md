@@ -3,9 +3,13 @@
 [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](
 https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE)
 
-<div>
-  <img src=https://visit-counter.vercel.app/counter.png?page=https://github.com/suzukimain/auto_diffusers/main&c=00ffff&ff=flat&tb=visitor:%20&s=20>
-</div>
+
+
+<details>
+  <summary>Viewer</summary>
+  <img src=https://visit-counter.vercel.app/counter.png?page=https://github.com/suzukimain/auto_diffusers/main&c=00ffff&ff=flat&tb=viewer:%20&s=20>  
+</details>
+
 
 >CONTENTS
 + [About The Project](#About_The_Project)
