@@ -1,21 +1,12 @@
 import os
-import re
-import torch
 import requests
-import gc
-import jax
-import json
 from requests import HTTPError
 from tqdm.auto import tqdm
-import diffusers
-from diffusers import (DiffusionPipeline,
-                       StableDiffusionPipeline,
-                       FlaxDiffusionPipeline)
-from checker import config_check
-from utils import (logger,
-                   basic_config)
 
-class Civitai(basic_config):
+from ..setup.Base_config import Basic_config
+
+
+class Civitai(Basic_config):
     '''
     Example:
     item = requests.get("http://civitai.example").json
@@ -281,6 +272,7 @@ class Civitai(basic_config):
             self.path_dict["filename"] = state_list[0]["filename"]
             return state_list[0]
 
+
     def civitai_save_path(self):
         """
         Set the save path using the information in path_dict.
@@ -292,7 +284,7 @@ class Civitai(basic_config):
         file_version_dir = str(self.path_dict['version_id'])
         save_file_name = str(self.path_dict['filename'])
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
-        logger.debug(f"save: {save_path}")
+        self.self.logger.debug(f"save: {save_path}")
         return save_path
 
 

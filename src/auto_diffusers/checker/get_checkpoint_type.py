@@ -3,13 +3,13 @@ import torch
 import requests
 import yaml
 from io import BytesIO
-from utils import (logger,
-                   basic_config)
+
+from ..setup.Base_config import Basic_config
 
 
-class checkpoint_type(basic_config):
+class checkpoint_type(Basic_config):
     def __init__(self):
-        pass
+        super().__init__()
 
 
     def checkpoint_type_get(
@@ -104,9 +104,9 @@ class checkpoint_type(basic_config):
                 try:
                     original_config_file = BytesIO(requests.get(config_url).content)
                 except:
-                    logger.error(f"Could not download the Config_file to find out the model type from the following URL: {config_url}")
+                    self.logger.error(f"Could not download the Config_file to find out the model type from the following URL: {config_url}")
                     if model_type is None:
-                        logger.warning("model_type is set to None")
+                        self.logger.warning("model_type is set to None")
                     return model_type
             else:
                 with open(original_config_file, "r") as f:
@@ -135,5 +135,5 @@ class checkpoint_type(basic_config):
 
         else:
             if model_type is None:
-                logger.warning("model_type is set to None")
+                self.logger.warning("model_type is set to None")
             return model_type

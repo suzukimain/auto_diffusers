@@ -4,10 +4,11 @@ import time
 import queue
 import threading
 from tqdm.auto import tqdm
-from ...setup.runtime_config import Runtime_config
+
+from ..setup.Base_config import Basic_config
 
 
-class download(Runtime_func):
+class download(Basic_config):
     """
     Example:
     if __name__ == "__main__":
@@ -33,6 +34,7 @@ class download(Runtime_func):
                  desc_dot: bool = False,
                  pofix_dot: bool = False,
                  **ex_word):
+        super().__init__()
         self.url = url
         self.save_path = save_path
         self.desc = desc

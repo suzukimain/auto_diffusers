@@ -1,24 +1,19 @@
-import os
 import re
-import torch
 import requests
 import gc
-import jax
-import json
 from requests import HTTPError
 from tqdm.auto import tqdm
-import diffusers
+
 from diffusers import (DiffusionPipeline,
                        StableDiffusionPipeline,
                        FlaxDiffusionPipeline)
-from checker import config_check
-from utils import (logger,
-                   basic_config)
+
 from huggingface_hub import hf_hub_download
 
+from ..setup.Base_config import Basic_config
 
 
-class Huggingface(basic_config):
+class Huggingface(Basic_config):
     def __init__(self):
         super().__init__()
         self.num_prints=20
@@ -63,8 +58,8 @@ class Huggingface(basic_config):
             if not self.self.is_url_valid(url_or_path):
                 raise HTTPError("Invalid URL")
             hf_path, file_name =self.repo_name_or_path(url_or_path)
-            logger.debug(f"url_or_path:{url_or_path}")
-            logger.debug(f"hf_path: {hf_path} \nfile_name: {file_name}")
+            self.logger.debug(f"url_or_path:{url_or_path}")
+            self.logger.debug(f"hf_path: {hf_path} \nfile_name: {file_name}")
             if hf_path and file_name:
                 model_file_path = hf_hub_download(hf_path, file_name)
             elif hf_path and (not file_name):
@@ -77,10 +72,10 @@ class Huggingface(basic_config):
 
         #from hf_repo
         elif self.diffusers_model_check(url_or_path):
-            logger.debug(f"url_or_path: {url_or_path}")
+            self.logger.debug(f"url_or_path: {url_or_path}")
             model_file_path = _hf_repo_download(url_or_path)
         else:
-            logger.debug(f"url_or_path:{url_or_path}")
+            self.logger.debug(f"url_or_path:{url_or_path}")
             raise TypeError("Invalid path_or_url")
         return model_file_path
 
@@ -150,7 +145,7 @@ class Huggingface(basic_config):
         return:
         repo_model_list,with_like : list
         """
-        #logger.debug(f"model_name: {model_name}")
+        #self.logger.debug(f"model_name: {model_name}")
         data=self.hf_model_search(model_name,limit)
         final_list = []
         if data:
@@ -357,7 +352,7 @@ class Huggingface(basic_config):
 
 
     def file_name_set(self,model_select,auto,model_type="Checkpoint",download=False):
-        logger.debug(f"model_select: {model_select}")
+        self.logger.debug(f"model_select: {model_select}")
         del_dir_name = ["VAEs"]
         if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
             self.diffuser_model=True
@@ -371,8 +366,6 @@ class Huggingface(basic_config):
         data = response.json()
         choice_path=""
         file_value = []
-        logger.debug(data)
-        logger.debug(element for element in data)
         siblings = data["siblings"]
         if data:
             for item in siblings:

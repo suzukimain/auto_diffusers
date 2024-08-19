@@ -1,10 +1,12 @@
 import jax
-from auto_diffusers.utils.get_custom_logger import logger
+
+from ..utils.get_custom_logger import custom_logger
 
 
 class device_set:
     def __init__(self):
         self.device_type = self.device_type_check()
+        self.logger = custom_logger()
 
 
     def device_type_check(self):
@@ -17,9 +19,9 @@ class device_set:
             return "cuda"
 
 
-    def device_set(self):
+    def  extra_device_set(self):
         device_type = self.device_type_check()
-        logger.debug(f"device_type: {self.device_type}")
+        self.logger.debug(f"device_type: {self.device_type}")
         if device_type == "TPU":
             #import torch_xla.core.xla_model as xm
             #device = xm.xla_device()

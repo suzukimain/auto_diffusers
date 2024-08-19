@@ -1,2 +1,1 @@
-from pipeline_checker import Pipeline_status
 from memorize_config import config_check
