@@ -31,8 +31,9 @@ pip install diffusers
 pip install git+https://github.com/suzukimain/auto_diffusers
 
 from diffusers import StableDiffusionPipeline
-from auto_diffusers import run_search
+from auto_diffusers import Search_cls
 
+run_search = Search_cls()
 model_path = run_search(<keyword>, auto=True, download=False)
 pipe = StableDIffusionPipeline.from_single_file(model_path)
 ```
