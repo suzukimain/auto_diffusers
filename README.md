@@ -53,9 +53,9 @@ pipe = StableDIffusionPipeline.from_single_file(model_path)
     
       * Example:
     
-        1.anything"
+        1."anything"
 
-        2.diffusion 1.5"
+        2."diffusion 1.5"
     
     4.huggingface path 
 
