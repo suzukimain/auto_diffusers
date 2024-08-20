@@ -172,7 +172,7 @@ class Search_cls(Config_Mix):
                         model_path,single_file = self.run_hf_download(model_select)
                         return_dict["single_file"] = False
                     else:
-                        model_path = model_select
+                        model_path = model_path = file_path #The name is file_path, but in this case it returns “<repo>/<creator>”.
                         return_dict["single_file"] = False
                 else:
                     hf_model_path=f"https://huggingface.co/{model_select}/blob/{branch}/{file_path}"
@@ -195,7 +195,7 @@ class Search_cls(Config_Mix):
                         model_path,single_file = self.run_hf_download(file_path)
                         return_dict["single_file"] = False
                     else:
-                        model_path = model_name #f"https://huggingface.co/{model_name}"
+                        model_path = file_path #The name is file_path, but in this case it returns “<repo>/<creator>”.
                         return_dict["single_file"] = False
 
                 else:
@@ -211,11 +211,12 @@ class Search_cls(Config_Mix):
                 model_url, model_path = self.civitai_download(
                     model_select,
                     auto,
-                    model_type)
+                    model_type,
+                    download=download)
 
                 return_dict["single_file"] = True
                 return_dict["civitai_url"] = model_url
-                return_dict["local"] = True
+                return_dict["local"] = True if download else False
 
         #It is not called, but should not be deleted because it is updating the dictionary.
         update_model_path = self.check_func_hist(key="model_path",value=model_path)
