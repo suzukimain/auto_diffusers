@@ -3,7 +3,7 @@ import torch
 
 from diffusers import StableDiffusionPipeline
 
-from . import Config_Mix
+from .mix_class import Config_Mix
 
 
 class pipeline_setup(Config_Mix):

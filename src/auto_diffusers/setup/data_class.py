@@ -106,3 +106,6 @@ class data_config:
                 ・Check that there is no whitespace in the path.
                 ・Check if there are any special symbols such as "\" or "." and other special symbols (may not be recognized).
                 ''')
+    
+    def __init__(self):
+        self.single_file_only = False

@@ -48,11 +48,13 @@ class Huggingface(Basic_config):
     def run_hf_download(self,url_or_path):
         """
         retrun:
-        os.path
+        [os.path(str), Single_file_or_not(bool)]
         """
         def _hf_repo_download(path):
             model_path = DiffusionPipeline.download(path)
             return model_path
+        
+        single_file = True
 
         if any(url_or_path.startswith(checked) for checked in self.VALID_URL_PREFIXES):
             if not self.self.is_url_valid(url_or_path):
@@ -61,9 +63,11 @@ class Huggingface(Basic_config):
             self.logger.debug(f"url_or_path:{url_or_path}")
             self.logger.debug(f"hf_path: {hf_path} \nfile_name: {file_name}")
             if hf_path and file_name:
+                single_file = True
                 model_file_path = hf_hub_download(hf_path, file_name)
             elif hf_path and (not file_name):
                 if self.diffusers_model_check(hf_path):
+                    single_file = False
                     model_file_path = _hf_repo_download(url_or_path)
                 else:
                     raise HTTPError("Invalid hf_path")
@@ -73,11 +77,12 @@ class Huggingface(Basic_config):
         #from hf_repo
         elif self.diffusers_model_check(url_or_path):
             self.logger.debug(f"url_or_path: {url_or_path}")
+            single_file = False
             model_file_path = _hf_repo_download(url_or_path)
         else:
             self.logger.debug(f"url_or_path:{url_or_path}")
             raise TypeError("Invalid path_or_url")
-        return model_file_path
+        return [model_file_path, single_file]
 
 
     def model_safe_check(self,model_list) ->str:
@@ -122,14 +127,17 @@ class Huggingface(Basic_config):
             data["siblings"]
             file_path=item["rfilename"]
             #model_index.json outside the root directory is not recognized
-            if file_path=="model_index.json":
+            if file_path=="model_index.json" and (not self.single_file_only):
                 df_model_bool=True
-            elif (any(file_path.endswith(ext) for ext in self.exts) and
-                not any(file_path.endswith(ex) for ex in self.exclude)):
+            elif (
+                any(file_path.endswith(ext) for ext in self.exts) and
+                not any(file_path.endswith(ex) for ex in self.exclude)
+                ):
                 file_value_list.append(file_path)
         #↓{df_model,file_value_list}
         self.file_path_dict.update({path:(df_model_bool,file_value_list)})
         return file_value_list
+
 
     def hf_model_search(self,
                         model_path,
@@ -137,6 +145,7 @@ class Huggingface(Basic_config):
         url = f"https://huggingface.co/api/models"#?search={model_name}"
         params={"search":model_path,"sort":"likes","direction":-1,"limit":limit_num}#"downloads",}
         return requests.get(url,params=params).json()
+
 
     def hf_models(self,
                   model_name,
@@ -163,7 +172,6 @@ class Huggingface(Basic_config):
         return final_list
 
 
-
     def model_name_search(self,
                           model_name: str,
                           auto_set: bool,
@@ -187,7 +195,6 @@ class Huggingface(Basic_config):
                     max_like_dict = model_dict
             return max_like_dict["model_id"] or model_dict_list[0]["model_id"]
 
-
         """
         auto_set: bool
         loads the model with the most likes in hugface
@@ -196,8 +203,6 @@ class Huggingface(Basic_config):
             limit = 1000
         else:
             limit = 15
-
-
 
         repo_model_list = self.hf_models(model_name,limit)
         model_history = self.check_func_hist(key="hf_model_name",
@@ -240,9 +245,7 @@ class Huggingface(Basic_config):
             else:
                 choice_path = "_hf_no_model"
 
-
         return choice_path
-
 
 
     def file_name_set_sub(self,model_select,file_value,model_type):
@@ -268,6 +271,7 @@ class Huggingface(Basic_config):
                         raise ValueError("Processing was stopped because no corresponding model was found.")
                 else:
                     print("Please enter only [y,n]")
+
         file_value=self.list_safe_check(file_value)
         if len(file_value)>=self.num_prints: #15
             start_number="1"
@@ -351,7 +355,15 @@ class Huggingface(Basic_config):
         #print("\033[0m",end="")
 
 
-    def file_name_set(self,model_select,auto,model_type="Checkpoint",download=False):
+    def file_name_set(
+            self,
+            model_select,
+            auto,
+            model_type="Checkpoint",
+            download=False,
+            single_file_only=False
+            ):
+        
         del_dir_name = ["VAEs"]
         if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
             self.diffuser_model=True
@@ -385,6 +397,8 @@ class Huggingface(Basic_config):
             else:
                 if self.diffuser_model:
                     self.input_url=False
+                    choice_path=""
+                    
                 else:
                     self.input_url=True
                     choice_path=self.model_safe_check(file_value)
@@ -402,5 +416,3 @@ class Huggingface(Basic_config):
         #if not self.choice_number== -1:
         #    choice_key_update = self.check_func_hist(key=check_choice_key,value=self.choice_number)
         return choice_path
-
-gc.collect()

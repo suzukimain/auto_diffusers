@@ -1,17 +1,7 @@
-from ..setup.Base_config import Basic_config
-from .search_hugface import Huggingface
-from .search_civitai import Civitai
-from .flax_config import with_Flax
+from .mix_class import Config_Mix
+from .Perform_path_search import Search_cls
 
 
 
 
-class Config_Mix(
-    Huggingface,
-    Civitai,
-    with_Flax,
-    Basic_config
-    ):
-    #fix MMO error
-    def __init__(self):
-        super().__init__()
+
