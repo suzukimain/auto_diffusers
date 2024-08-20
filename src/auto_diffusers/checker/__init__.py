@@ -1,1 +1,1 @@
-from memorize_config import config_check
+from .memorize_config import config_check

@@ -6,25 +6,26 @@ import difflib
 import diffusers
 from natsort import natsorted
 
-from device_config import device_set
-from data_class import data_config
+from .device_config import device_set
+from .data_class import data_config
 from ..checker.memorize_config import config_check
-from runtime_config import Runtime_func
+from .runtime_config import Runtime_func
+from ..utils.get_custom_logger import custom_logger
 
-
-class Basic_config(
-    device_set,
+class Basic_config(  
     data_config,
     config_check,
-    Runtime_func
+    Runtime_func,
+    device_set
     ):
 
     def __init__(self):
         super().__init__()
         self.device_count = self.count_device()
         self.device_type = self.device_type_check()
-        self.device = self.device_set()
+        self.device = self.extra_device_set()
         self.use_TPU = self.is_TPU()
+        self.logger = custom_logger()
 
 
     @classmethod

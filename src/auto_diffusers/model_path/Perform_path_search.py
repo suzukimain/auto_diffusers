@@ -1,10 +1,14 @@
 import os
 
+
 from . import Config_Mix
 
 
 class search_path(Config_Mix):
-    def __init__(
+    def __init__(self):
+        super().__init__()
+    
+    def run_search(
             self,
             seach_word,
             auto=True,
@@ -14,21 +18,25 @@ class search_path(Config_Mix):
             local_file_only = False,
             return_path = True
             ):
-        
-        super().__init__()
+        self.seach_word = seach_word
+        self.auto = auto
+        self.download = download
+        self.model_type = model_type
+        self.branch = branch 
+        self.local_file_only = local_file_only
+        self.return_path = return_path
+    
         result = self.model_set(
-                  model_select = seach_word,
-                  auto = auto,
-                  download = download,
-                  model_type = model_type,
-                  branch = branch,
-                  local_file_only = local_file_only,
-                  path_only = return_path)
-        
+                  model_select = self.seach_word,
+                  auto = self.auto,
+                  download = self.download,
+                  model_type = self.model_type,
+                  branch = self.branch,
+                  local_file_only = self.local_file_only,
+                  return_path = self.return_path
+                  )
         return result
         
-        
-
 
     def File_search(
             self,

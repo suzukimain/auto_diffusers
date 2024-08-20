@@ -4,7 +4,7 @@ import requests
 import importlib
 import logging
 
-from device_config import device_set
+from .device_config import device_set
 from ..utils.get_custom_logger import custom_logger
 
 

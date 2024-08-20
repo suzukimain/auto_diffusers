@@ -1,7 +1,9 @@
+import os
 import logging
 
 
-def custom_logger(debug:bool):
+def custom_logger(debug=None):
+    _debugs = os.environ.get("DEBUG",False) if debug is None else debug
     format = '%(levelname)s:<cell line: %(lineno)d> <funcName: %(funcName)s>: %(message)s'
     logger = logging.getLogger(__name__)
     logger.propagate = False
@@ -10,7 +12,7 @@ def custom_logger(debug:bool):
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
         logger.addHandler(handler) 
-    if debug:
+    if _debugs:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.WARNING)

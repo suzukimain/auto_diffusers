@@ -5,10 +5,10 @@ import queue
 import threading
 from tqdm.auto import tqdm
 
-from ..setup.Base_config import Basic_config
+#from ..setup.Base_config import Basic_config
 
 
-class download(Basic_config):
+class download:
     """
     Example:
     if __name__ == "__main__":

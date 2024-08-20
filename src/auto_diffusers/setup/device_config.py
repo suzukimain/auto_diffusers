@@ -21,7 +21,7 @@ class device_set:
 
     def  extra_device_set(self):
         device_type = self.device_type_check()
-        self.logger.debug(f"device_type: {self.device_type}")
+        
         if device_type == "TPU":
             #import torch_xla.core.xla_model as xm
             #device = xm.xla_device()

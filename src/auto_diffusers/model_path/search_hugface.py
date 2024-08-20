@@ -352,7 +352,6 @@ class Huggingface(Basic_config):
 
 
     def file_name_set(self,model_select,auto,model_type="Checkpoint",download=False):
-        self.logger.debug(f"model_select: {model_select}")
         del_dir_name = ["VAEs"]
         if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
             self.diffuser_model=True
