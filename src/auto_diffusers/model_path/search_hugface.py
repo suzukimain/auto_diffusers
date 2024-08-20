@@ -57,7 +57,7 @@ class Huggingface(Basic_config):
         single_file = True
 
         if any(url_or_path.startswith(checked) for checked in self.VALID_URL_PREFIXES):
-            if not self.self.is_url_valid(url_or_path):
+            if not self.is_url_valid(url_or_path):
                 raise HTTPError("Invalid URL")
             hf_path, file_name =self.repo_name_or_path(url_or_path)
             self.logger.debug(f"url_or_path:{url_or_path}")
