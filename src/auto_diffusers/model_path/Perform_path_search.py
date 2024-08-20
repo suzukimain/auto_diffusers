@@ -172,7 +172,7 @@ class Search_cls(Config_Mix):
                         model_path,single_file = self.run_hf_download(model_select)
                         return_dict["single_file"] = False
                     else:
-                        model_path = model_path = file_path #The name is file_path, but in this case it returns “<repo>/<creator>”.
+                        model_path = model_select
                         return_dict["single_file"] = False
                 else:
                     hf_model_path=f"https://huggingface.co/{model_select}/blob/{branch}/{file_path}"
@@ -195,7 +195,7 @@ class Search_cls(Config_Mix):
                         model_path,single_file = self.run_hf_download(file_path)
                         return_dict["single_file"] = False
                     else:
-                        model_path = file_path #The name is file_path, but in this case it returns “<repo>/<creator>”.
+                        model_path = model_name
                         return_dict["single_file"] = False
 
                 else:

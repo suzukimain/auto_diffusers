@@ -364,7 +364,7 @@ class Huggingface(Basic_config):
             single_file_only=False
             ):
         
-        del_dir_name = ["VAEs"]
+        del_dir_name = ["VAEs","vaes"]
         if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
             self.diffuser_model=True
         #check_choice_key = f"model_select_{model_type}"
@@ -397,7 +397,7 @@ class Huggingface(Basic_config):
             else:
                 if self.diffuser_model and (not self.single_file_only):
                     self.input_url=False
-                    choice_path=model_select
+                    choice_path="_DFmodel"
                     
                 else:
                     self.input_url=True
