@@ -32,6 +32,7 @@ pip install git+https://github.com/suzukimain/auto_diffusers
 
 from diffusers import StableDiffusionPipeline
 from auto_diffusers import run_search
+
 model_path = run_search(<keyword>, auto=True, download=False)
 pipe = StableDIffusionPipeline.from_single_file(model_path)
 ```
@@ -43,24 +44,16 @@ pipe = StableDIffusionPipeline.from_single_file(model_path)
 > seach_word (< keyword >)
   * type
     * string
-  * Input available
-
-    1.url
-    
-    2.directory or file
-
-    3.Keywords to search
-    
-      * Example:
-    
-        1."anything"
-
-        2."diffusion 1.5"
-    
-    4.huggingface path 
-
+  * Input available  \
+    1.url  \
+    2.directory or file \
+    3.Keywords to search 
+      * Example:  \
+        1."anything"  \
+        2."diffusion 1.5"  \
+    4.huggingface path
        * Format
-          * < creator > / < repo >
+          * < creator > / < repo > 
 
 > auto
   * desc
@@ -87,13 +80,13 @@ pipe = StableDIffusionPipeline.from_single_file(model_path)
   * default
     * "Checkpoint"
   * Input available
-    1. Checkpoint
-    2. TextualInversion
-    3. Hypernetwork
-    4. AestheticGradient
-    5. LORA
-    6. Controlnet
-    7. Poses
+    1.Checkpoint \
+    2.TextualInversion \
+    3.Hypernetwork \
+    4.AestheticGradient \
+    5.LORA \
+    6.Controlnet \
+    7.Poses
 
 > return_path
   * desc
