@@ -5,10 +5,7 @@ from . import Config_Mix
 
 
 class search_path(Config_Mix):
-    def __init__(self):
-        super().__init__()
-    
-    def __call__(
+    def __init__(
             self,
             seach_word,
             auto=True,
@@ -25,7 +22,10 @@ class search_path(Config_Mix):
         self.branch = branch 
         self.local_file_only = local_file_only
         self.return_path = return_path
+        super().__init__()
     
+    
+    def __call__(self):
         result = self.model_set(
                   model_select = self.seach_word,
                   auto = self.auto,
