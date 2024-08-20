@@ -395,9 +395,9 @@ class Huggingface(Basic_config):
                 #if not self.choice_number == -1:
                 #    choice_key_update = self.check_func_hist(key=check_key,value=self.choice_number)
             else:
-                if self.diffuser_model:
+                if self.diffuser_model and (not self.single_file_only):
                     self.input_url=False
-                    choice_path=""
+                    choice_path=model_select
                     
                 else:
                     self.input_url=True
@@ -405,8 +405,9 @@ class Huggingface(Basic_config):
 
 
         elif self.diffuser_model:
-            print("\033[32mOnly models in Diffusers format found")
-            choice_path = "_DFmodel"
+            if not auto:
+                self.logger.warning("\033[32mOnly models in Diffusers format found\033[0m")
+                choice_path = "_DFmodel"
         else:
             raise FileNotFoundError("No available files found in the specified repository")
         #if model_type!="Checkpoint" and model_type!="_DFmodel":
