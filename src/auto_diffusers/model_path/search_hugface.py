@@ -364,7 +364,6 @@ class Huggingface(Basic_config):
             single_file_only=False
             ):
         
-        del_dir_name = ["VAEs","vaes"]
         if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
             self.diffuser_model=True
         #check_choice_key = f"model_select_{model_type}"
@@ -383,7 +382,7 @@ class Huggingface(Basic_config):
                 fi_path=item["rfilename"]
                 if (any(fi_path.endswith(ext) for ext in self.exts) and
                     (not any(fi_path.endswith(ex) for ex in self.exclude)) and
-                    (not any(fi_path.startswith(st) for st in del_dir_name))):
+                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
                     file_value.append(fi_path)
         else:
             raise ValueError("No available file was found.\nPlease check the name.")

@@ -106,6 +106,25 @@ class data_config:
                 ・Check that there is no whitespace in the path.
                 ・Check if there are any special symbols such as "\" or "." and other special symbols (may not be recognized).
                 ''')
+    config_file_list = [
+        "preprocessor_config.json",
+        "config.json",
+        "model.fp16.safetensors",
+        "model.safetensors",
+        "pytorch_model.bin",
+        "pytorch_model.fp16.bin",
+        "scheduler_config.json",
+        "merges.txt",
+        "special_tokens_map.json",
+        "tokenizer_config.json",
+        "vocab.json",
+        "diffusion_pytorch_model.bin",
+        "diffusion_pytorch_model.fp16.bin",
+        "diffusion_pytorch_model.fp16.safetensors",
+        "diffusion_pytorch_model.non_ema.bin",
+        "diffusion_pytorch_model.non_ema.safetensors",
+        "diffusion_pytorch_model.safetensors",
+        ]
     
     def __init__(self):
         self.single_file_only = False

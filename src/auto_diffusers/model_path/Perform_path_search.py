@@ -226,4 +226,3 @@ class Search_cls(Config_Mix):
         else:
             return [model_path, return_dict]
         
-
