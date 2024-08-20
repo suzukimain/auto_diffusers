@@ -7,10 +7,12 @@ import jax
 import json
 from requests import HTTPError
 from tqdm.auto import tqdm
+
 import diffusers
 from diffusers import FlaxDiffusionPipeline
 
 from ..setup.Base_config import Basic_config
+
 
 class with_Flax(Basic_config):
     def __init__(self):

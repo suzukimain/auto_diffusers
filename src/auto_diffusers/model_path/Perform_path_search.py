@@ -8,7 +8,7 @@ class search_path(Config_Mix):
     def __init__(self):
         super().__init__()
     
-    def run_search(
+    def __call__(
             self,
             seach_word,
             auto=True,

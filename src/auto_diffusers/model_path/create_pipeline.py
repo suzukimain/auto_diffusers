@@ -4,11 +4,6 @@ import torch
 from diffusers import StableDiffusionPipeline
 
 from . import Config_Mix
-from ..setup.Base_config import Basic_config
-from search_civitai import Civitai
-from search_hugface import Huggingface
-from flax_config import with_Flax
-
 
 
 class pipeline_setup(Config_Mix):
