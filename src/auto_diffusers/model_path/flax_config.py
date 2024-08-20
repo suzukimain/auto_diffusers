@@ -7,16 +7,14 @@ import jax
 import json
 from requests import HTTPError
 from tqdm.auto import tqdm
+
 import diffusers
-from diffusers import (DiffusionPipeline,
-                       StableDiffusionPipeline,
-                       FlaxDiffusionPipeline)
-from checker import config_check
-from utils import (logger,
-                   basic_config)
+from diffusers import FlaxDiffusionPipeline
+
+from ..setup.Base_config import Basic_config
 
 
-class with_Flax(basic_config):
+class with_Flax(Basic_config):
     def __init__(self):
         super().__init__()
 
@@ -56,8 +54,8 @@ class with_Flax(basic_config):
         model_index_path=os.path.join(model_dir_path,self.Config_file)
         with open(model_index_path, "r") as f:
             pipeline_class_name = json.load(f)["_class_name"]
-        pipeline_class = getattr(diffusers, pipeline_class_name)
-        logger.info(f"Pipeline class imported: {pipeline_class_name}.")
+        #pipeline_class = getattr(diffusers, pipeline_class_name)
+        self.logger.info(f"Pipeline class imported: {pipeline_class_name}.")
         try:
             base_pipe,base_params = FlaxDiffusionPipeline.from_pretrained(model_dir_path,
                                                                            dtype=jax.numpy.bfloat16,
