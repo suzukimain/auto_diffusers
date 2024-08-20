@@ -34,7 +34,6 @@ class Search_cls(Config_Mix):
                   download = self.download,
                   model_type = self.model_type,
                   branch = self.branch,
-                  single_file_only = self.single_file_only,
                   local_file_only = self.local_file_only,
                   return_path = self.return_path
                   )
