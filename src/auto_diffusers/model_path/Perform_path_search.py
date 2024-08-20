@@ -190,7 +190,7 @@ class Search_cls(Config_Mix):
             #hf->civit
             if not model_name == "_hf_no_model":
                 file_path = self.file_name_set(model_name,auto,model_type)
-                if model_path == "_DFmodel":
+                if file_path == "_DFmodel":
                     if download:
                         model_path,single_file = self.run_hf_download(file_path)
                         return_dict["single_file"] = False
