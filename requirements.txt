@@ -6,7 +6,4 @@ requests
 imageio
 torch
 jax
-urllib3
-numpy
 natsort
-imageio
