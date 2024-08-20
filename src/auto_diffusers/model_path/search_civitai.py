@@ -90,7 +90,7 @@ class Civitai(Basic_config):
                 save_path=save_path)
             return (model_url, self.civitai_save_path())
         else:
-            return (model_url, None)
+            return (model_url, model_url)
 
 
     def download_model(self, url, save_path):
@@ -111,7 +111,7 @@ class Civitai(Basic_config):
             total=int(response.headers.get('content-length', 0))) as fout:
             for chunk in response.iter_content(chunk_size=4096):
                 fout.write(chunk)
-        print(f"Downloaded file saved to {save_path}")
+        self.logger.info(f"Downloaded file saved to {save_path}")
 
 
     def repo_select_civitai(self, state: list, auto: bool, recursive: bool = True):
