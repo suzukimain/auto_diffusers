@@ -284,7 +284,6 @@ class Civitai(Basic_config):
         file_version_dir = str(self.path_dict['version_id'])
         save_file_name = str(self.path_dict['filename'])
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
-        self.self.logger.debug(f"save: {save_path}")
         return save_path
 
 
