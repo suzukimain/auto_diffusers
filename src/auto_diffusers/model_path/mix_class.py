@@ -7,7 +7,7 @@ from ..setup.Base_config import Basic_config
 class Config_Mix(
     Huggingface,
     Civitai,
-    with_Flax,
+    With_Flax,
     Basic_config
     ):
     #fix MMO error

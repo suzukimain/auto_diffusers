@@ -192,7 +192,7 @@ class Search_cls(Config_Mix):
                 file_path = self.file_name_set(model_name,auto,model_type)
                 if file_path == "_DFmodel":
                     if download:
-                        model_path,single_file = self.run_hf_download(file_path)
+                        model_path,single_file = self.run_hf_download(model_name)
                         return_dict["single_file"] = False
                     else:
                         model_path = model_name

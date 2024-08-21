@@ -14,7 +14,7 @@ from diffusers import FlaxDiffusionPipeline
 from ..setup.Base_config import Basic_config
 
 
-class with_Flax(Basic_config):
+class With_Flax(Basic_config):
     def __init__(self):
         super().__init__()
 
