@@ -47,10 +47,11 @@ pipe = StableDIffusionPipeline.from_single_file(model_path)
   * Input available  \
     1.url  \
     2.directory or file \
-    3.Keywords to search 
-      * Example:  \
-        1."anything"  \
-        2."diffusion 1.5"  \
+    3.Keywords to search
+      * Example:  
+        * "anything"  
+        * "diffusion 1.5"
+
     4.huggingface path
        * Format
           * < creator > / < repo > 
