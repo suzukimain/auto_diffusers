@@ -1,6 +1,6 @@
 from .search_hugface import Huggingface
 from .search_civitai import Civitai
-from .flax_config import with_Flax
+from .flax_config import With_Flax
 from ..setup.Base_config import Basic_config
 
 
