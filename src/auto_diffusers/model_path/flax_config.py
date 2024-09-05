@@ -8,7 +8,7 @@ import json
 from requests import HTTPError
 from tqdm.auto import tqdm
 
-import diffusers
+
 from diffusers import FlaxDiffusionPipeline
 
 from ..setup.Base_config import Basic_config
@@ -57,10 +57,11 @@ class With_Flax(Basic_config):
         #pipeline_class = getattr(diffusers, pipeline_class_name)
         self.logger.info(f"Pipeline class imported: {pipeline_class_name}.")
         try:
-            base_pipe,base_params = FlaxDiffusionPipeline.from_pretrained(model_dir_path,
-                                                                           dtype=jax.numpy.bfloat16,
-                                                                           use_safetensors=True)
-
+            base_pipe,base_params = FlaxDiffusionPipeline.from_pretrained(
+                model_dir_path,
+                dtype=jax.numpy.bfloat16,
+                use_safetensors=True
+                )
         except ValueError:
             raise ValueError("Insufficient memory.")
         #from flax.jax_utils import replicate
