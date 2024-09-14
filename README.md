@@ -4,11 +4,9 @@
 https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE)
 
 
-
-<details>
-  <summary>Viewer</summary>
+<div>
   <img src=https://visit-counter.vercel.app/counter.png?page=https://github.com/suzukimain/auto_diffusers/main&c=00ffff&ff=flat&tb=viewer:%20&s=20>  
-</details>
+</div>
 
 
 >CONTENTS
@@ -37,78 +35,33 @@ model_path = run_search(<keyword>, auto=True, download=False)
 pipe = StableDIffusionPipeline.from_single_file(model_path)
 ```
 
-
-
 ##  Description<a name = "Description"></a>
-
-> seach_word (< keyword >)
-  * type
-    * string
-  * Input available  \
-    1.url  \
-    2.directory or file \
-    3.Keywords to search
-      * Example:  
-        * "anything"  
-        * "diffusion 1.5"
-
-    4.huggingface path
-       * Format
-          * < creator > / < repo > 
-
-> auto
-  * desc
-    * Minimize user input by automatically selecting the most highly rated models when searching for models.
-  * type
-    * bool
-  * default
-    * True
-
->  download
-  * desc
-    * Returns the path where the file was downloaded and saved.
-  * type
-    * bool
-  * default
-    * False
+> Arguments of `run_ search`
+> 
+| Name           | Type   | Default     | Input Available  | Description |
+|:--------------:|:------:|:-----------:|:----------------:|:--------------------------------------------------------:|
+| search_word    | string | ー          | [Details](#search-word) | Keywords to search models |
+| auto           | bool   | True        | ー                | Minimize user input by selecting the highest-rated models. |
+| download       | bool   | False       | ー                | Returns the path where the file was downloaded. |
+| model_type     | string | "Checkpoint"| 1. `Checkpoint`<br>2. `TextualInversion`<br>3. `Hypernetwork`<br>4. `AestheticGradient`<br>5. `LORA`<br>6. `Controlnet`<br>7. `Poses` | Valid only in Civitai. |
+| return_path    | bool   | True        | ー                | Returns only the path or `[model_path, status_dict]`. |
+| branch         | string | "main"      | ー                | Specify the branches of huggingface and civitai. |
+| local_file_only| bool   | False       | ー                | Search local folders only. |
 
 
-> model_type
-  * desc
-    * Valid only in Civitai.
-  * type
-    * string
-  * default
-    * "Checkpoint"
-  * Input available
-    1.Checkpoint \
-    2.TextualInversion \
-    3.Hypernetwork \
-    4.AestheticGradient \
-    5.LORA \
-    6.Controlnet \
-    7.Poses
+<a id="search-word"></a>
+<details open>
+<summary>search_word</summary>
 
-> return_path
-  * desc
-    * Whether to return only the path or not. If false, returns [model_path , status_dict].
-    
-  * type
-    * bool
-  * default
-    * False
+| Type                         | Description                                                            |
+| :--------------------------: | :--------------------------------------------------------------------: |
+| keyword                      | Keywords to search model<br>                                           |
+| url                          | Can be any URL other than huggingface or Civitai.                      |
+| Local directory or file path | Search for files with the extensions: `.safetensors`, `.ckpt`, `.bin`  |
+| huggingface path             | The following format: `< creator > / < repo >`                         |
 
-> branch  
-  * type
-    * string
-  * default
-    * "main"
+</details>
 
-> local_file_only
-  * type
-    * bool
-  * default
-    * False
 
 ## License<a name = "License"></a>
 In accordance with [BSD-3-Clause license](LICENSE)
