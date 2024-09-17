@@ -23,7 +23,7 @@ setup(
     description="Customized diffusers with model search and other functions.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    keywords="Added the ability to search models and more to diffusers",
+    keywords="diffusers model search deep learning diffusion jax pytorch stable diffusion",
     license="BSD 3-Clause License",
     author="suzukimain",
     author_email="subarucosmosmain@gmail.com",
