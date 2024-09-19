@@ -4,9 +4,15 @@ import sys
 
 from setuptools import find_packages, setup
 
-
-with open("./requirements.txt", "r", encoding="utf-8") as _file:
-    _deps = _file.read().splitlines()
+_deps = [
+    diffusers,
+    transformers,
+    huggingface-hub,
+    requests,
+    torch,
+    jax,
+    natsort
+]
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}
 
