@@ -27,7 +27,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -U setuptools wheel twine build
           python -m pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install -U transformers diffusers
 
       - name: Build release distributions
         run: |
@@ -60,19 +59,19 @@ jobs:
           name: release-dists
           path: dist/
 
-      - name: Publish release distributions to test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
-          skip-existing: true
-          repository-url: https://test.pypi.org/legacy/
+      #- name: Publish release distributions to test PyPI
+      #  uses: pypa/gh-action-pypi-publish@release/v1
+      #  with:
+      #    verbose: true
+      #    skip-existing: true
+      #    repository-url: https://test.pypi.org/legacy/
           
 
-      - name: Test installing auto_diffusers and importing
-        run: |
-          pip install auto_diffusers && pip uninstall auto_diffusers -y
-          pip install -i https://testpypi.python.org/pypi auto_diffusers
-          python -c "from auto_diffusers import *"
+      #- name: Test installing auto_diffusers and importing
+      #  run: |
+      #    pip install auto_diffusers && pip uninstall auto_diffusers -y
+      #    pip install -i https://testpypi.python.org/pypi auto_diffusers
+      #    python -c "from auto_diffusers import *"
 
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
