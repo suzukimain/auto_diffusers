@@ -36,7 +36,7 @@ pipe = StableDIffusionPipeline.from_single_file(model_path)
 ```
 
 ##  Description<a name = "Description"></a>
-> Arguments of `run_ search`
+> Arguments of `run_search`
 > 
 | Name           | Type   | Default     | Input Available  | Description |
 |:--------------:|:------:|:-----------:|:----------------:|:--------------------------------------------------------:|
