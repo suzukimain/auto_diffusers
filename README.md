@@ -26,7 +26,7 @@ Enhance the functionality of diffusers.
 
 ```python
 pip install diffusers
-pip install git+https://github.com/suzukimain/auto_diffusers
+pip install auto_diffusers
 
 from diffusers import StableDiffusionPipeline
 from auto_diffusers import run_search
