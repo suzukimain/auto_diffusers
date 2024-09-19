@@ -63,6 +63,7 @@ jobs:
       - name: Publish release distributions to test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          skip-existing: true
           repository-url: https://test.pypi.org/legacy/
 
       - name: Test installing auto_diffusers and importing
@@ -73,6 +74,8 @@ jobs:
 
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
 
 
