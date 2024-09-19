@@ -5,13 +5,13 @@ import sys
 from setuptools import find_packages, setup
 
 _deps = [
-    diffusers,
-    transformers,
-    huggingface-hub,
-    requests,
-    torch,
-    jax,
-    natsort
+    "diffusers",
+    "transformers",
+    "huggingface-hub",
+    "requests",
+    "torch",
+    "jax",
+    "natsort",
 ]
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}
