@@ -1,7 +1,12 @@
 # auto_diffusers
 
-[![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](
-https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE)
+<p>
+    <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-BSD%203--Clause-blue.svg?style=social"></a>
+</p>
+<p>
+    <a href="https://pepy.tech/project/auto_diffusers"><img alt="GitHub release" src="https://static.pepy.tech/badge/auto_diffusers"></a>
+    <a href="https://github.com/suzukimain/auto_diffusers/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/suzukimain/auto_diffusers.svg"></a>
+</p>
 
 
 <div>
