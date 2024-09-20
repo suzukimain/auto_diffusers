@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'
+      - '*'
   release:
     types: [published]
 
@@ -23,14 +23,14 @@ jobs:
           python-version: "3.x"
 
       #test
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+      #- name: Get version from tag
+      #  id: get_version
+      #  run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
 
-      - name: Update version in setup.py
-        run: |
-          sed -i "s/version='.*'/version='${{ env.VERSION }}'/g" setup.py
-          cat setup.py
+      #- name: Update version in setup.py
+      #  run: |
+      #    sed -i "s/version='.*'/version='${{ env.VERSION }}'/g" setup.py
+      #    cat setup.py
       #----
 
           
