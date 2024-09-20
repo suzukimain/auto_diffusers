@@ -59,22 +59,17 @@ jobs:
           name: release-dists
           path: dist/
 
-      #- name: Publish release distributions to test PyPI
-      #  uses: pypa/gh-action-pypi-publish@release/v1
-      #  with:
-      #    verbose: true
-      #    repository-url: https://test.pypi.org/legacy/
+      - name: Publish release distributions to test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
           
 
-      #- name: Test installing auto_diffusers and importing
-      #  run: |
-      #    pip install auto_diffusers && pip uninstall auto_diffusers -y
-      #    pip install -i https://testpypi.python.org/pypi auto_diffusers
-      #    python -c "from auto_diffusers import *"
+      - name: Test installing auto_diffusers and importing
+        run: |
+          pip install auto_diffusers && pip uninstall auto_diffusers -y
+          pip install -i https://testpypi.python.org/pypi auto_diffusers
+          python -c "from auto_diffusers import *"
 
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
-          skip-existing: true
-          
