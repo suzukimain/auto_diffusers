@@ -1,0 +1,52 @@
+name: Update VERSION file
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  update_version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF##*/}" | sed 's/^v//' >> $GITHUB_ENV
+
+      - name: Get PyPI versions
+        id: get_pypi_versions
+        run: |
+          all_versions=$(get_pypi_latest_version -a auto_diffusers)
+          echo "VERSIONS=$all_versions" >> $GITHUB_ENV
+
+      - name: Determine new version
+        id: determine_version
+        run: |
+          version=${{ env.VERSION }}
+          versions=(${{ steps.get_pypi_versions.outputs.VERSIONS }})
+          new_version=$version
+          suffix=0
+          while [[ " ${versions[@]} " =~ " $new_version " ]]; do
+            suffix=$((suffix+1))
+            new_version="${version}dev${suffix}"
+          done
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+
+      - name: Update VERSION file
+        run: echo "${{ env.NEW_VERSION }}" > VERSION
+
+      - name: Commit changes
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "actions@github.com"
+          git add VERSION
+          git commit -m "Update VERSION to ${{ env.NEW_VERSION }}"
+          git push
