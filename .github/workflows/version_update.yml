@@ -41,6 +41,10 @@ jobs:
     - name: Update VERSION file
       run: echo "${{ steps.determine_version.outputs.final_version }}" > VERSION
 
+    - name: Checkout branch
+      run: |
+        git checkout -B main
+
     - name: Commit changes
       run: |
         git config --global user.name 'github-actions[bot]'
