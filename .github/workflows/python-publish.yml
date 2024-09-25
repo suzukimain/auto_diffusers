@@ -1,6 +1,7 @@
 name: Version Update and Upload Python Package
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*'
