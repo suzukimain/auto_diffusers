@@ -51,18 +51,18 @@ jobs:
     - name: Update VERSION file
       run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
 
-    - name: Checkout branch
-      run: |
-        git checkout -b main
+   # - name: Checkout branch
+   #   run: |
+   #     git checkout -b main
 
     - name: Commit changes
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git pull origin main
+        git pull origin main --force
         git add Version.txt
         git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
-        git push origin main
+        git push origin main --force
    
 
   release-build:
