@@ -51,9 +51,10 @@ jobs:
     - name: Update VERSION file
       run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
 
-   # - name: Checkout branch
-   #   run: |
-   #     git checkout -b main
+    - name: Checkout branch
+      uses: actions/checkout@v2
+      with:
+        ref: main
 
     - name: Commit changes
       run: |
