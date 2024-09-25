@@ -55,6 +55,7 @@ jobs:
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add Version.txt
         git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
+        git pull
         git push --set-upstream origin main
 
 
