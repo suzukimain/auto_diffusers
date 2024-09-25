@@ -51,17 +51,19 @@ jobs:
 
     - name: Checkout branch
       run: |
-        git checkout -B main
+        git checkout main
 
     - name: Commit changes
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git branch --set-upstream-to=origin/main main
+        git pull origin main
         git add Version.txt
         git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
-        git pull
-        git push --set-upstream origin main
+        git push origin main
+
+
+        
 
 
   release-build:
