@@ -16,6 +16,10 @@ _deps = [
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}
 
+def read_version():
+    with open(os.path.join(os.path.dirname(__file__), 'Version.txt')) as version_file:
+        return version_file.read().strip()
+
 
 def deps_list(*pkgs):
     return [deps[pkg] for pkg in pkgs]
@@ -25,7 +29,7 @@ version_range_max = max(sys.version_info[1], 10) + 1
 
 setup(
     name="auto_diffusers",
-    version="1.1.0",
+    version=read_version(),
     description="Customized diffusers with model search and other functions.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -43,7 +47,7 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
-        "Intended Audience :: Science/Research"
+        "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Programming Language :: Python :: 3",
     ]

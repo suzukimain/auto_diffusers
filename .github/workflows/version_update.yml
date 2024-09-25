@@ -1,0 +1,54 @@
+name: Update VERSION file
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Extract version from tag
+      id: extract_version
+      run: echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+
+    - name: Get auto_diffusers version
+      id: get_auto_diffusers_version
+      run: |
+        pip install auto_diffusers
+        auto_diffusers_version=$(pip show auto_diffusers | grep Version | awk '{print $2}')
+        echo "::set-output name=auto_diffusers_version::$auto_diffusers_version"
+
+    - name: Determine final version
+      id: determine_version
+      run: |
+        version=${{ steps.extract_version.outputs.version }}
+        auto_diffusers_version=${{ steps.get_auto_diffusers_version.outputs.auto_diffusers_version }}
+        if [[ "$auto_diffusers_version" == *"$version"* ]]; then
+          dev_version=0
+          while [[ "$auto_diffusers_version" == *"$version.dev$dev_version"* ]]; do
+            dev_version=$((dev_version + 1))
+          done
+          version="$version.dev$dev_version"
+        fi
+        echo "::set-output name=final_version::$version"
+
+    - name: Update VERSION file
+      run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
+
+    - name: Checkout branch
+      run: |
+        git checkout -B main
+
+    - name: Commit changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add Version.txt
+        git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
+        git push --set-upstream origin main
