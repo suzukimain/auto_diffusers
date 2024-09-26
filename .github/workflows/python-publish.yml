@@ -1,5 +1,10 @@
 name: Version Update and Upload Python Package
 
+#Upload to pypi when tagged release.
+#Requirements:
+#・Add this file to "trusted publishers" in pypi and test pypi.
+#・Version.txt exists in root
+
 on:
   workflow_dispatch:
   push:
