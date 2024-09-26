@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - '*'
+      - 'v*'
   release:
     types: [published]
 
@@ -29,18 +29,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
-    #- name: branch check
-     # run: |
-    #    git fetch origin
-     #   git checkout main
-
 
     - name: Extract version from tag
       id: extract_version
-      #run: echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
       run: echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_OUTPUT
 
-    #echo "::set-output name=auto_diffusers_version::$auto_diffusers_version"
+
     - name: Get auto_diffusers version
       id: get_auto_diffusers_version
       run: |
@@ -48,7 +42,7 @@ jobs:
         auto_diffusers_version=$(pip show auto_diffusers | grep Version | awk '{print $2}')  
         echo "auto_diffusers_version=$auto_diffusers_version" >> $GITHUB_OUTPUT
         
-    #echo "::set-output name=final_version::$version"
+    
     - name: Determine final version
       id: determine_version
       run: |
@@ -67,8 +61,6 @@ jobs:
     - name: Update VERSION file
       run: |
         echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
-        
-
   
     - name: Commit
       run: |
