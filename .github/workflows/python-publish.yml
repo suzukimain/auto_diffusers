@@ -55,6 +55,9 @@ jobs:
     - name: Update VERSION file
       run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
 
+    - name: branch check
+      run: git branch -m master main
+
     - name: Commit
       run: |
         git config --global user.name 'github-actions[bot]'
