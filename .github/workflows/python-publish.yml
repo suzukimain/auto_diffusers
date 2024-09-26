@@ -56,7 +56,9 @@ jobs:
       run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
 
     - name: branch check
-      run: git branch -m master main
+      run: |
+        git fetch origin
+        git checkout main
 
     - name: Commit
       run: |
