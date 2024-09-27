@@ -7,16 +7,11 @@ name: Version Update and Upload Python Package
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
   release:
     types: [published]
 
-
 permissions:
   contents: write
-
 
 jobs:
   update-version:
@@ -29,11 +24,9 @@ jobs:
           ref: main
           fetch-depth: 0
 
-
     - name: Extract version from tag
       id: extract_version
       run: echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_OUTPUT
-
 
     - name: Get auto_diffusers version
       id: get_auto_diffusers_version
@@ -41,8 +34,7 @@ jobs:
         pip install auto_diffusers
         auto_diffusers_version=$(pip show auto_diffusers | grep Version | awk '{print $2}')  
         echo "auto_diffusers_version=$auto_diffusers_version" >> $GITHUB_OUTPUT
-        
-    
+
     - name: Determine final version
       id: determine_version
       run: |
@@ -56,21 +48,21 @@ jobs:
           version="$version.dev$dev_version"
         fi
         echo "final_version=$version" >> $GITHUB_OUTPUT
-        
+
+    - name: Set version as environment variable
+      run: echo "VERSION=${{ steps.determine_version.outputs.final_version }}" >> $GITHUB_ENV
 
     - name: Update VERSION file
-      run: |
-        echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
-  
+      run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
+
     - name: Commit
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add Version.txt
         git pull origin main
+        git add Version.txt
         git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
         git push origin main
-   
 
   release-build:
     name: Build the release
@@ -103,7 +95,6 @@ jobs:
         with:
           name: release-dists
           path: dist/
-
 
   pypi-publish:
     name: Upload release to PyPI
