@@ -10,7 +10,7 @@ from diffusers import (DiffusionPipeline,
 
 from huggingface_hub import hf_hub_download
 
-from ..setup.base_config import Basic_config
+from ..setup.Base_config import Basic_config
 
 
 class Huggingface(Basic_config):

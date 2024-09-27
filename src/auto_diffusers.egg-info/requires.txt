@@ -1,0 +1,7 @@
+diffusers
+transformers
+huggingface-hub
+requests
+torch
+jax
+natsort
