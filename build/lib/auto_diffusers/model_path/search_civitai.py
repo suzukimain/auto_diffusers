@@ -3,7 +3,7 @@ import requests
 from requests import HTTPError
 from tqdm.auto import tqdm
 
-from ..setup.Base_config import Basic_config
+from ..setup.base_config import Basic_config
 
 
 class Civitai(Basic_config):

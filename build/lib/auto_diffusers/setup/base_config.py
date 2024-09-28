@@ -1,7 +1,7 @@
 import os
+import jax
 import inspect
 import difflib
-import importlib 
 
 import diffusers
 from natsort import natsorted
@@ -209,20 +209,5 @@ class Basic_config(
         Sorted by version in order of newest to oldest
         """
         return natsorted(sorted_list,reverse = True)
-    
-    
-    def install_check(self,module_name) -> bool:
-        check_availability = importlib.util.find_spec(module_name) is not None
-        if check_availability:
-            try:
-                _module_version = importlib.metadata.version(module_name)
-                self.logger.info(f"{module_name} version {_module_version} available.")
-            except importlib.metadata.PackageNotFoundError:
-                check_availability = False
-        else:
-            check_availability = False
-        return check_availability
-
-
 
 

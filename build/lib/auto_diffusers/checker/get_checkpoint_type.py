@@ -4,7 +4,7 @@ import requests
 import yaml
 from io import BytesIO
 
-from ..setup.Base_config import Basic_config
+from ..setup.base_config import Basic_config
 
 
 class checkpoint_type(Basic_config):

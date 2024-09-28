@@ -19,7 +19,7 @@ class device_set:
             return "cuda"
 
 
-    def  extra_device_set(self):
+    def extra_device_set(self):
         device_type = self.device_type_check()
         
         if device_type == "TPU":
