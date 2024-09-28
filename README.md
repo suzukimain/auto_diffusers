@@ -1,5 +1,6 @@
 # auto_diffusers
 
+
 <p>
     <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-BSD%203--Clause-blue.svg?style=social"></a>
 </p>
@@ -7,11 +8,6 @@
     <a href="https://pepy.tech/project/auto_diffusers"><img alt="GitHub release" src="https://static.pepy.tech/badge/auto_diffusers"></a>
     <a href="https://github.com/suzukimain/auto_diffusers/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/suzukimain/auto_diffusers.svg"></a>
 </p>
-
-
-<div>
-  <img src=https://visit-counter.vercel.app/counter.png?page=https://github.com/suzukimain/auto_diffusers/main&c=00ffff&ff=flat&tb=viewer:%20&s=20>  
-</div>
 
 
 >CONTENTS
@@ -67,6 +63,10 @@ pipe = StableDIffusionPipeline.from_single_file(model_path)
 
 </details>
 
+<details>
+<summary>viewer</summary>
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=suzukimain.auto_diffusers" alt="Visitor Badge">
+</details>
 
 ## License<a name = "License"></a>
 In accordance with [BSD-3-Clause license](LICENSE)
