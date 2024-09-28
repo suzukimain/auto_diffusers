@@ -8,6 +8,7 @@ _deps = [
     "diffusers",
     "transformers",
     "huggingface-hub",
+    "tensorflow",
     "requests",
     "torch",
     "jax",
