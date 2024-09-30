@@ -85,7 +85,8 @@ class Search_cls(Config_Mix):
                   model_type = "Checkpoint",
                   branch = "main",
                   local_file_only = False,
-                  return_path = True):
+                  return_path = True
+                  ):
         """
         return:
         if path_only is false
@@ -96,19 +97,23 @@ class Search_cls(Config_Mix):
             raise TypeError(f'Wrong argument. Valid values are "Checkpoint", "TextualInversion", "LORA", "Hypernetwork", "AestheticGradient", "Controlnet", "Poses". What was passed on {model_type}')
         
         return_dict = {
-            "url_or_path":"",
             "search_word":model_select,
+            "url_or_path":"",
+            "load_type":"",# "" or "from_single_file" or "from_pretrained"
             "single_file":False,
             "local":True if download or local_file_only else False,
-            "civitai_url":"",
+            "is_hf_path":"",
             }
         
         model_path = model_select
         file_path = ""
         if model_select in self.model_dict:
             model_path_to_check = self.model_dict[model_select]
-            if self.is_url_valid(f"https://huggingface.co/{model_path_to_check}"):
+            _check_url = f"https://huggingface.co/{model_path_to_check}"
+            if self.is_url_valid(_check_url):
                 model_select = model_path_to_check
+                return_dict["url_or_path"] = _check_url
+
 
         if local_file_only:
             model_path = self.File_search(
@@ -133,9 +138,11 @@ class Search_cls(Config_Mix):
 
         elif model_select.startswith("https://civitai.com/"):
             #local file
-            model_path = self.public_civiai(model_select,
-                                            auto,
-                                            model_type)
+            model_path = self.public_civiai(
+                model_select,
+                auto,
+                model_type
+                )
             return_dict["single_file"] = True
 
         elif os.path.isfile(model_select):
@@ -176,6 +183,7 @@ class Search_cls(Config_Mix):
                         return_dict["single_file"] = False
                 else:
                     hf_model_path=f"https://huggingface.co/{model_select}/blob/{branch}/{file_path}"
+                    return_dict["url_or_path"] = hf_model_path
                     if download:
                         model_path,single_file = self.run_hf_download(hf_model_path)
                         return_dict["single_file"] = single_file

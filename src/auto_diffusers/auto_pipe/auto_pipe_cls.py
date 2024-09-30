@@ -50,9 +50,19 @@ class AutoPipeline(Search_cls,Basic_config):
             priority: Optional[str] = "hugface",
             branch: Optional[str] = "main",
             search_local_only: Optional[bool] = False,
+            **keywords
             ):
+        
         super().__init__()
+        self.seach_word = search_word
+        self.pipe_type = pipe_type
+        self.auto = auto
+        self.priority = priority
+        self.branch = branch
+        self.search_local_only = search_local_only
+
         self.device = self.device_type_check()
+
     
 
     def pipeline_type(

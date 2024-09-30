@@ -23,6 +23,7 @@ License-File: LICENSE
 Requires-Dist: diffusers
 Requires-Dist: transformers
 Requires-Dist: huggingface-hub
+Requires-Dist: tensorflow
 Requires-Dist: requests
 Requires-Dist: torch
 Requires-Dist: jax

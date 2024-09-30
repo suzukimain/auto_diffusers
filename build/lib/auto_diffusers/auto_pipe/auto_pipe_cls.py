@@ -49,7 +49,7 @@ class AutoPipeline(Search_cls,Basic_config):
             auto: Optional[bool] = True,
             priority: Optional[str] = "hugface",
             branch: Optional[str] = "main",
-            local_file_only: Optional[bool] = False,
+            search_local_only: Optional[bool] = False,
             ):
         super().__init__()
         self.device = self.device_type_check()
