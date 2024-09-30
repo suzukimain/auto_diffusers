@@ -13,6 +13,7 @@
 >CONTENTS
 + [About The Project](#About_The_Project)
 + [How to use](#How_to_use)
++ [Example](#Example)
 + [Description](#Description)
 + [License](#License)
 + [Acknowledgement](#Acknowledgement)
@@ -34,6 +35,23 @@ from auto_diffusers import run_search
 
 model_path = run_search(<keyword>, auto=True, download=False)
 pipe = StableDIffusionPipeline.from_single_file(model_path)
+```
+
+##  Example<a name = "Example"></a>
+
+```python
+pip install --quiet diffusers
+pip install --quiet auto_diffusers
+
+from diffusers import StableDiffusionPipeline
+from IPython.display import display
+from auto_diffusers import run_search
+
+model_path = run_search("Any", auto=True, download=False)
+pipe = StableDiffusionPipeline.from_pretrained(model_path).to("cuda")
+image = pipe("Mt. Fuji").images[0]
+print(f"model_path: {model_path}")
+display(image)
 ```
 
 ##  Description<a name = "Description"></a>
