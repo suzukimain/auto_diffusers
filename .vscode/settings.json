@@ -1,5 +1,7 @@
 {
     "github-actions.workflows.pinned.workflows": [
         ".github/workflows/python-publish.yml"
-    ]
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic"
 }

@@ -92,10 +92,13 @@ class pipeline_setup(Config_Mix):
 
         elif model_select.startswith("https://civitai.com/"):
             #local file
-            model_path = self.public_civiai(model_select,
-                                            auto,
-                                            model_type)
+            model_url,model_path = self.civitai_download(
+                search_word=model_select,
+                auto=auto,
+                model_type=model_type,
+                download=download)
             return_dict["from_single_file"] = True
+            return_dict["url_or_path"] = model_url
 
         elif os.path.isfile(model_select):
             model_path = model_select

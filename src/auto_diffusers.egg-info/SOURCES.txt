@@ -13,6 +13,7 @@ src/auto_diffusers.egg-info/top_level.txt
 src/auto_diffusers/auto_pipe/__init__.py
 src/auto_diffusers/auto_pipe/auto_pipe_cls.py
 src/auto_diffusers/checker/__init__.py
+src/auto_diffusers/checker/checkpoint_type.py
 src/auto_diffusers/checker/get_checkpoint_type.py
 src/auto_diffusers/checker/memorize_config.py
 src/auto_diffusers/model_path/__init__.py
