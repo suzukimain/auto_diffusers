@@ -84,6 +84,8 @@ class Civitai(Basic_config):
             query=seach_word,
             auto=auto,
             model_type=model_type)
+        if model_url == "_civitai_no_model":
+            return ("_civitai_no_model","_civitai_no_model")
         if download:
             self.download_model(
                 url=model_url,
@@ -127,6 +129,8 @@ class Civitai(Basic_config):
         - dict: Selected repository information.
         """
         if not state:
+            #self.logger.warning("There is no model in Civitai that fits the criteria.")
+            #return "_civitai_no_model"
             raise ValueError("state is empty")
 
         if auto:
@@ -365,7 +369,9 @@ class Civitai(Basic_config):
                     state.append(state_dict)
 
         if not state:
-            raise ValueError("No matches found for your criteria")
+            self.logger.warning("There is no model in Civitai that fits the criteria.")
+            return ("_civitai_no_model","_civitai_no_model")
+            #raise ValueError("No matches found for your criteria")
 
         model_dict = self.repo_select_civitai(
             state = state,
