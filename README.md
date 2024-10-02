@@ -7,6 +7,7 @@
 <p>
     <a href="https://pepy.tech/project/auto_diffusers"><img alt="GitHub release" src="https://static.pepy.tech/badge/auto_diffusers"></a>
     <a href="https://github.com/suzukimain/auto_diffusers/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/suzukimain/auto_diffusers.svg"></a>
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=suzukimain.auto_diffusers" alt="Visitor Badge">
 </p>
 
 
@@ -47,7 +48,7 @@ from diffusers import StableDiffusionPipeline
 from IPython.display import display
 from auto_diffusers import run_search
 
-model_path = run_search("Any", auto=True, download=False)
+model_path = run_search("Any", auto=True, model_format="diffusers", download=False)
 pipe = StableDiffusionPipeline.from_pretrained(model_path).to("cuda")
 image = pipe("Mt. Fuji").images[0]
 print(f"model_path: {model_path}")
@@ -62,10 +63,12 @@ display(image)
 | search_word    | string | ー          | [Details](#search-word) | Keywords to search models |
 | auto           | bool   | True        | ー                | Minimize user input by selecting the highest-rated models. |
 | download       | bool   | False       | ー                | Returns the path where the file was downloaded. |
-| model_type     | string | "Checkpoint"| 1. `Checkpoint`<br>2. `TextualInversion`<br>3. `Hypernetwork`<br>4. `AestheticGradient`<br>5. `LORA`<br>6. `Controlnet`<br>7. `Poses` | Valid only in Civitai. |
+| model_format   | string | "single_file" | `all`,<br> `diffusers`,<br> `single_file`| Specifies the format of the model. [Details](#model_format) |
+| model_type     | string | "Checkpoint"| `Checkpoint`,<br>`TextualInversion`,<br>`Hypernetwork`,<br>`AestheticGradient`,<br>`LORA`,<br>`Controlnet`,<br>`Poses` | Valid only in Civitai. |
 | return_path    | bool   | True        | ー                | Returns only the path or `[model_path, status_dict]`. |
 | branch         | string | "main"      | ー                | Specify the branches of huggingface and civitai. |
-| local_file_only| bool   | False       | ー                | Search local folders only. |
+| local_file_only| bool   | False       | ー                | Search local folders only.<br>**In the case of `auto`, files with names similar to `search_word` will be given priority.** |
+
 
 
 <a id="search-word"></a>
@@ -81,10 +84,19 @@ display(image)
 
 </details>
 
-<details>
-<summary>viewer</summary>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=suzukimain.auto_diffusers" alt="Visitor Badge">
+
+<a id="model_format"></a>
+<details open>
+<summary>model_format</summary>
+
+| Argument                     | Description                                                            |
+| :--------------------------: | :--------------------------------------------------------------------: |
+| all                          | In auto, `multifolder diffusers format checkpoint` takes precedence    |                                      
+| single_file                  | Only `single file checkpoint` are searched.  |
+| diffusers                    | Search only for `multifolder diffusers format checkpoint`<br>**Note that only the huggingface is searched for, since it is not in civitai.**    |
+
 </details>
+
 
 ## License<a name = "License"></a>
 In accordance with [BSD-3-Clause license](LICENSE)
