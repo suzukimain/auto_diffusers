@@ -1,10 +1,11 @@
 import os
+
 import torch
 import requests
 import yaml
 from io import BytesIO
 
-from ..setup.Base_config import Basic_config
+from ..setup.base_config import Basic_config
 
 
 class checkpoint_type(Basic_config):
@@ -65,7 +66,7 @@ class checkpoint_type(Basic_config):
             key_name_v2_1 = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
             key_name_sd_xl_base = "conditioner.embedders.1.model.transformer.resblocks.9.mlp.c_proj.bias"
             key_name_sd_xl_refiner = "conditioner.embedders.0.model.transformer.resblocks.9.mlp.c_proj.bias"
-            #is_upscale = pipeline_class == StableDiffusionUpscalePipeline
+            is_upscale = pipeline_class == StableDiffusionUpscalePipeline
             config_url = None
             # model_type = "v1"
             if config_files is not None and "v1" in config_files:
@@ -135,5 +136,5 @@ class checkpoint_type(Basic_config):
 
         else:
             if model_type is None:
-                self.logger.warning("model_type is set to None")
+                self.logger.error("model_type is set to None")
             return model_type

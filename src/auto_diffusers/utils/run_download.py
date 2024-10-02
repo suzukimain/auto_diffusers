@@ -5,8 +5,6 @@ import queue
 import threading
 from tqdm.auto import tqdm
 
-#from ..setup.Base_config import Basic_config
-
 
 class download:
     """
