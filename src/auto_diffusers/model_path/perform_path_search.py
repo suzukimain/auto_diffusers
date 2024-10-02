@@ -302,6 +302,8 @@ class Search_cls(Config_Mix):
                 hf_model_path = f"https://huggingface.co/{model_name}/blob/{self.branch}/{file_path}"
                 if download:
                     model_path = self.run_hf_download(hf_model_path)
+                else:
+                    model_path = hf_model_path
                 self.return_dict["single_file"] = True
                 self.return_dict["load_type"] = "from_single_file"
 
