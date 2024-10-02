@@ -278,7 +278,7 @@ class Search_cls(Config_Mix):
             model_type,
             download
             ):
-        
+        model_path = ""
         model_name = self.model_name_search(
             model_name=model_select,
             auto_set=auto,
