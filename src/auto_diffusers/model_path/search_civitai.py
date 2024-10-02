@@ -44,7 +44,11 @@ class Civitai(Basic_config):
 
     def __init__(self):
         super().__init__()
-        self.path_dict = {}
+        self.path_dict = {
+            "repo_id":"",
+            "viersion_id":"",
+            "filename":""
+            }
         self.save_file_name = ""
 
 
@@ -194,11 +198,10 @@ class Civitai(Basic_config):
             Limit_choice = False
 
         if auto:
-            result_dict = max(ver_list, key=lambda x: x['downloadCount'])
-            ver_files_list = self.sort_by_version(result_dict["files"])
-            return_dict = ver_files_list[0]
-            self.path_dict["version_id"] = return_dict["id"]
-            return return_dict
+            result = max(ver_list, key=lambda x: x['downloadCount'])
+            ver_files_list = self.sort_by_version(result["files"])
+            self.path_dict["version_id"] = result["id"]
+            return ver_files_list[0]
         else:
             if recursive:
                 print("\n\n\033[34mThe following model paths were found\033[0m")
@@ -335,7 +338,6 @@ class Civitai(Basic_config):
         for item in items:
             for model_ver in item["modelVersions"]:
                 files_list = []
-
                 for model_value in model_ver["files"]:
                     if any(check_word in model_value for check_word in ["downloadUrl", "name"]):
                         file_status = {
