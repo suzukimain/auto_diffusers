@@ -1,1 +1,0 @@
-from model_path.mix_class import Basic_config

@@ -16,14 +16,12 @@ class Huggingface(Basic_config):
         self.model_name=""
         self.vae_name=""
         self.model_file=""
-        self.input_url=False
         self.diffuser_model=False
         self.check_choice_key = ""
         self.choice_number = -1
         self.file_path_dict={}
         self.special_file=""
         self.hf_repo_id = ""
-        self.skip_difusers = False
         
 
 
@@ -238,12 +236,13 @@ class Huggingface(Basic_config):
                 if choice == 0:
                     return "_hf_no_model"
                 elif (not Recursive_execution) and choice>=16 and choice == len(repo_model_list)+1:
-                    return self.model_name_search(model_name = model_name,
-                                                  auto_set = auto_set,
-                                                  model_format=model_format,
-                                                  Recursive_execution = True,
-                                                  extra_limit=extra_limit
-                                                  )
+                    return self.model_name_search(
+                        model_name = model_name,
+                        auto_set = auto_set,
+                        model_format=model_format,
+                        Recursive_execution = True,
+                        extra_limit=extra_limit
+                        )
                 elif 1 <= choice <= len(repo_model_list):
                     choice_path_dict = repo_model_list[choice-1]
                     choice_path = choice_path_dict["model_id"]
@@ -256,13 +255,13 @@ class Huggingface(Basic_config):
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
                     if model_format == "diffusers" and self.diffusers_model_check(check_repo):
-                            choice_path = check_repo
-                            break
+                        choice_path = check_repo
+                        break
                     elif model_format == "single_file" and self.hf_config_check(check_repo):
-                            choice_path = check_repo
-                            break
+                        choice_path = check_repo
+                        break
                     elif model_format == "all" and (self.diffusers_model_check(check_repo) or self.hf_config_check(check_repo)):
-                        choice_path =check_repo
+                        choice_path = check_repo
                         break
 
                 else:
@@ -366,7 +365,6 @@ class Huggingface(Basic_config):
                     print("\033[33mOnly natural numbers are valid\033[34m")
                     continue
                 if self.diffuser_model and choice==0:
-                    self.input_url=False
                     self.choice_number = -1
                     print("\033[0m",end="")
                     choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
@@ -375,7 +373,6 @@ class Huggingface(Basic_config):
                 elif choice==(self.num_prints+1): #other_file
                     break
                 elif 1<=choice<=self.num_prints:
-                    self.input_url=True
                     choice_path=file_value[choice-1]
                     self.choice_number = choice
                     print("\033[0m",end="")
@@ -404,14 +401,12 @@ class Huggingface(Basic_config):
                 print("\033[33mOnly natural numbers are valid\033[34m")
             else:
                 if self.diffuser_model and choice==0:
-                    self.input_url=False
                     print("\033[0m",end="")
                     self.choice_number = -1
                     choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
                     return "_DFmodel"
                 
                 if 1<=choice<=len(file_value):
-                    self.input_url=True
                     choice_path=file_value[choice-1]
                     self.choice_number = choice
                     print("\033[0m",end="")
@@ -432,7 +427,9 @@ class Huggingface(Basic_config):
             self.diffuser_model=True
         
         if model_format == "single_file":
-            self.skip_difusers = True
+            skip_difusers = True
+        else:
+            skip_difusers = False
 
         data = self.get_hf_model_config(model_select)
         choice_path=""
@@ -453,14 +450,13 @@ class Huggingface(Basic_config):
                 print("\033[34mThe following model files were found\033[0m")
                 choice_path=self.file_name_set_sub(model_select,file_value)
             else:
-                if self.diffuser_model and (not self.skip_difusers):
-                    self.input_url=False
+                if self.diffuser_model and (not skip_difusers):
                     choice_path = "_DFmodel"
                 else:
-                    self.input_url=True
                     choice_path=self.model_safe_check(file_value)
 
         elif self.diffuser_model:
+            #When “auto” is selected, the presence or absence of “single_file” is determined when selecting a repo, so it is not necessary.
             choice_path = "_DFmodel"
         else:
             raise FileNotFoundError("No available files found in the specified repository")
