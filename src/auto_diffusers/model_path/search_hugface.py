@@ -420,10 +420,14 @@ class Huggingface(Basic_config):
             self,
             model_select,
             auto,
+            model_format,
             model_type="Checkpoint",
             ):
         
-        if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
+        if (self.diffusers_model_check(model_select) and 
+            model_type=="Checkpoint" and
+            not model_format == "diffusers"
+            ):
             self.diffuser_model=True
         data = self.get_hf_model_config(model_select)
         choice_path=""

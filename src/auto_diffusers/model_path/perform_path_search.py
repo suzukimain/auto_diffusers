@@ -285,7 +285,11 @@ class Search_cls(Config_Mix):
             model_format=model_format)
         #hf->civit
         if not model_name == "_hf_no_model":
-            file_path = self.file_name_set(model_name,auto,model_type)
+            file_path = self.file_name_set(
+                model_select=model_name,
+                auto=auto,
+                model_format=model_format,
+                model_type=model_type)
             if file_path == "_DFmodel":
                 if download:
                     model_path = self.run_hf_download(model_name,branch=self.branch)
