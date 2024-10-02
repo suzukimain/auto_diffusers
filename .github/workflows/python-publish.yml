@@ -124,7 +124,7 @@ jobs:
           
       - name: Test installing auto_diffusers and importing
         run: |
-          pip install -i https://testpypi.python.org/pypi auto_diffusers
+          pip install -i https://testpypi.python.org/pypi auto_diffusers --upgrade
           python -c "from auto_diffusers import *"
 
       - name: Publish release distributions to PyPI
