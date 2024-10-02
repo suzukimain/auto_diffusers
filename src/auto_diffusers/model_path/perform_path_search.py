@@ -22,9 +22,9 @@ class Search_cls(Config_Mix):
             auto=True,
             download=False,
             model_type="Checkpoint",
+            model_format = "single_file",
             branch = "main",
             priority = "hugface",
-            single_file_only = False,
             local_file_only = False,
             return_path = True
             ):
@@ -33,13 +33,14 @@ class Search_cls(Config_Mix):
         self.download = download
         self.model_type = model_type
         self.branch = branch
-        self.single_file_only = single_file_only
-        self.local_file_only = local_file_only
+        self.local_file_only=local_file_only
+        self.model_format =model_format
         self.return_path = return_path
         result = self.model_set(
                   model_select = self.seach_word,
                   auto = self.auto,
                   download = self.download,
+                  model_format=model_format,
                   model_type = self.model_type,
                   branch = self.branch,
                   priority = priority,
@@ -100,6 +101,9 @@ class Search_cls(Config_Mix):
             return_path = True
             ):
         """
+        parameter:
+        model_format:
+            one of the following: "all","diffusers","single_file"
         return:
         if path_only is false
         [model_path:str, {base_model_path: str,single_file: bool}]
@@ -108,6 +112,9 @@ class Search_cls(Config_Mix):
         if not model_type  in ["Checkpoint", "TextualInversion", "LORA", "Hypernetwork", "AestheticGradient", "Controlnet", "Poses"]:
             raise TypeError(f'Wrong argument. Valid values are "Checkpoint", "TextualInversion", "LORA", "Hypernetwork", "AestheticGradient", "Controlnet", "Poses". What was passed on {model_type}')
         
+        if not model_format in ["all","diffusers","single_file"]:
+            raise TypeError('The model_format is valid only for one of the following: "all","diffusers","single_file"')
+
         self.return_dict = {
             "search_word":model_select,
             "url_or_path":"",
