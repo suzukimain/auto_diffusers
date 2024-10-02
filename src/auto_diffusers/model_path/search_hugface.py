@@ -23,7 +23,8 @@ class Huggingface(Basic_config):
         self.file_path_dict={}
         self.special_file=""
         self.hf_repo_id = ""
-        #self.model_select = ""
+        self.skip_difusers = False
+        
 
 
     def repo_name_or_path(self,model_name_or_path):
@@ -423,12 +424,12 @@ class Huggingface(Basic_config):
             model_format,
             model_type="Checkpoint",
             ):
-        
-        if (self.diffusers_model_check(model_select) and 
-            model_type=="Checkpoint" and
-            not model_format == "diffusers"
-            ):
+        if self.diffusers_model_check(model_select) and model_type=="Checkpoint":
             self.diffuser_model=True
+        
+        if model_format == "single_file":
+            self.skip_difusers = True
+
         data = self.get_hf_model_config(model_select)
         choice_path=""
         file_value = []
@@ -448,7 +449,7 @@ class Huggingface(Basic_config):
                 print("\033[34mThe following model files were found\033[0m")
                 choice_path=self.file_name_set_sub(model_select,file_value)
             else:
-                if self.diffuser_model and (not self.single_file_only):
+                if self.diffuser_model and (not self.skip_difusers):
                     self.input_url=False
                     choice_path = "_DFmodel"
                 else:
