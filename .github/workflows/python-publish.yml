@@ -24,6 +24,15 @@ jobs:
           ref: main
           fetch-depth: 0
 
+    - uses: actions/setup-python@v5
+      with:
+          python-version: "3.x"
+
+    - name: Install dependencies
+      run: |
+          python3 -m pip install -U pip setuptools
+          pip install --upgrade setuptools wheel twine build
+
     - name: Extract version from tag
       id: extract_version
       run: echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_OUTPUT
@@ -75,15 +84,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install dependencies
-        run: |
-          python3 -m pip install -U pip setuptools
-          pip install --upgrade setuptools wheel twine build
 
       - name: Build release distributions
         run: |
