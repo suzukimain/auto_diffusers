@@ -92,7 +92,6 @@ class Search_cls(Config_Mix):
             model_select,
             auto = True,
             download = False,
-            model_format = "single_file",
             model_type = "Checkpoint",
             branch = "main",
             priority = "hugface",
@@ -156,12 +155,12 @@ class Search_cls(Config_Mix):
 
 
         elif model_select.startswith("https://civitai.com/"):
-            model_path = self.civitai_model_set(
-                    model_select=model_select,
-                    auto=auto,
-                    model_type=model_type,
-                    download=download
-                    )
+            model_path = self.civitai_model_Set(
+                model_select,
+                auto,
+                model_type,
+                download
+                )
 
         elif os.path.isfile(model_select):
             model_path = model_select
@@ -221,36 +220,34 @@ class Search_cls(Config_Mix):
         else:
             if priority == "hugface":
                 model_path = self.hf_model_set(
-                    model_select=model_select,
-                    auto=auto,
-                    model_format=model_format,
-                    model_type=model_type,
-                    download=download
+                    model_select,
+                    auto,
+                    model_type,
+                    download
                     )
                 if model_path == "_hf_no_model":
                     model_path = self.civitai_model_set(
-                        model_select=model_select,
-                        auto=auto,
-                        model_type=model_type,
-                        download=download
+                        model_select,
+                        auto,
+                        model_type,
+                        download
                         )
                     if model_path == "_civitai_no_model":
                         raise ValueError("No models matching the criteria were found.")
                 
             else:
                 model_path = self.civitai_model_set(
-                    model_select=model_select,
-                    auto=auto,
-                    model_type=model_type,
-                    download=download
+                    model_select,
+                    auto,
+                    model_type,
+                    download
                     )
                 if model_path == "_civitai_no_model":
                     model_path = self.hf_model_set(
-                        model_select = model_select,
-                        auto = auto,
-                        model_format=model_format,
-                        model_type=model_type,
-                        download=download
+                        model_select,
+                        auto,
+                        model_type,
+                        download
                         )
                     if model_path == "_hf_no_model":
                         raise ValueError("No models matching the criteria were found.")
@@ -267,15 +264,11 @@ class Search_cls(Config_Mix):
             self,
             model_select,
             auto,
-            model_format,
             model_type,
             download
             ):
         
-        model_name = self.model_name_search(
-            model_name=model_select,
-            auto_set=auto,
-            model_format=model_format)
+        model_name = self.model_name_search(model_select,auto)
         #hf->civit
         if not model_name == "_hf_no_model":
             file_path = self.file_name_set(model_name,auto,model_type)
@@ -304,8 +297,7 @@ class Search_cls(Config_Mix):
             model_select,
             auto,
             model_type,
-            download
-            ):
+            download):
 
         model_url, model_path = self.civitai_download(
             model_select,

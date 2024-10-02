@@ -48,7 +48,7 @@ class Huggingface(Basic_config):
         def _hf_repo_download(path,branch="main"):
             model_path = DiffusionPipeline.download(path,revision=branch)
             return model_path
-        model_file_path = ""
+        #single_file = True
         if any(url_or_path.startswith(checked) for checked in self.VALID_URL_PREFIXES):
             if not self.is_url_valid(url_or_path):
                 raise HTTPError("Invalid URL")
@@ -74,7 +74,7 @@ class Huggingface(Basic_config):
         else:
             self.logger.debug(f"url_or_path:{url_or_path}")
             raise TypeError("Invalid path_or_url")
-        return model_file_path # type: ignore
+        return model_file_path
 
 
     def model_safe_check(self,model_list) ->str:
@@ -191,7 +191,7 @@ class Huggingface(Basic_config):
             auto_set:bool,
             model_format:str = "single_file",#"all","diffusers"
             Recursive_execution:bool = False,
-            extra_limit=None
+            extra_limit:int=None
             ):
         """
         auto_set: bool
@@ -211,7 +211,8 @@ class Huggingface(Basic_config):
         
         only_single_file = True if model_format == "single_file" else False
         only_diffusers_model = True if model_format == "diffusers" else False
-        
+
+
         repo_model_list = self.hf_models(model_name,limit)
         model_history = self.check_func_hist(key="hf_model_name",
                                              return_value=True)
@@ -240,8 +241,7 @@ class Huggingface(Basic_config):
                     return self.model_name_search(model_name = model_name,
                                                   auto_set = auto_set,
                                                   model_format=model_format,
-                                                  Recursive_execution = True,
-                                                  extra_limit=extra_limit
+                                                  Recursive_execution = True
                                                   )
                 elif 1 <= choice <= len(repo_model_list):
                     choice_path_dict = repo_model_list[choice-1]
@@ -254,20 +254,19 @@ class Huggingface(Basic_config):
             if repo_model_list:
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
-                    if only_diffusers_model and self.diffusers_model_check(check_repo):
+                    if only_diffusers_model:
+                        if self.diffusers_model_check(check_repo):
                             choice_path = check_repo
-                            break
-                    elif only_single_file and self.hf_config_check(check_repo):
-                            choice_path = check_repo
-                            break
+                        elif only_single_file:
+                            if self.hf_config_check(check_repo):
+                                choice_path = check_repo
                 else:
                     if not Recursive_execution:
                         return self.model_name_search(
                                 model_name = model_name,
                                 auto_set = auto_set,
                                 model_format = model_format,
-                                Recursive_execution = True,
-                                extra_limit=extra_limit
+                                Recursive_execution = True
                                 )
                     else:
                         self.logger.warning("No models in diffusers format were found.")
