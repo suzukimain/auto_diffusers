@@ -255,12 +255,16 @@ class Huggingface(Basic_config):
             if repo_model_list:
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
-                    if only_diffusers_model and self.diffusers_model_check(check_repo):
+                    if model_format == "diffusers" and self.diffusers_model_check(check_repo):
                             choice_path = check_repo
                             break
-                    elif only_single_file and self.hf_config_check(check_repo):
+                    elif model_format == "single_file" and self.hf_config_check(check_repo):
                             choice_path = check_repo
                             break
+                    elif model_format == "all" and (self.diffusers_model_check(check_repo) or self.hf_config_check(check_repo)):
+                        choice_path =check_repo
+                        break
+
                 else:
                     if not Recursive_execution:
                         return self.model_name_search(
