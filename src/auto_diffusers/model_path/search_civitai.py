@@ -201,7 +201,7 @@ class Civitai(Basic_config):
             result = max(ver_list, key=lambda x: x['downloadCount'])
             ver_files_list = self.sort_by_version(result["files"])
             self.path_dict["version_id"] = result["id"]
-            return ver_files_list[0]
+            return ver_files_list
         else:
             if recursive:
                 print("\n\n\033[34mThe following model paths were found\033[0m")
