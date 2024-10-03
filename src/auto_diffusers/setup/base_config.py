@@ -23,7 +23,7 @@ class Basic_config(
         super().__init__()
         self.device_count = self.count_device()
         self.device_type = self.device_type_check()
-        self.device = self.extra_device_set()
+        self.device = self.device_set()
         self.use_TPU = self.is_TPU()
         self.logger = custom_logger()
 
