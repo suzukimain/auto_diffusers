@@ -3,5 +3,7 @@
         ".github/workflows/python-publish.yml"
     ],
     "python.analysis.autoImportCompletions": true,
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "javascript.validate.enable": false
 }
