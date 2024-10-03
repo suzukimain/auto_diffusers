@@ -9,7 +9,6 @@ _deps = [
     "transformers",
     "huggingface-hub",
     "safetensors",
-    "tensorflow",
     "requests",
     "torch",
     "jax",
