@@ -251,6 +251,6 @@ class pipeline_setup(Config_Mix):
                 self.logger.debug(a)
                 raise OSError("Check your internet connection")
         base_pipe = self.pipe_status_check(base_pipe)
-        if self.device_type == "cpu" and base_pipe.dtype == torch.float16:
+        if self.device == "cpu" and base_pipe.dtype == torch.float16:
             self.logger.warning("CPU cannot use base_pipe with half precision (torch.float16)")
         return base_pipe, params, model_dict["url_or_path"]
