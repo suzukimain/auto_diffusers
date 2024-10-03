@@ -32,10 +32,26 @@ pip install diffusers
 pip install auto_diffusers
 
 from diffusers import StableDiffusionPipeline
-from auto_diffusers import run_search
+from auto_diffusers import model_search
 
-model_path = run_search(<keyword>, auto=True, download=False)
-pipe = StableDIffusionPipeline.from_single_file(model_path)
+
+path = model_search(
+           <keyword>,
+           auto = True,
+           model_format="diffusers",
+           download = False
+           )
+pipe = StableDiffusionPipeline.from_pretrained(path)
+
+# or
+
+path = model_search(
+           <keyword>,
+           auto = True,
+           model_format="single_file",
+           download = False
+           )
+pipe = StableDIffusionPipeline.from_single_file(path)
 ```
 
 ##  Example<a name = "Example"></a>
@@ -46,17 +62,24 @@ pip install --quiet auto_diffusers
 
 from diffusers import StableDiffusionPipeline
 from IPython.display import display
-from auto_diffusers import run_search
+from auto_diffusers import model_search
 
-model_path = run_search("Any", auto=True, model_format="diffusers", download=False)
+model_path = model_search(
+                 "Any",
+                 auto=True,
+                 model_format="diffusers",
+                 download=False
+                 )
 pipe = StableDiffusionPipeline.from_pretrained(model_path).to("cuda")
+
 image = pipe("Mt. Fuji").images[0]
+
 print(f"model_path: {model_path}")
 display(image)
 ```
 
 ##  Description<a name = "Description"></a>
-> Arguments of `run_search`
+> Arguments of `model_search`
 > 
 | Name           | Type   | Default     | Input Available  | Description |
 |:--------------:|:------:|:-----------:|:----------------:|:--------------------------------------------------------:|
