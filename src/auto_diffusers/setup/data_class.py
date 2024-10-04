@@ -135,6 +135,7 @@ class data_config:
             "load_type" : "",# "" or "from_single_file" or "from_pretrained"
             "single_file" : False,
             "local" : False,
+            "sizeKb":0,
             "repo_id":"",
             "viersion_id":"",
             "filename":"",
