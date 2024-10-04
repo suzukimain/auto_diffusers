@@ -95,19 +95,6 @@ class Basic_config(
         return class_type
 
 
-    def key_check(self,keyword) -> bool:
-        global key_dict
-        if "key_dict" not in globals():
-            key_dict = {}
-        key = str(keyword)
-        key_in = False
-        if key in key_dict:
-            if keyword == key_dict[key]:
-                key_in = True
-        key_dict[key] = keyword
-        return key_in
-
-
     def get_call_method(
             self,
             class_name,
@@ -142,32 +129,6 @@ class Basic_config(
             return True
         else:
             return False
-
-
-    def pipe_class_type(
-            self,
-            class_name
-            ):
-        """
-        Args:
-        class_name : class
-
-        Returns:
-        Literal['txt2img','img2img','txt2video']
-        """
-        _txt2img_method_list = [] #else
-        _img2img_method_list = ["image"]
-        _img2video_method_list = ["video_length","fps"]
-
-        call_method = self.get_call_method(class_name,method_name = '__call__')
-
-        if any(method in call_method for method in _img2video_method_list):
-            pipeline_type = "txt2video"
-        elif any(method in call_method for method in _img2img_method_list):
-            pipeline_type = "img2img"
-        else:
-            pipeline_type = "txt2img"
-        return pipeline_type
 
 
     def import_on_str(

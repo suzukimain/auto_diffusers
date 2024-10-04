@@ -115,7 +115,7 @@ class Civitai(Basic_config):
         with tqdm.wrapattr(open(save_path, "wb"), "write",
             miniters=1, desc="Downloading model",
             total=int(response.headers.get('content-length', 0))) as fout:
-            for chunk in response.iter_content(chunk_size=4096):
+            for chunk in response.iter_content(chunk_size=8192):
                 fout.write(chunk)
         self.logger.info(f"Downloaded file saved to {save_path}")
 
@@ -133,8 +133,6 @@ class Civitai(Basic_config):
         - dict: Selected repository information.
         """
         if not state:
-            #self.logger.warning("There is no model in Civitai that fits the criteria.")
-            #return "_civitai_no_model"
             raise ValueError("state is empty")
 
         if auto:
