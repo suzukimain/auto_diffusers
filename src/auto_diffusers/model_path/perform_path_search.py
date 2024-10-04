@@ -111,13 +111,7 @@ class Search_cls(Config_Mix):
         if not model_format in ["all","diffusers","single_file"]:
             raise TypeError('The model_format is valid only for one of the following: "all","diffusers","single_file"')
 
-        self.return_dict = {
-            "search_word":model_select,
-            "url_or_path":"",
-            "load_type":"",# "" or "from_single_file" or "from_pretrained"
-            "single_file":False,
-            "local":True if download or local_file_only else False,
-            }
+        self.return_dict["local"] = True if download or local_file_only else False
         
         model_path = model_select
         file_path = ""
