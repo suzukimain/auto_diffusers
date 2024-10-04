@@ -162,7 +162,7 @@ class Civitai(Basic_config):
                 if Limit_choice and choice == max_number:
                     return self.repo_select_civitai(state=state, auto=auto, recursive=False)
                 elif 1 <= choice <= max_number:
-                    self.path_dict["repo_id"] = sorted_list[choice - 1]["repo_id"]
+                    self.return_dict["repo_id"] = sorted_list[choice - 1]["repo_id"]
                     return sorted_list[choice - 1]
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{max_number}\033[34m")
@@ -193,7 +193,7 @@ class Civitai(Basic_config):
         if auto:
             result = max(ver_list, key=lambda x: x['downloadCount'])
             ver_files_list = self.sort_by_version(result["files"])
-            self.path_dict["version_id"] = result["id"]
+            self.return_dict["version_id"] = result["id"]
             return ver_files_list
         else:
             if recursive:
@@ -224,7 +224,7 @@ class Civitai(Basic_config):
                     return self.version_select_civitai(state=state, auto=auto, recursive=False)
                 elif 1 <= choice <= max_number:
                     return_dict = ver_list[choice - 1]
-                    self.path_dict["version_id"] = return_dict["id"]
+                    self.return_dict["version_id"] = return_dict["id"]
                     return return_dict["files"]
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{max_number}\033[34m")
@@ -264,12 +264,12 @@ class Civitai(Basic_config):
                 if Limit_choice and choice == max_number:
                     return self.file_select_civitai(state_list=state_list, auto=auto, recursive=False)
                 elif 1 <= choice <= len(state_list):
-                    self.path_dict.update(state_list[choice - 1])
+                    self.return_dict.update(state_list[choice - 1])
                     return state_list[choice - 1]
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{len(state_list)}\033[34m")
         else:
-            self.path_dict.update(state_list[0])
+            self.return_dict.update(state_list[0])
             return state_list[0]
 
 
@@ -280,11 +280,11 @@ class Civitai(Basic_config):
         Returns:
         - str: Save path.
         """
-        repo_level_dir = str(self.path_dict["repo_id"])
-        file_version_dir = str(self.path_dict["version_id"])
-        save_file_name = str(self.path_dict["filename"])
+        repo_level_dir = str(self.return_dict["repo_id"])
+        file_version_dir = str(self.return_dict["version_id"])
+        save_file_name = str(self.return_dict["filename"])
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
-        self.path_dict["save_path"] = save_path
+        self.return_dict["save_path"] = save_path
         return save_path
     
 
