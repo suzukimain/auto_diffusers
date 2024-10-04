@@ -139,7 +139,6 @@ class data_config:
             "viersion_id":"",
             "filename":"",
             "file_id": "",
-            "file_size": 0,
             "fp": "",                
             "download_url": "",
             }

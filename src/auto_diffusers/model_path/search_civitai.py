@@ -360,7 +360,6 @@ class Civitai(Basic_config):
                         file_status = {
                             "filename": model_value["name"],
                             "file_id": model_value["id"],
-                            "file_size": model_value["sizeKb"],
                             "fp": model_value["metadata"]["fp"],
                             "file_format": model_value["metadata"]["format"],                
                             "download_url": model_value["downloadUrl"],
