@@ -269,12 +269,12 @@ class Civitai(Basic_config):
                 if Limit_choice and choice == max_number:
                     return self.file_select_civitai(state_list=state_list, auto=auto, recursive=False)
                 elif 1 <= choice <= len(state_list):
-                    self.path_dict["filename"] = state_list[choice - 1]["filename"]
+                    self.path_dict.update(state_list[choice - 1])
                     return state_list[choice - 1]
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{len(state_list)}\033[34m")
         else:
-            self.path_dict["filename"] = state_list[0]["filename"]
+            self.path_dict.update(state_list[0])
             return state_list[0]
 
 
@@ -285,12 +285,34 @@ class Civitai(Basic_config):
         Returns:
         - str: Save path.
         """
-        repo_level_dir = str(self.path_dict['repo_id'])
-        file_version_dir = str(self.path_dict['version_id'])
-        save_file_name = str(self.path_dict['filename'])
+        repo_level_dir = str(self.path_dict["repo_id"])
+        file_version_dir = str(self.path_dict["version_id"])
+        save_file_name = str(self.path_dict["filename"])
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
         return save_path
+    
 
+    def model_safety_check(self,value):
+        """
+        Note:
+        The virus scan and pickle scan are used to make the decision.
+        True is returned in case of Success, 
+        and True is returned in case of Pending or Error only if exclude_untested_model is False.
+        """
+        check_list = [value["pickleScanResult"],value["virusScanResult"]]
+
+        if "Danger" in check_list:
+            return False
+        
+        elif all(status == "Success" for status in check_list):
+            return True
+        
+        else:
+            if self.exclude_untested_model:
+                return False
+            else:
+                return True
+            
 
     def requests_civitai(self, query, auto, model_type):
         """
@@ -314,7 +336,6 @@ class Civitai(Basic_config):
         (url, save_path)
         """
         state = []
-        repo_list = []
         model_ver_list = []
         version_dict = {}
 
@@ -337,10 +358,15 @@ class Civitai(Basic_config):
             for model_ver in item["modelVersions"]:
                 files_list = []
                 for model_value in model_ver["files"]:
-                    if any(check_word in model_value for check_word in ["downloadUrl", "name"]):
+                    if (any(check_word in model_value for check_word in ["downloadUrl", "name"]) and
+                        self.model_safety_check(model_value)
+                        ):
                         file_status = {
                             "filename": model_value["name"],
                             "file_id": model_value["id"],
+                            "file_size": model_value["metadata"]["size"],
+                            "fp": model_value["metadata"]["fp"],
+                            "file_format": model_value["metadata"]["format"],                
                             "download_url": model_value["downloadUrl"],
                         }
                         files_list.append(file_status)
@@ -373,12 +399,12 @@ class Civitai(Basic_config):
             return ("_civitai_no_model","_civitai_no_model")
             #raise ValueError("No matches found for your criteria")
 
-        model_dict = self.repo_select_civitai(
+        dict_of_civitai_repo = self.repo_select_civitai(
             state = state,
             auto = auto
             )
         files_list = self.version_select_civitai(
-            state = model_dict,
+            state = dict_of_civitai_repo,
             auto = auto
             )
 

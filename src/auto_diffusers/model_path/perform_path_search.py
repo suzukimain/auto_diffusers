@@ -26,7 +26,8 @@ class Search_cls(Config_Mix):
             branch = "main",
             priority = "hugface",
             local_file_only = False,
-            return_path = True
+            return_path = True,
+            exclude_untested_model = False
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -36,16 +37,18 @@ class Search_cls(Config_Mix):
         self.local_file_only=local_file_only
         self.model_format =model_format
         self.return_path = return_path
+        self.exclude_untested_model = exclude_untested_model
+
         result = self.model_set(
-                  model_select = self.seach_word,
-                  auto = self.auto,
-                  download = self.download,
-                  model_format=model_format,
-                  model_type = self.model_type,
-                  branch = self.branch,
+                  model_select = seach_word,
+                  auto = auto,
+                  download = download,
+                  model_format = model_format,
+                  model_type = model_type,
+                  branch = branch,
                   priority = priority,
-                  local_file_only = self.local_file_only,
-                  return_path = self.return_path
+                  local_file_only = local_file_only,
+                  return_path = return_path
                   )
         return result
         

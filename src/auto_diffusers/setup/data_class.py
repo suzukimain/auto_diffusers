@@ -128,3 +128,4 @@ class data_config:
     
     def __init__(self):
         self.single_file_only = False
+        self.exclude_untested_model = True
