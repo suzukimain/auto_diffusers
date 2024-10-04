@@ -130,11 +130,17 @@ class data_config:
         self.single_file_only = False
         self.exclude_untested_model = True
         self.return_dict = {
-                            "filename": "",
-                            "file_id": "",
-                            "file_size": "",
-                            "fp": "",
-                            "file_format": "",                
-                            "download_url": "",
-                        }
+            "search_word" : "",
+            "url_or_path" : "",
+            "load_type" : "",# "" or "from_single_file" or "from_pretrained"
+            "single_file" : False,
+            "local" : False,
+            "repo_id":"",
+            "viersion_id":"",
+            "filename":"",
+            "file_id": "",
+            "file_size": "",
+            "fp": "",                
+            "download_url": "",
+            }
         

@@ -44,16 +44,6 @@ class Civitai(Basic_config):
 
     def __init__(self):
         super().__init__()
-        self.path_dict = {
-            "repo_id":"",
-            "viersion_id":"",
-            "filename":"",
-            "file_id": "",
-            "file_size": "",
-            "fp": "",                
-            "download_url": "",
-            }
-            
         self.save_file_name = ""
 
 
