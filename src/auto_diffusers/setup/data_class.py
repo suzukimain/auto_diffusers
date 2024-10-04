@@ -129,3 +129,12 @@ class data_config:
     def __init__(self):
         self.single_file_only = False
         self.exclude_untested_model = True
+        self.return_dict = {
+                            "filename": "",
+                            "file_id": "",
+                            "file_size": "",
+                            "fp": "",
+                            "file_format": "",                
+                            "download_url": "",
+                        }
+        

@@ -14,6 +14,15 @@ class Search_cls(Config_Mix):
             "single_file" : False,
             "local" : False,
             }
+        self.path_dict = {
+            "repo_id":"",
+            "viersion_id":"",
+            "filename":"",
+            "file_id": "",
+            "file_size": "",
+            "fp": "",                
+            "download_url": "",
+            }
 
 
     def __call__(
@@ -337,4 +346,6 @@ class Search_cls(Config_Mix):
             self.return_dict["load_type"] = "from_single_file"
         else:
             self.return_dict["load_type"] = ""
+        
+        self.return_dict.update(self.path_dict)
         return model_path

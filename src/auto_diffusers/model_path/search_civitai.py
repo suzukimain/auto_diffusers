@@ -47,8 +47,13 @@ class Civitai(Basic_config):
         self.path_dict = {
             "repo_id":"",
             "viersion_id":"",
-            "filename":""
+            "filename":"",
+            "file_id": "",
+            "file_size": "",
+            "fp": "",                
+            "download_url": "",
             }
+            
         self.save_file_name = ""
 
 
@@ -289,6 +294,7 @@ class Civitai(Basic_config):
         file_version_dir = str(self.path_dict["version_id"])
         save_file_name = str(self.path_dict["filename"])
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
+        self.path_dict["save_path"] = save_path
         return save_path
     
 
