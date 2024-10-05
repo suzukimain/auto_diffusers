@@ -145,9 +145,8 @@ class data_config:
         """
         
         self.return_dict = {
-            "load_type" : "",# "" or "from_single_file" or "from_pretrained"
-            "download_url": "",
             "model_path" : "",
+            "load_type" : "",# "" or "from_single_file" or "from_pretrained"            
             "repo_status":{
                 "repo_name":"",
                 "repo_id":"",
@@ -155,6 +154,7 @@ class data_config:
                 },
             "model_status":{
                 "search_word" : "",
+                "download_url": "",
                 "filename":"",
                 "file_id": "",
                 "fp": "",

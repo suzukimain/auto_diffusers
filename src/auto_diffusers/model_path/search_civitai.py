@@ -45,7 +45,7 @@ class Civitai(Basic_config):
     def __init__(self):
         super().__init__()
         self.save_file_name = ""
-        
+
 
     def civitai_download(
             self,
@@ -79,19 +79,26 @@ class Civitai(Basic_config):
         ---
         """
 
-        model_url, save_path = self.requests_civitai(
+        model_state_list = self.requests_civitai(
             query=search_word,
             auto=auto,
             model_type=model_type)
-        if model_url == "_civitai_no_model":
-            return ("_civitai_no_model","_civitai_no_model")
-        if download:
+        if not model_state_list:
+            return ""
+        
+        model_url,model_save_path = model_state_list
+        if download:    
             self.download_model(
                 url=model_url,
-                save_path=save_path)
-            return (model_url, self.civitai_save_path())
+                save_path=model_save_path
+                )
+            
+            result = model_save_path
         else:
-            return (model_url, model_url)
+            result = model_url
+        
+        self.return_dict["model_path"] = result
+        return result
 
 
     def download_model(self, url, save_path):
@@ -128,9 +135,10 @@ class Civitai(Basic_config):
         - dict: Selected repository information.
         """
         if not state:
-            raise ValueError("state is empty")
+            self.logger.warning("No models were found in civitai.")
+            return {}
 
-        if auto:
+        elif auto:
             repo_dict = max(state, key=lambda x: x['downloadCount'])
             self.return_dict["repo_status"]["repo_name"] = repo_dict["repo_name"]
             self.return_dict["repo_status"]["repo_id"] = repo_dict["repo_id"]
@@ -148,6 +156,7 @@ class Civitai(Basic_config):
                 print("\n\n\n")
 
             max_number = min(self.max_number_of_choices, len(sorted_list)) if recursive else len(sorted_list)
+            print(f"\033[34m0. Search for huggingface")
             for number, states_dict in enumerate(sorted_list[:max_number]):
                 print(f"\033[34m{number + 1}. Repo_id: {states_dict['CreatorName']} / {states_dict['repo_name']}, download: {states_dict['downloadCount']}")
 
@@ -164,6 +173,8 @@ class Civitai(Basic_config):
 
                 if Limit_choice and choice == max_number:
                     return self.repo_select_civitai(state=state, auto=auto, recursive=False)
+                elif choice == 0:
+                    return {}
                 elif 1 <= choice <= max_number:
                     repo_dict = sorted_list[choice - 1]
                     self.return_dict["repo_status"]["repo_name"] = repo_dict["repo_name"]
@@ -277,8 +288,8 @@ class Civitai(Basic_config):
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{len(state_list)}\033[34m")
         else:
-            #self.return_dict.update(state_list[0])
-            self.return_dict["model_status"].update(state_list[0])
+            file_dict = state_list[0]
+            self.return_dict["model_status"].update(file_dict)
             return state_list[0]
 
 
@@ -400,13 +411,17 @@ class Civitai(Basic_config):
 
         if not state:
             self.logger.warning("There is no model in Civitai that fits the criteria.")
-            return ("_civitai_no_model","_civitai_no_model")
+            return {}
             #raise ValueError("No matches found for your criteria")
 
         dict_of_civitai_repo = self.repo_select_civitai(
             state = state,
             auto = auto
             )
+        
+        if not dict_of_civitai_repo:
+            return []
+        
         files_list = self.version_select_civitai(
             state = dict_of_civitai_repo,
             auto = auto
@@ -417,5 +432,6 @@ class Civitai(Basic_config):
             auto = auto)
 
         save_path = self.civitai_save_path()
+        
 
-        return (file_status_dict["download_url"], save_path)
+        return [file_status_dict["download_url"],save_path]

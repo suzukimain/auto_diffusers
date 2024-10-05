@@ -135,10 +135,11 @@ class Search_cls(Config_Mix):
             model_select,
             auto,
             model_type,
-            download
+            download,
+            skip_error=True
             ):
 
-        model_url, model_path = self.civitai_download(
+        model_path = self.civitai_download(
             model_select,
             auto,
             model_type,
@@ -146,9 +147,9 @@ class Search_cls(Config_Mix):
         
         
         self.return_dict["model_status"]["single_file"] = True
-        self.return_dict["model_path"] = model_url
-        
-        if download:
+        if (not skip_error) and (not model_path):
+            raise ValueError("No models were found in civitai.")
+        elif download:
             self.return_dict["load_type"] = "from_single_file"
         else:
             self.return_dict["load_type"] = ""
@@ -229,7 +230,8 @@ class Search_cls(Config_Mix):
                     model_select=model_select,
                     auto=auto,
                     model_type=model_type,
-                    download=download
+                    download=download,
+                    skip_error=False
                     )
 
         elif os.path.isfile(model_select):
@@ -307,7 +309,7 @@ class Search_cls(Config_Mix):
                         model_type=model_type,
                         download=download
                         )
-                    if model_path == "_civitai_no_model":
+                    if not model_path:
                         raise ValueError("No models matching the criteria were found.")
                 
             else:
@@ -317,7 +319,7 @@ class Search_cls(Config_Mix):
                     model_type=model_type,
                     download=download
                     )
-                if model_path == "_civitai_no_model":
+                if not model_path:
                     model_path = self.hf_model_set(
                         model_select = model_select,
                         auto = auto,
@@ -334,4 +336,4 @@ class Search_cls(Config_Mix):
         if return_path:
             return model_path
         else:
-            return [model_path, self.return_dict]
+            return self.return_dict
