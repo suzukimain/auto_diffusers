@@ -32,6 +32,9 @@ class Search_cls(Config_Mix):
         self.return_path = return_path
         self.exclude_untested_model = exclude_untested_model
 
+        self.return_dict["model_status"]["search_word"] = seach_word
+        self.return_dict["model_status"]["local"] = True if download or local_file_only else False
+
         result = self.model_set(
                   model_select = seach_word,
                   auto = auto,
@@ -82,6 +85,74 @@ class Search_cls(Config_Mix):
                 search_list = paths
                 )
         return search_path
+    
+    def hf_model_set(
+            self,
+            model_select,
+            auto,
+            model_format,
+            model_type,
+            download
+            ):
+        model_path = ""
+        model_name = self.model_name_search(
+            model_name=model_select,
+            auto_set=auto,
+            model_format=model_format)
+        #hf->civit
+        if not model_name == "_hf_no_model":
+            file_path = self.file_name_set(
+                model_select=model_name,
+                auto=auto,
+                model_format=model_format,
+                model_type=model_type)
+            if file_path == "_DFmodel":
+                if download:
+                    model_path = self.run_hf_download(model_name,branch=self.branch)
+                else:
+                    model_path = model_name
+                self.return_dict["model_path"] = model_path
+                self.return_dict["model_status"]["single_file"] = False
+                self.return_dict["load_type"] = "from_pretrained"
+
+            else:
+                hf_model_path = f"https://huggingface.co/{model_name}/blob/{self.branch}/{file_path}"
+                if download:
+                    model_path = self.run_hf_download(hf_model_path)
+                else:
+                    model_path = hf_model_path
+                self.return_dict["model_status"]["single_file"] = True
+                self.return_dict["load_type"] = "from_single_file"
+                self.return_dict["model_status"]["filename"] = file_path
+
+            return model_path
+        else:
+            return "_hf_no_model"
+
+
+    def civitai_model_set(
+            self,
+            model_select,
+            auto,
+            model_type,
+            download
+            ):
+
+        model_url, model_path = self.civitai_download(
+            model_select,
+            auto,
+            model_type,
+            download=download)
+        
+        
+        self.return_dict["model_status"]["single_file"] = True
+        self.return_dict["model_path"] = model_url
+        
+        if download:
+            self.return_dict["load_type"] = "from_single_file"
+        else:
+            self.return_dict["load_type"] = ""
+        return model_path
 
 
     def model_set(
@@ -111,7 +182,7 @@ class Search_cls(Config_Mix):
         if not model_format in ["all","diffusers","single_file"]:
             raise TypeError('The model_format is valid only for one of the following: "all","diffusers","single_file"')
 
-        self.return_dict["local"] = True if download or local_file_only else False
+        
         
         model_path = model_select
         file_path = ""
@@ -120,7 +191,7 @@ class Search_cls(Config_Mix):
             _check_url = f"https://huggingface.co/{model_path_to_check}"
             if self.is_url_valid(_check_url):
                 model_select = model_path_to_check
-                self.return_dict["url_or_path"] = _check_url
+                self.return_dict["model_path"] = _check_url
 
 
         if local_file_only:
@@ -128,8 +199,8 @@ class Search_cls(Config_Mix):
                 search_word = model_select,
                 auto = auto
                 )
-            self.return_dict["single_file"] = True
-            self.return_dict["url_or_path"] = model_path
+            self.return_dict["model_status"]["single_file"] = True
+            self.return_dict["model_path"] = model_path
             self.return_dict["load_type"] = "from_single_file"
 
         elif model_select.startswith("https://huggingface.co/"):
@@ -141,14 +212,15 @@ class Search_cls(Config_Mix):
                 else:
                     model_path = model_select
 
-                self.return_dict["single_file"] = True
-                self.return_dict["url_or_path"] = model_path
+                self.return_dict["model_status"]["single_file"] = True
+                self.return_dict["model_path"] = model_path
                 repo,file_name = self.repo_name_or_path(model_select)
                 if file_name:
-                    self.return_dict["single_file"] = True
+                    self.return_dict["model_status"]["filename"] = file_name
+                    self.return_dict["model_status"]["single_file"] = True
                     self.return_dict["load_type"] = "from_single_file"
                 else:
-                    self.return_dict["single_file"] = False
+                    self.return_dict["model_status"]["single_file"] = False
                     self.return_dict["load_type"] = "from_pretrained"
 
 
@@ -162,30 +234,32 @@ class Search_cls(Config_Mix):
 
         elif os.path.isfile(model_select):
             model_path = model_select
-            self.return_dict["url_or_path"] = model_select
-            self.return_dict["single_file"] = True
+            self.return_dict["model_path"] = model_select
+            self.return_dict["model_status"]["single_file"] = True
             self.return_dict["load_type"] = "from_single_file"
-            self.return_dict["local"] = True
+            self.return_dict["model_status"]["local"] = True
 
 
         elif os.path.isdir(model_select):
             if os.path.exists(os.path.join(model_select,self.Config_file)):
                 model_path = model_select
-                self.return_dict["url_or_path"] = model_select
-                self.return_dict["single_file"] = False
+                self.return_dict["model_path"] = model_select
+                self.return_dict["model_status"]["single_file"] = False
                 self.return_dict["load_type"] = "from_pretrained"
-                self.return_dict["local"] = True
+                self.return_dict["model_status"]["local"] = True
             else:
                 raise FileNotFoundError(f"model_index.json not found in {model_select}")
 
         elif model_select.count("/") == 1:
+            creator_name, repo_name = model_select.split("/")
+
             if auto and self.diffusers_model_check(model_select):
                 if download:
                     model_path = self.run_hf_download(model_select)
-                    self.return_dict["single_file"] = False
+                    self.return_dict["model_status"]["single_file"] = False
                 else:
                     model_path = model_select
-                    self.return_dict["single_file"] = False
+                    self.return_dict["model_status"]["single_file"] = False
                 self.return_dict["load_type"] = "from_pretrained"
 
             elif auto and (not self.hf_model_check(model_select)):
@@ -200,8 +274,7 @@ class Search_cls(Config_Mix):
                     else:
                         model_path = model_select
 
-                    self.return_dict["url_or_path"] = model_path
-                    self.return_dict["single_file"] = False
+                    self.return_dict["model_status"]["single_file"] = False
                     self.return_dict["load_type"] = "from_pretrained"
                     
                 else:
@@ -211,10 +284,13 @@ class Search_cls(Config_Mix):
                         model_path = self.run_hf_download(hf_model_path)
                     else:
                         model_path = hf_model_path
-                    self.return_dict["single_file"] = True
-                    self.return_dict["url_or_path"] = model_path
+                    
+                    self.return_dict["model_status"]["filename"] = file_path
+                    self.return_dict["model_status"]["single_file"] = True
                     self.return_dict["load_type"] = "from_single_file"
-
+                
+            self.return_dict["repo_status"]["repo_name"] = repo_name
+                
         else:
             if priority == "hugface":
                 model_path = self.hf_model_set(
@@ -252,76 +328,10 @@ class Search_cls(Config_Mix):
                     if model_path == "_hf_no_model":
                         raise ValueError("No models matching the criteria were found.")
                 
+        self.return_dict["model_path"] = model_path
         #It is not called, but should not be deleted because it is updating the dictionary.
         update_model_path = self.check_func_hist(key="model_path",value=model_path)
         if return_path:
             return model_path
         else:
             return [model_path, self.return_dict]
-        
-
-    def hf_model_set(
-            self,
-            model_select,
-            auto,
-            model_format,
-            model_type,
-            download
-            ):
-        model_path = ""
-        model_name = self.model_name_search(
-            model_name=model_select,
-            auto_set=auto,
-            model_format=model_format)
-        #hf->civit
-        if not model_name == "_hf_no_model":
-            file_path = self.file_name_set(
-                model_select=model_name,
-                auto=auto,
-                model_format=model_format,
-                model_type=model_type)
-            if file_path == "_DFmodel":
-                if download:
-                    model_path = self.run_hf_download(model_name,branch=self.branch)
-                else:
-                    model_path = model_name
-                self.return_dict["single_file"] = False
-                self.return_dict["load_type"] = "from_pretrained"
-
-            else:
-                hf_model_path = f"https://huggingface.co/{model_name}/blob/{self.branch}/{file_path}"
-                if download:
-                    model_path = self.run_hf_download(hf_model_path)
-                else:
-                    model_path = hf_model_path
-                self.return_dict["single_file"] = True
-                self.return_dict["load_type"] = "from_single_file"
-
-            return model_path
-        else:
-            return "_hf_no_model"
-
-
-    def civitai_model_set(
-            self,
-            model_select,
-            auto,
-            model_type,
-            download
-            ):
-
-        model_url, model_path = self.civitai_download(
-            model_select,
-            auto,
-            model_type,
-            download=download)
-        
-        
-        self.return_dict["single_file"] = True
-        self.return_dict["url_or_path"] = model_url
-        
-        if download:
-            self.return_dict["load_type"] = "from_single_file"
-        else:
-            self.return_dict["load_type"] = ""
-        return model_path

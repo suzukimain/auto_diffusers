@@ -45,11 +45,11 @@ class Civitai(Basic_config):
     def __init__(self):
         super().__init__()
         self.save_file_name = ""
-
+        
 
     def civitai_download(
             self,
-            seach_word,
+            search_word,
             auto,
             model_type,
             download=True):
@@ -57,7 +57,7 @@ class Civitai(Basic_config):
         Function to download models from civitai.
 
         Parameters:
-        - seach_word(str): Search query string.
+        - search_word(str): Search query string.
         - auto(bool): Flag for automatic selection.
         - model_type(str): Type of model to search for.
             arg:[Checkpoint,
@@ -80,7 +80,7 @@ class Civitai(Basic_config):
         """
 
         model_url, save_path = self.requests_civitai(
-            query=seach_word,
+            query=search_word,
             auto=auto,
             model_type=model_type)
         if model_url == "_civitai_no_model":
@@ -131,7 +131,10 @@ class Civitai(Basic_config):
             raise ValueError("state is empty")
 
         if auto:
-            return max(state, key=lambda x: x['downloadCount'])
+            repo_dict = max(state, key=lambda x: x['downloadCount'])
+            self.return_dict["repo_status"]["repo_name"] = repo_dict["repo_name"]
+            self.return_dict["repo_status"]["repo_id"] = repo_dict["repo_id"]
+            return repo_dict
         else:
             sorted_list = sorted(state, key=lambda x: x['downloadCount'], reverse=True)
             if recursive and self.max_number_of_choices < len(sorted_list):
@@ -162,8 +165,10 @@ class Civitai(Basic_config):
                 if Limit_choice and choice == max_number:
                     return self.repo_select_civitai(state=state, auto=auto, recursive=False)
                 elif 1 <= choice <= max_number:
-                    self.return_dict["repo_id"] = sorted_list[choice - 1]["repo_id"]
-                    return sorted_list[choice - 1]
+                    repo_dict = sorted_list[choice - 1]
+                    self.return_dict["repo_status"]["repo_name"] = repo_dict["repo_name"]
+                    self.return_dict["repo_status"]["repo_id"] = repo_dict["repo_id"]
+                    return repo_dict
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{max_number}\033[34m")
 
@@ -193,7 +198,7 @@ class Civitai(Basic_config):
         if auto:
             result = max(ver_list, key=lambda x: x['downloadCount'])
             ver_files_list = self.sort_by_version(result["files"])
-            self.return_dict["version_id"] = result["id"]
+            self.return_dict["repo_status"]["version_id"] = result["id"]
             return ver_files_list
         else:
             if recursive:
@@ -224,7 +229,7 @@ class Civitai(Basic_config):
                     return self.version_select_civitai(state=state, auto=auto, recursive=False)
                 elif 1 <= choice <= max_number:
                     return_dict = ver_list[choice - 1]
-                    self.return_dict["version_id"] = return_dict["id"]
+                    self.return_dict["repo_status"]["version_id"] = return_dict["id"]
                     return return_dict["files"]
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{max_number}\033[34m")
@@ -241,6 +246,7 @@ class Civitai(Basic_config):
         Returns:
         - str: Download URL of the selected file.
         """
+        
         if recursive and self.max_number_of_choices < len(state_list):
             Limit_choice = True
         else:
@@ -264,12 +270,15 @@ class Civitai(Basic_config):
                 if Limit_choice and choice == max_number:
                     return self.file_select_civitai(state_list=state_list, auto=auto, recursive=False)
                 elif 1 <= choice <= len(state_list):
-                    self.return_dict.update(state_list[choice - 1])
-                    return state_list[choice - 1]
+                    #self.return_dict.update(state_list[choice - 1])
+                    file_dict = state_list[choice - 1]
+                    self.return_dict["model_status"].update(file_dict)
+                    return file_dict
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{len(state_list)}\033[34m")
         else:
-            self.return_dict.update(state_list[0])
+            #self.return_dict.update(state_list[0])
+            self.return_dict["model_status"].update(state_list[0])
             return state_list[0]
 
 
@@ -280,11 +289,11 @@ class Civitai(Basic_config):
         Returns:
         - str: Save path.
         """
-        repo_level_dir = str(self.return_dict["repo_id"])
-        file_version_dir = str(self.return_dict["version_id"])
-        save_file_name = str(self.return_dict["filename"])
+        repo_level_dir = str(self.return_dict["repo_status"]["repo_id"])
+        file_version_dir = str(self.return_dict["repo_status"]["version_id"])
+        save_file_name = str(self.return_dict["model_status"]["filename"])
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
-        self.return_dict["save_path"] = save_path
+        self.return_dict["model_path"] = save_path
         return save_path
     
 

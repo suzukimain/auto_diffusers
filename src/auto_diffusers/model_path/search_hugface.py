@@ -50,7 +50,7 @@ class Huggingface(Basic_config):
         model_file_path = ""
         if any(url_or_path.startswith(checked) for checked in self.VALID_URL_PREFIXES):
             if not self.is_url_valid(url_or_path):
-                raise HTTPError("Invalid URL")
+                raise HTTPError(f"Invalid URL: {url_or_path}")
             hf_path, file_name = self.repo_name_or_path(url_or_path)
             self.logger.debug(f"url_or_path:{url_or_path}")
             self.logger.debug(f"hf_path: {hf_path} \nfile_name: {file_name}")
@@ -71,8 +71,7 @@ class Huggingface(Basic_config):
             #single_file = False
             model_file_path = _hf_repo_download(url_or_path,branch=branch)
         else:
-            self.logger.debug(f"url_or_path:{url_or_path}")
-            raise TypeError("Invalid path_or_url")
+            raise TypeError(f"Invalid path_or_url: {url_or_path}")
         return model_file_path # type: ignore
 
 
