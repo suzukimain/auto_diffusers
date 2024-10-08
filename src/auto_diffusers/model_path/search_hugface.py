@@ -3,7 +3,12 @@ import requests
 from requests import HTTPError
 
 from diffusers import DiffusionPipeline
-from huggingface_hub import hf_hub_download
+from huggingface_hub import (
+    hf_hub_download, 
+    HfApi
+    )
+from dataclasses import asdict
+    
 
 from ..setup.base_config import Basic_config
 
@@ -22,7 +27,7 @@ class Huggingface(Basic_config):
         self.file_path_dict={}
         self.special_file=""
         self.hf_repo_id = ""
-        
+        self.hf_api = HfApi()
 
 
     def repo_name_or_path(self,model_name_or_path):
@@ -129,17 +134,55 @@ class Huggingface(Basic_config):
         return file_value_list
 
 
-    def hf_model_search(self,
-                        model_path,
-                        limit_num):
-        url = f"https://huggingface.co/api/models"#?search={model_name}"
-        params={"search":model_path,"sort":"likes","direction":-1,"limit":limit_num}#"downloads",}
+    def hf_model_search(
+            self,
+            model_path,
+            limit_num
+            ):
+        params={
+            "search" : model_path,
+            "sort" : "likes",
+            "direction" : -1,
+            "limit" : limit_num
+            }
+        return [value.__dict__ for value in list(self.hf_api.list_models(**params))]
+
+
+    def extra_hf_model_search(
+            self,
+            model_path,
+            limit_num
+            ):
+        """
+        NOTE:
+        It is not already in use, but is kept as a spare.
+        """
+        url = f"https://huggingface.co/api/models"
+        params = {
+            "search" : model_path,
+            "sort" : "likes",
+            "direction" : -1,
+            "limit" : limit_num
+            }
         return requests.get(url,params=params).json()
+    
+
+    def hf_model_info(self,model_name) -> dict:
+        return self.hf_api.model_info(
+            repo_id = model_name,
+            securityStatus = True
+            ).__dict__
+    
+
+    def hf_security_check(self,check_dict):    
+        return check_dict["securityStatus"]["hasUnsafeFile"]
 
 
-    def hf_models(self,
-                  model_name,
-                  limit):
+    def hf_models(
+            self,
+            model_name,
+            limit
+            ):
         """
         return:
         repo_model_list,with_like : list
@@ -149,18 +192,27 @@ class Huggingface(Basic_config):
         final_list = []
         if data:
             for item in data:
-                model_id,like,private_value,tag_value = item["modelId"],item["likes"],item["private"],item["tags"]
+                model_id = item["modelId"]
+                like = item["likes"]
+                private_value = item["private"]
+                tag_value = item["tags"]
                 if  ("audio-to-audio" not in tag_value and
                     (not private_value)):
                     if self.data_get(model_id):
-                        model_dict = {"model_id":model_id,
-                                      "like":like,}
+                        info = self.hf_model_info(model_name=model_id)
+                        model_dict = {
+                            "model_id":model_id,
+                            "like":like,
+                            "model_info":info,
+                            "security_risk":self.hf_security_check(info)                            
+                            }
                         final_list.append(model_dict)
         else:
             print("No models matching your criteria were found on huggingface.")
             return []
         return final_list
     
+
     def find_max_like(self,model_dict_list:list):
         """
         Finds the dictionary with the highest "like" value in a list of dictionaries.
@@ -458,10 +510,6 @@ class Huggingface(Basic_config):
             #When “auto” is selected, the presence or absence of “single_file” is determined when selecting a repo, so it is not necessary.
             choice_path = "_DFmodel"
         else:
-            raise FileNotFoundError("No available files found in the specified repository")
-        
-        #if download:
-        #    if choice_path == "_DFmodel"
-        #        choice_path=hf_hub_download(repo_id=model_select, filename=choice_path)
+            raise FileNotFoundError("No available files found in the specified repository")        
         return choice_path
 

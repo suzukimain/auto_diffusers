@@ -308,7 +308,7 @@ class Civitai(Basic_config):
         return save_path
     
 
-    def model_safety_check(self,value):
+    def civitai_model_safety_check(self,value):
         """
         Note:
         The virus scan and pickle scan are used to make the decision.
@@ -375,7 +375,7 @@ class Civitai(Basic_config):
                 files_list = []
                 for model_value in model_ver["files"]:
                     if (any(check_word in model_value for check_word in ["downloadUrl", "name"]) and
-                        self.model_safety_check(model_value)
+                        self.civitai_model_safety_check(model_value)
                         ):
                         file_status = {
                             "filename": model_value["name"],
