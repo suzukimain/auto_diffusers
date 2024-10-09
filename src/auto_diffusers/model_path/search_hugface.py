@@ -109,7 +109,7 @@ class Huggingface(Basic_config):
         return self.is_url_valid(f"https://huggingface.co/{path}")
 
 
-    def data_get(self,path) -> list:
+    def model_data_get(self,path) -> list:
         #url = f"https://huggingface.co/api/models/{path}"
         #data = requests.get(url).json()
         data = self.hf_model_info(path)
@@ -133,7 +133,12 @@ class Huggingface(Basic_config):
                 file_value_list.append(file_path)
 
         self.file_path_dict.update({path:(df_model_bool,file_value_list)})
-        return file_value_list      
+        return {
+            "model_info" : data,
+            "file_list" : file_value_list,
+            "security_risk" : self.hf_security_check(data),
+            }
+
 
 
     def hf_model_search(
@@ -237,11 +242,16 @@ class Huggingface(Basic_config):
             tag_value = item["tags"]
             if  ("audio-to-audio" not in tag_value and
                 (not private_value)):
-                if self.data_get(model_id):
+                model_status = self.model_data_get(model_id)
+                if not model_status["security_risk"]:
                     model_dict = {
                         "model_id":model_id,
                         "like":like,
+                        "model_info" : model_status["model_info"],
+                        "file_list" : model_status["file_list"],
+                        "security_risk" : model_status["security_risk"]
                         }
+                                  
                     return_list.append(model_dict)
         if not return_list:
             print("No models matching your criteria were found on huggingface.")            
