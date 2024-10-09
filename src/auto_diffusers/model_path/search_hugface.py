@@ -205,14 +205,9 @@ class Huggingface(Basic_config):
 
     def check_if_file_exists(self,hf_repo_info):
         try:
-            matching_files = [
-                item['rfilename'] for item in hf_repo_info['siblings']
-                if any(item['rfilename'].endswith(ext) for ext in self.exts)
-                ]
-            if matching_files:
-                return True
-            else:
-                return False
+            return any(
+                item['rfilename'].endswith(ext) for item in hf_repo_info['siblings'] for ext in self.exts
+                )
         except KeyError:
             return False
 
