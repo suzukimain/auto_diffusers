@@ -140,7 +140,6 @@ class Huggingface(Basic_config):
             }
 
 
-
     def hf_model_search(
             self,
             model_path,
@@ -361,7 +360,7 @@ class Huggingface(Basic_config):
             if repo_model_list:
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
-                    repo_info = self.hf_model_info(model_name=check_repo)
+                    repo_info = check_dict["model_info"]
                     if model_format == "diffusers" and self.diffusers_model_check(check_repo):
                         choice_path = check_repo
                         break
