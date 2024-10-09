@@ -206,7 +206,7 @@ class Huggingface(Basic_config):
     def check_if_file_exists(self,hf_repo_info):
         try:
             return any(
-                item['rfilename'].endswith(ext) for item in hf_repo_info['siblings'] for ext in self.exts
+                item.__dict__['rfilename'].endswith(ext) for item in hf_repo_info['siblings'] for ext in self.exts
                 )
         except KeyError:
             return False
