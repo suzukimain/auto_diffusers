@@ -110,8 +110,9 @@ class Huggingface(Basic_config):
 
 
     def data_get(self,path) -> list:
-        url = f"https://huggingface.co/api/models/{path}"
-        data = requests.get(url).json()
+        #url = f"https://huggingface.co/api/models/{path}"
+        #data = requests.get(url).json()
+        data = self.hf_model_info(path)
         file_value_list = []
         df_model_bool=False
         # fix error': 'Repo model <repo_id>/<model> is gated. You must be authenticated to access it.
@@ -121,7 +122,6 @@ class Huggingface(Basic_config):
             return []
 
         for item in siblings:
-            data["siblings"]
             file_path=item["rfilename"]
             # model_index.json outside the root directory is not recognized
             if file_path=="model_index.json" and (not self.single_file_only):
@@ -238,16 +238,11 @@ class Huggingface(Basic_config):
             if  ("audio-to-audio" not in tag_value and
                 (not private_value)):
                 if self.data_get(model_id):
-                    info = self.hf_model_info(model_name=model_id)
-                    if self.check_if_file_exists(info):
-                        security_risk = self.hf_security_check(info)
-                        if not security_risk:
-                            model_dict = {
-                                "model_id":model_id,
-                                "like":like,
-                                "model_info":info,
-                                }
-                            return_list.append(model_dict)
+                    model_dict = {
+                        "model_id":model_id,
+                        "like":like,
+                        }
+                    return_list.append(model_dict)
         if not return_list:
             print("No models matching your criteria were found on huggingface.")            
         return return_list
@@ -356,7 +351,7 @@ class Huggingface(Basic_config):
             if repo_model_list:
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
-                    repo_info = check_dict["model_info"]
+                    repo_info = self.hf_model_info(model_name=check_repo)
                     if model_format == "diffusers" and self.diffusers_model_check(check_repo):
                         choice_path = check_repo
                         break
