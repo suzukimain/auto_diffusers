@@ -1,3 +1,4 @@
+import os
 import re
 import requests
 from requests import HTTPError
@@ -42,16 +43,17 @@ class Huggingface(Basic_config):
         repo_id = f"{match.group(1)}/{match.group(2)}"
         weights_name = match.group(3)
         return repo_id, weights_name
+    
+
+    def _hf_repo_download(self,path,branch="main") -> os.PathLike:
+        return DiffusionPipeline.download(path,revision=branch)
 
 
     def run_hf_download(self,url_or_path,branch="main") -> str:
         """
         retrun:
         os.path(str)
-        """
-        def _hf_repo_download(path,branch="main"):
-            model_path = DiffusionPipeline.download(path,revision=branch)
-            return model_path
+        """     
         model_file_path = ""
         if any(url_or_path.startswith(checked) for checked in self.VALID_URL_PREFIXES):
             if not self.is_url_valid(url_or_path):
@@ -65,7 +67,7 @@ class Huggingface(Basic_config):
             elif hf_path and (not file_name):
                 if self.diffusers_model_check(hf_path):
                     #single_file = False
-                    model_file_path = _hf_repo_download(url_or_path,branch=branch)
+                    model_file_path = self._hf_repo_download(url_or_path,branch=branch)
                 else:
                     raise HTTPError("Invalid hf_path")
             else:
@@ -74,7 +76,7 @@ class Huggingface(Basic_config):
         elif self.diffusers_model_check(url_or_path):
             self.logger.debug(f"url_or_path: {url_or_path}")
             #single_file = False
-            model_file_path = _hf_repo_download(url_or_path,branch=branch)
+            model_file_path = self._hf_repo_download(url_or_path,branch=branch)
         else:
             raise TypeError(f"Invalid path_or_url: {url_or_path}")
         return model_file_path # type: ignore
@@ -112,7 +114,7 @@ class Huggingface(Basic_config):
         data = requests.get(url).json()
         file_value_list = []
         df_model_bool=False
-        #fix error': 'Repo model <repo_id>/<model> is gated. You must be authenticated to access it.
+        # fix error': 'Repo model <repo_id>/<model> is gated. You must be authenticated to access it.
         try:
             siblings=data["siblings"]
         except KeyError:
@@ -121,7 +123,7 @@ class Huggingface(Basic_config):
         for item in siblings:
             data["siblings"]
             file_path=item["rfilename"]
-            #model_index.json outside the root directory is not recognized
+            # model_index.json outside the root directory is not recognized
             if file_path=="model_index.json" and (not self.single_file_only):
                 df_model_bool=True
             elif (
@@ -129,26 +131,26 @@ class Huggingface(Basic_config):
                 not any(file_path.endswith(ex) for ex in self.exclude)
                 ):
                 file_value_list.append(file_path)
-        #↓{df_model,file_value_list}
+
         self.file_path_dict.update({path:(df_model_bool,file_value_list)})
-        return file_value_list
+        return file_value_list      
 
 
     def hf_model_search(
             self,
             model_path,
             limit_num
-            ):
+            ) -> list:
         params={
             "search" : model_path,
             "sort" : "likes",
             "direction" : -1,
             "limit" : limit_num
             }
-        return [value.__dict__ for value in list(self.hf_api.list_models(**params))]
+        return [asdict(value) for value in list(self.hf_api.list_models(**params))]
 
 
-    def extra_hf_model_search(
+    def old_hf_model_search(
             self,
             model_path,
             limit_num
@@ -168,13 +170,18 @@ class Huggingface(Basic_config):
     
 
     def hf_model_info(self,model_name) -> dict:
-        return self.hf_api.model_info(
+        hf_info = self.hf_api.model_info(
             repo_id = model_name,
             securityStatus = True
-            ).__dict__
+            )
+        model_dict = asdict(hf_info)
+        # When using asdict, securityStatus is not added to the dictionary and must be added separately.
+        if "securityStatus" not in model_dict.keys():
+            model_dict["securityStatus"] = hf_info.__dict__["securityStatus"]
+        return model_dict
     
 
-    def extra_hf_model_info(self,model_select) -> dict:
+    def old_hf_model_info(self,model_select) -> dict:
         """
         NOTE:
         It is not already in use, but is kept as a spare.
@@ -206,7 +213,7 @@ class Huggingface(Basic_config):
     def check_if_file_exists(self,hf_repo_info):
         try:
             return any(
-                item.__dict__['rfilename'].endswith(ext) for item in hf_repo_info['siblings'] for ext in self.exts
+                item['rfilename'].endswith(ext) for item in hf_repo_info['siblings'] for ext in self.exts
                 )
         except KeyError:
             return False
@@ -285,7 +292,7 @@ class Huggingface(Basic_config):
             self,
             model_name:str,
             auto_set:bool,
-            model_format:str = "single_file",#"all","diffusers"
+            model_format:str = "single_file", # "all","diffusers"
             Recursive_execution:bool = False,
             extra_limit=None
             ):
@@ -416,7 +423,7 @@ class Huggingface(Basic_config):
             if choice_history:
                 if choice_history>self.num_prints+1:
                     choice_history = self.num_prints+1
-                print(f"\033[33m＊Previous number: {choice_history}\033[0m")
+                print(f"\033[33m* Previous number: {choice_history}\033[0m")
 
             if self.diffuser_model:
                 start_number="0"
@@ -452,7 +459,7 @@ class Huggingface(Basic_config):
 
         choice_history = self.check_func_hist(key = check_key,return_value=True)
         if choice_history:
-            print(f"\033[33m＊Previous number: {choice_history}\033[0m")
+            print(f"\033[33m* Previous number: {choice_history}\033[0m")
 
         start_number="1"
         if self.diffuser_model:
@@ -517,7 +524,7 @@ class Huggingface(Basic_config):
                     choice_path=self.model_safe_check(file_value)
 
         elif self.diffuser_model:
-            #When “auto” is selected, the presence or absence of “single_file” is determined when selecting a repo, so it is not necessary.
+            # When “auto” is selected, the presence or absence of “single_file” is determined when selecting a repo, so it is not necessary.
             choice_path = "_DFmodel"
         else:
             raise FileNotFoundError("No available files found in the specified repository")        

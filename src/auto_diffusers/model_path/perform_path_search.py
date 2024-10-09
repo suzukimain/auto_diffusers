@@ -84,6 +84,7 @@ class Search_cls(Config_Mix):
                 )
         return search_path
     
+
     def hf_model_set(
             self,
             model_select,
@@ -128,32 +129,6 @@ class Search_cls(Config_Mix):
             return "_hf_no_model"
 
 
-    def civitai_model_set(
-            self,
-            model_select,
-            auto,
-            model_type,
-            download,
-            skip_error=True
-            ):
-
-        model_path = self.civitai_download(
-            model_select,
-            auto,
-            model_type,
-            download=download)
-        
-        
-        self.return_dict["model_status"]["single_file"] = True
-        if (not skip_error) and (not model_path):
-            raise ValueError("No models were found in civitai.")
-        elif download:
-            self.return_dict["load_type"] = "from_single_file"
-        else:
-            self.return_dict["load_type"] = ""
-        return model_path
-
-
     def model_set(
             self,
             model_select,
@@ -180,9 +155,7 @@ class Search_cls(Config_Mix):
         
         if not model_format in ["all","diffusers","single_file"]:
             raise TypeError('The model_format is valid only for one of the following: "all","diffusers","single_file"')
-
-        
-        
+      
         model_path = model_select
         file_path = ""
         if model_select in self.model_dict:

@@ -45,14 +45,15 @@ class Civitai(Basic_config):
     def __init__(self):
         super().__init__()
         self.save_file_name = ""
+    
 
-
-    def civitai_download(
+    def civitai_model_set(
             self,
             search_word,
             auto,
             model_type,
-            download=True):
+            download=True,
+            skip_error=True):
         """
         Function to download models from civitai.
 
@@ -83,9 +84,13 @@ class Civitai(Basic_config):
             query=search_word,
             auto=auto,
             model_type=model_type)
-        if not model_state_list:
-            return ""
         
+        if not model_state_list:
+            if skip_error:
+                return ""
+            else:
+                raise ValueError("No models were found in civitai.")
+            
         model_url,model_save_path = model_state_list
         if download:    
             self.download_model(
@@ -93,12 +98,18 @@ class Civitai(Basic_config):
                 save_path=model_save_path
                 )
             
-            result = model_save_path
+            model_path = model_save_path
         else:
-            result = model_url
+            model_path = model_url
         
-        self.return_dict["model_path"] = result
-        return result
+        self.return_dict["model_status"]["single_file"] = True
+        if download:
+            self.return_dict["load_type"] = "from_single_file"
+        else:
+            self.return_dict["load_type"] = ""
+ 
+        self.return_dict["model_path"] = model_path
+        return model_path
 
 
     def download_model(self, url, save_path):
@@ -426,6 +437,4 @@ class Civitai(Basic_config):
             auto = auto)
 
         save_path = self.civitai_save_path()
-        
-
         return [file_status_dict["download_url"],save_path]
