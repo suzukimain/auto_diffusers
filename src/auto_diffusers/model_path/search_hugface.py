@@ -244,9 +244,8 @@ class Huggingface(Basic_config):
                                 "model_id":model_id,
                                 "like":like,
                                 "model_info":info,
-                                "security_risk":security_risk#just to be sure           
                                 }
-                        return_list.append(model_dict)
+                            return_list.append(model_dict)
         if not return_list:
             print("No models matching your criteria were found on huggingface.")            
         return return_list
@@ -324,8 +323,7 @@ class Huggingface(Basic_config):
             for (i,(model_dict)) in enumerate(repo_model_list,1):
                 model_name = model_dict["model_id"]
                 like = model_dict["like"]
-                warning_txt = "\033[31m[*Danger*]" if model_dict["security_risk"] else ""
-                print(f"\033[34m{i}.{warning_txt}model path: {model_name}, evaluation: {like}\033[0m")
+                print(f"\033[34m{i}. model path: {model_name}, evaluation: {like}\033[0m")
 
             if Recursive_execution:
                 print("\033[34m16.Other than above")
@@ -357,8 +355,6 @@ class Huggingface(Basic_config):
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
                     repo_info = check_dict["model_info"]
-                    if repo_info["security_risk"]:
-                        continue
                     if model_format == "diffusers" and self.diffusers_model_check(check_repo):
                         choice_path = check_repo
                         break
