@@ -174,43 +174,80 @@ class Huggingface(Basic_config):
             ).__dict__
     
 
-    def hf_security_check(self,check_dict):    
-        return check_dict["securityStatus"]["hasUnsafeFile"]
+    def extra_hf_model_info(self,model_select) -> dict:
+        """
+        NOTE:
+        It is not already in use, but is kept as a spare.
+        """
+        url = f"https://huggingface.co/api/models/{model_select}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            raise HTTPError("A hugface login or token is required")
+        data = response.json()
+        return data
+    
+
+    def hf_security_check(self,check_dict):
+        # Returns True if dangerous.
+        # Also returns False in case of failure.
+        try:
+            if (check_dict["securityStatus"]["hasUnsafeFile"] or
+                (not check_dict["securityStatus"]["scansDone"])
+                ):
+                return True
+            else:
+                return False
+        except KeyError:
+            return False
+        
+
+    def check_if_file_exists(self,hf_repo_info):
+        try:
+            matching_files = [
+                item['rfilename'] for item in hf_repo_info['siblings']
+                if any(item['rfilename'].endswith(ext) for ext in self.exts)
+                ]
+            if matching_files:
+                return True
+            else:
+                return False
+        except KeyError:
+            return False
 
 
     def hf_models(
             self,
             model_name,
             limit
-            ):
+            ) -> list:
         """
         return:
         repo_model_list,with_like : list
         """
-        #self.logger.debug(f"model_name: {model_name}")
         data=self.hf_model_search(model_name,limit)
-        final_list = []
-        if data:
-            for item in data:
-                model_id = item["modelId"]
-                like = item["likes"]
-                private_value = item["private"]
-                tag_value = item["tags"]
-                if  ("audio-to-audio" not in tag_value and
-                    (not private_value)):
-                    if self.data_get(model_id):
-                        info = self.hf_model_info(model_name=model_id)
+        return_list = []
+        for item in data:
+            model_id = item["modelId"]
+            like = item["likes"]
+            private_value = item["private"]
+            tag_value = item["tags"]
+            if  ("audio-to-audio" not in tag_value and
+                (not private_value)):
+                if self.data_get(model_id):
+                    info = self.hf_model_info(model_name=model_id)
+                    if self.check_if_file_exists(info):
                         model_dict = {
                             "model_id":model_id,
                             "like":like,
                             "model_info":info,
-                            "security_risk":self.hf_security_check(info)                            
+                            "security_risk":self.hf_security_check(info)
                             }
-                        final_list.append(model_dict)
-        else:
-            print("No models matching your criteria were found on huggingface.")
-            return []
-        return final_list
+                        return_list.append(model_dict)
+        if not return_list:
+            print("No models matching your criteria were found on huggingface.")            
+        return return_list
     
 
     def find_max_like(self,model_dict_list:list):
@@ -233,6 +270,19 @@ class Huggingface(Basic_config):
 
     def sort_by_likes(self,model_dict_list: list):
         return sorted(model_dict_list, key=lambda x: x.get("like", 0), reverse=True)
+    
+
+    def hf_file_config(self,check_data) -> list:
+        check_file_value = []
+        if check_data:
+            siblings = check_data["siblings"]
+            for item in siblings:
+                fi_path=item["rfilename"]
+                if (any(fi_path.endswith(ext) for ext in self.exts) and
+                    (not any(fi_path.endswith(ex) for ex in self.exclude)) and
+                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
+                    check_file_value.append(fi_path)
+        return check_file_value
 
 
     def model_name_search(
@@ -259,12 +309,11 @@ class Huggingface(Basic_config):
             else:
                 limit = 15
         
-        only_single_file = True if model_format == "single_file" else False
-        only_diffusers_model = True if model_format == "diffusers" else False
-        
         repo_model_list = self.hf_models(model_name,limit)
-        model_history = self.check_func_hist(key="hf_model_name",
-                                             return_value=True)
+        model_history = self.check_func_hist(
+            key="hf_model_name",
+            return_value=True
+            )
         if not auto_set:
             print("\033[34mThe following model paths were found")
             if model_history is not None:
@@ -273,10 +322,11 @@ class Huggingface(Basic_config):
             for (i,(model_dict)) in enumerate(repo_model_list,1):
                 model_name = model_dict["model_id"]
                 like = model_dict["like"]
-                print(f"{i}.model path: {model_name}, evaluation: {like}")
+                warning_txt = "\033[31m[*Danger*]" if model_dict["security_risk"] else ""
+                print(f"\033[34m{i}.{warning_txt}model path: {model_name}, evaluation: {like}\033[0m")
 
             if Recursive_execution:
-                print("16.Other than above")
+                print("\033[34m16.Other than above")
 
             while True:
                 try:
@@ -300,18 +350,20 @@ class Huggingface(Basic_config):
                     break
                 else:
                     print(f"Please enter the numbers 1~{len(repo_model_list)}")
-
         else:
             if repo_model_list:
                 for check_dict in self.sort_by_likes(repo_model_list):
                     check_repo = check_dict["model_id"]
+                    repo_info = check_dict["model_info"]
+                    if repo_info["security_risk"]:
+                        continue
                     if model_format == "diffusers" and self.diffusers_model_check(check_repo):
                         choice_path = check_repo
                         break
-                    elif model_format == "single_file" and self.hf_config_check(check_repo):
+                    elif model_format == "single_file" and self.hf_file_config(repo_info):
                         choice_path = check_repo
                         break
-                    elif model_format == "all" and (self.diffusers_model_check(check_repo) or self.hf_config_check(check_repo)):
+                    elif model_format == "all" and (self.diffusers_model_check(check_repo) or self.hf_file_config(repo_info)):
                         choice_path = check_repo
                         break
 
@@ -327,41 +379,12 @@ class Huggingface(Basic_config):
                     else:
                         self.logger.warning("No models in diffusers format were found.")
                         choice_path = "_hf_no_model"
-            
-                #else:
-                #    choice_path = self.find_max_like(repo_model_list)
             else:
                 choice_path = "_hf_no_model"
-
+                
+        print("\033[0m",end="")#turn back the color
         return choice_path
     
-
-    def get_hf_model_config(self,model_select):
-        url = f"https://huggingface.co/api/models/{model_select}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError:
-            raise HTTPError("A hugface login or token is required")
-        data = response.json()
-        return data
-    
-
-    def hf_config_check(self,model_select) -> bool:
-        try:
-            check_data = self.get_hf_model_config(model_select)
-        except Exception:
-            return False
-        check_file_value = []
-        if check_data:
-            siblings = check_data["siblings"]
-            for item in siblings:
-                fi_path=item["rfilename"]
-                if (any(fi_path.endswith(ext) for ext in self.exts) and
-                    (not any(fi_path.endswith(ex) for ex in self.exclude)) and
-                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
-                    check_file_value.append(fi_path)
-        return len(check_file_value)>0
 
 
     def file_name_set_sub(
@@ -482,17 +505,11 @@ class Huggingface(Basic_config):
         else:
             skip_difusers = False
 
-        data = self.get_hf_model_config(model_select)
+        data = self.hf_model_info(model_select)
         choice_path=""
         file_value = []
-        siblings = data["siblings"]
         if data:
-            for item in siblings:
-                fi_path=item["rfilename"]
-                if (any(fi_path.endswith(ext) for ext in self.exts) and
-                    (not any(fi_path.endswith(ex) for ex in self.exclude)) and
-                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
-                    file_value.append(fi_path)
+            file_value = self.hf_file_config(check_data=data)
         else:
             raise ValueError("No available file was found.\nPlease check the name.")
         if file_value:
