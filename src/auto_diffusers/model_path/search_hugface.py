@@ -231,7 +231,7 @@ class Huggingface(Basic_config):
         data=self.hf_model_search(model_name,limit)
         return_list = []
         for item in data:
-            model_id = item["modelId"]
+            model_id = item["id"]
             like = item["likes"]
             private_value = item["private"]
             tag_value = item["tags"]
