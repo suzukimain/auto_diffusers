@@ -308,27 +308,20 @@ class Civitai(Basic_config):
         return save_path
     
 
-    def civitai_model_safety_check(self,value):
+    def civitai_security_check(self,value):
         """
         Note:
         The virus scan and pickle scan are used to make the decision.
-        True is returned in case of Success, 
-        and True is returned in case of Pending or Error only if exclude_untested_model is False.
+        Returns True if judged to be dangerous.
         """
         check_list = [value["pickleScanResult"],value["virusScanResult"]]
 
-        if "Danger" in check_list:
+        if all(status == "Success" for status in check_list):
             return False
-        
-        elif all(status == "Success" for status in check_list):
+        else:
             return True
         
-        else:
-            if self.exclude_untested_model:
-                return False
-            else:
-                return True
-            
+        
 
     def requests_civitai(self, query, auto, model_type):
         """
@@ -374,8 +367,9 @@ class Civitai(Basic_config):
             for model_ver in item["modelVersions"]:
                 files_list = []
                 for model_value in model_ver["files"]:
+                    security_risk = self.civitai_security_check(model_value)
                     if (any(check_word in model_value for check_word in ["downloadUrl", "name"]) and
-                        self.civitai_model_safety_check(model_value)
+                        not security_risk
                         ):
                         file_status = {
                             "filename": model_value["name"],

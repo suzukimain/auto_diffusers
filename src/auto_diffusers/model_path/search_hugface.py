@@ -238,12 +238,14 @@ class Huggingface(Basic_config):
                 if self.data_get(model_id):
                     info = self.hf_model_info(model_name=model_id)
                     if self.check_if_file_exists(info):
-                        model_dict = {
-                            "model_id":model_id,
-                            "like":like,
-                            "model_info":info,
-                            "security_risk":self.hf_security_check(info)
-                            }
+                        security_risk = self.hf_security_check(info)
+                        if not security_risk:
+                            model_dict = {
+                                "model_id":model_id,
+                                "like":like,
+                                "model_info":info,
+                                "security_risk":security_risk#just to be sure           
+                                }
                         return_list.append(model_dict)
         if not return_list:
             print("No models matching your criteria were found on huggingface.")            

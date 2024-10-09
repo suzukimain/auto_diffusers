@@ -20,7 +20,6 @@ class Search_cls(Config_Mix):
             priority = "hugface",
             local_file_only = False,
             return_path = True,
-            exclude_untested_model = False
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -30,7 +29,6 @@ class Search_cls(Config_Mix):
         self.local_file_only=local_file_only
         self.model_format =model_format
         self.return_path = return_path
-        self.exclude_untested_model = exclude_untested_model
 
         self.return_dict["model_status"]["search_word"] = seach_word
         self.return_dict["model_status"]["local"] = True if download or local_file_only else False

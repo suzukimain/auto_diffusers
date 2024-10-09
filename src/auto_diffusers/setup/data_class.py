@@ -128,7 +128,6 @@ class data_config:
     
     def __init__(self):
         self.single_file_only = False
-        self.exclude_untested_model = True
         self.return_dict = {
             "model_path" : "",
             "load_type" : "",# "" or "from_single_file" or "from_pretrained"            
