@@ -23,9 +23,3 @@ class device_set:
     def count_device(self):
         return jax.device_count()
 
-
-    def is_TPU(self):
-        if self.device_type_check() == "TPU":
-            return True
-        else:
-            return False

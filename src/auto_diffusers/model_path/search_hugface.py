@@ -1,9 +1,10 @@
 import os
 import re
+from numpy import full
 import requests
 from requests import HTTPError
 
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline #type: ignore
 from huggingface_hub import (
     hf_hub_download, 
     HfApi
@@ -28,6 +29,8 @@ class Huggingface(Basic_config):
         self.file_path_dict={}
         self.special_file=""
         self.hf_repo_id = ""
+        self.force_download = False
+        self.hf_token = None
         self.hf_api = HfApi()
 
 
@@ -45,11 +48,20 @@ class Huggingface(Basic_config):
         return repo_id, weights_name
     
 
-    def _hf_repo_download(self,path,branch="main") -> os.PathLike:
-        return DiffusionPipeline.download(path,revision=branch)
+    def _hf_repo_download(self,path,branch="main"):
+        return DiffusionPipeline.download(
+            pretrained_model_name = path,
+            revision=branch,
+            force_download=self.force_download,
+            token=self.hf_token
+            )
 
 
-    def run_hf_download(self,url_or_path,branch="main") -> str:
+    def run_hf_download(
+            self,
+            url_or_path,
+            branch="main",
+            ) -> str:
         """
         retrun:
         os.path(str)
@@ -63,11 +75,19 @@ class Huggingface(Basic_config):
             self.logger.debug(f"hf_path: {hf_path} \nfile_name: {file_name}")
             if hf_path and file_name:
                 #single_file = True
-                model_file_path = hf_hub_download(hf_path, file_name)
+                model_file_path = hf_hub_download(
+                    repo_id = hf_path,
+                    filename=file_name,
+                    force_download=self.force_download,
+                    token=self.hf_token
+                    )
             elif hf_path and (not file_name):
                 if self.diffusers_model_check(hf_path):
                     #single_file = False
-                    model_file_path = self._hf_repo_download(url_or_path,branch=branch)
+                    model_file_path = self._hf_repo_download(
+                        url_or_path,
+                        branch=branch
+                        )
                 else:
                     raise HTTPError("Invalid hf_path")
             else:
@@ -85,31 +105,35 @@ class Huggingface(Basic_config):
     def model_safe_check(self,model_list) ->str:
         if len(model_list)>1:
            for check_model in model_list:
-                match = bool(re.search(r"(?i)[-ー_＿]sfw", check_model))
-                if match:
+                if bool(re.search(r"(?i)[-ー_＿](sfw|safe)", check_model)):
                     return check_model
         return model_list[0]
 
 
     def list_safe_check(self,model_list) -> list:
         for check_model in model_list:
-            if bool(re.search(r"(?i)[-ー_＿]sfw", check_model)):
+            if bool(re.search(r"(?i)[-ー_＿](sfw|safe)", check_model)):
                 model_list.remove(check_model)
                 model_list.insert(0, check_model)
                 break
         return model_list
 
 
-    def diffusers_model_check(self,checked_model: str) -> bool:
-        index_url=f"https://huggingface.co/{checked_model}/blob/main/model_index.json"
+    def diffusers_model_check(
+            self,
+            checked_model: str,
+            branch = "main"
+            ) -> bool:
+        index_url=f"https://huggingface.co/{checked_model}/blob/{branch}/model_index.json"
         return self.is_url_valid(index_url)
 
 
     def hf_model_check(self,path) -> bool:
+        # Determine if a repository exists on the huggingface.
         return self.is_url_valid(f"https://huggingface.co/{path}")
 
 
-    def model_data_get(self,path) -> list:
+    def model_data_get(self,path) -> dict:
         #url = f"https://huggingface.co/api/models/{path}"
         #data = requests.get(url).json()
         data = self.hf_model_info(path)
@@ -119,7 +143,7 @@ class Huggingface(Basic_config):
         try:
             siblings=data["siblings"]
         except KeyError:
-            return []
+            return {}
 
         for item in siblings:
             file_path=item["rfilename"]
@@ -136,7 +160,7 @@ class Huggingface(Basic_config):
         return {
             "model_info" : data,
             "file_list" : file_value_list,
-            "security_risk" : self.hf_security_check(data),
+            "security_risk" : self.hf_security_check(data)
             }
 
 
@@ -173,9 +197,14 @@ class Huggingface(Basic_config):
         return requests.get(url,params=params).json()
     
 
-    def hf_model_info(self,model_name) -> dict:
+    def hf_model_info(
+            self,
+            model_name
+            ) -> dict:
         hf_info = self.hf_api.model_info(
             repo_id = model_name,
+            token = self.hf_token,
+            files_metadata=True,
             securityStatus = True
             )
         model_dict = asdict(hf_info)

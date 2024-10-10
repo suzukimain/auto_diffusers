@@ -5,6 +5,10 @@ import importlib
 
 import diffusers
 from natsort import natsorted
+from importlib import (
+    metadata,
+    util
+    )
 
 from .device_config import device_set
 from .data_class import data_config
@@ -23,7 +27,6 @@ class Basic_config(
         super().__init__()
         self.device_count = self.count_device()
         self.device = self.device_type_check()
-        self.use_TPU = self.is_TPU()
         self.logger = custom_logger()
 
 
@@ -172,12 +175,12 @@ class Basic_config(
     
     
     def install_check(self,module_name) -> bool:
-        check_availability = importlib.util.find_spec(module_name) is not None
+        check_availability = util.find_spec(module_name) is not None
         if check_availability:
             try:
-                _module_version = importlib.metadata.version(module_name)
+                _module_version = metadata.version(module_name)
                 self.logger.info(f"{module_name} version {_module_version} available.")
-            except importlib.metadata.PackageNotFoundError:
+            except metadata.PackageNotFoundError:
                 check_availability = False
         else:
             check_availability = False

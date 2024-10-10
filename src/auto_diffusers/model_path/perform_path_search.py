@@ -127,6 +127,7 @@ class Search_cls(Config_Mix):
             return model_path
         else:
             return "_hf_no_model"
+    
 
 
     def model_set(
@@ -198,12 +199,13 @@ class Search_cls(Config_Mix):
 
         elif model_select.startswith("https://civitai.com/"):
             model_path = self.civitai_model_set(
-                    model_select=model_select,
+                    search_word=model_select,
                     auto=auto,
                     model_type=model_type,
                     download=download,
                     skip_error=False
                     )
+                    
 
         elif os.path.isfile(model_select):
             model_path = model_select
@@ -275,7 +277,7 @@ class Search_cls(Config_Mix):
                     )
                 if model_path == "_hf_no_model":
                     model_path = self.civitai_model_set(
-                        model_select=model_select,
+                        search_word=model_select,
                         auto=auto,
                         model_type=model_type,
                         download=download
@@ -285,7 +287,7 @@ class Search_cls(Config_Mix):
                 
             else:
                 model_path = self.civitai_model_set(
-                    model_select=model_select,
+                    search_word=model_select,
                     auto=auto,
                     model_type=model_type,
                     download=download

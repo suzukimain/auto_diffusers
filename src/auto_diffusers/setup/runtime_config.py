@@ -1,12 +1,10 @@
-import jax
 import re
 import requests
-import importlib
 import logging
+from importlib import metadata
 
 from .device_config import device_set
 from ..utils.get_custom_logger import custom_logger
-
 
 
 class Runtime_func(device_set):
@@ -17,16 +15,15 @@ class Runtime_func(device_set):
         This is because the `install_packages` class is executed before the `Basic_config` class is executed, so these functions are separated and inherited later.
         """
         self.device_type = self.device_type_check()
-        self.use_TPU = self.is_TPU()
         self.logger = custom_logger()
         super().__init__()
 
 
     def module_version(self,module_name):
         try:
-            version = importlib.metadata.version(module_name)
-            return re.match(r"^\d+\.\d+\.\d+", version).group(0)
-        except importlib.metadata.PackageNotFoundError:
+            version = metadata.version(module_name)
+            return re.match(r"^\d+\.\d+\.\d+", version).group(0) #type: ignore
+        except metadata.PackageNotFoundError:
             return None
 
 
