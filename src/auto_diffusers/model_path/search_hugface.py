@@ -26,7 +26,6 @@ class Huggingface(Basic_config):
         self.diffuser_model=False
         self.check_choice_key = ""
         self.choice_number = -1
-        self.file_path_dict={}
         self.special_file=""
         self.hf_repo_id = ""
         self.force_download = False
@@ -141,7 +140,7 @@ class Huggingface(Basic_config):
         
         data = model_info or self.hf_model_info(path)
         file_value_list = []
-        df_model_bool=False
+        df_model=False
         # fix error': 'Repo model <repo_id>/<model> is gated. You must be authenticated to access it.
         try:
             siblings=data["siblings"]
@@ -152,18 +151,17 @@ class Huggingface(Basic_config):
             file_path=item["rfilename"]
             # model_index.json outside the root directory is not recognized
             if file_path=="model_index.json" and (not self.single_file_only):
-                df_model_bool=True
+                df_model=True
             elif (
                 any(file_path.endswith(ext) for ext in self.exts) and
                 not any(file_path.endswith(ex) for ex in self.exclude)
                 ):
                 file_value_list.append(file_path)
-
-        self.file_path_dict.update({path:(df_model_bool,file_value_list)})
         return {
             "model_info" : data,
             "file_list" : file_value_list,
-            "security_risk" : self.hf_security_check(data)
+            "diffusers_model_exists" : df_model,
+            "security_risk" : self.hf_security_check(data),
             }
 
 
@@ -279,7 +277,9 @@ class Huggingface(Basic_config):
             tag_value = item["tags"]
             file_list = self.get_hf_files(item)
             if (all(tag not in tag_value for tag in exclude_tag) and
-                (not private_value)):
+                (not private_value) and
+                file_list
+                ):
                 #model_status = self.model_data_get(model_id)
                 #if not model_status["security_risk"]:
                 model_dict = {
