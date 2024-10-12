@@ -150,7 +150,7 @@ class Huggingface(Basic_config):
         for item in siblings:
             file_path=item["rfilename"]
             # model_index.json outside the root directory is not recognized
-            if file_path=="model_index.json" and (not self.single_file_only):
+            if "model_index.json"==file_path and (not self.single_file_only):
                 df_model=True
             elif (
                 any(file_path.endswith(ext) for ext in self.exts) and
@@ -276,9 +276,10 @@ class Huggingface(Basic_config):
             private_value = item["private"]
             tag_value = item["tags"]
             file_list = self.get_hf_files(item)
+            diffusers_model_exists = "model_index.json" in file_list and (not self.single_file_only)
             if (all(tag not in tag_value for tag in exclude_tag) and
                 (not private_value) and
-                file_list
+                (file_list or diffusers_model_exists)
                 ):
                 #model_status = self.model_data_get(model_id)
                 #if not model_status["security_risk"]:
@@ -287,6 +288,7 @@ class Huggingface(Basic_config):
                     "like" : like,
                     "model_info" : item,
                     "file_list" : file_list,
+                    "diffusers_model_exists": diffusers_model_exists,
                     "security_risk" : False
                     }
                 return_list.append(model_dict)

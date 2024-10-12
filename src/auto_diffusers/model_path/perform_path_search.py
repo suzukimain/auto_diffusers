@@ -29,6 +29,7 @@ class Search_cls(Config_Mix):
         self.local_file_only=local_file_only
         self.model_format =model_format
         self.return_path = return_path
+        self.single_file_only = True if "single_file" == model_format else False
 
         self.return_dict["model_status"]["search_word"] = seach_word
         self.return_dict["model_status"]["local"] = True if download or local_file_only else False
