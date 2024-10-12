@@ -359,10 +359,12 @@ class Huggingface(Basic_config):
             key="hf_model_name",
             return_value=True
             )
-        models_to_exclude = self.check_func_hist(
+        models_to_exclude:list = self.check_func_hist(
             key="dangerous_model",
-            return_value=True
+            return_value=True,
+            missing_value=[]
             )
+  
         if not auto_set:
             print("\033[34mThe following model paths were found\033[0m")
             if previous_model_selection is not None:
@@ -400,7 +402,14 @@ class Huggingface(Basic_config):
                     # The process here excludes models that may have security problems.
                     if self.model_data_get(path=choice_path)["security_risk"]:
                         print("\033[31mThis model has a security problem.\033[0m")
+                        if choice_path not in models_to_exclude:
+                            models_to_exclude.append(choice_path)
+                        self.update_json_dict(
+                            key = "dangerous_model",
+                            value = models_to_exclude
+                            )
                         continue
+                    
                     else:
                         break
                 else:
@@ -497,8 +506,10 @@ class Huggingface(Basic_config):
                     continue
                 if self.diffuser_model and choice==0:
                     self.choice_number = -1
-                    print("\033[0m",end="")
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return "_DFmodel"
                 
                 elif choice==(self.num_prints+1): #other_file
@@ -506,7 +517,10 @@ class Huggingface(Basic_config):
                 elif 1<=choice<=self.num_prints:
                     choice_path=file_value[choice-1]
                     self.choice_number = choice
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return choice_path
                 else:
                     print(f"\033[33mPlease enter numbers from 1~{self.num_prints}\033[0m")
@@ -514,7 +528,7 @@ class Huggingface(Basic_config):
 
         choice_history = self.check_func_hist(key = check_key,return_value=True)
         if choice_history:
-            print(f"\033[33m* Previous number: {choice_history}\033[0m")
+            print(f"\033[33m＊Previous number: {choice_history}\033[0m")
 
         start_number="1"
         if self.diffuser_model:
@@ -531,13 +545,19 @@ class Huggingface(Basic_config):
             else:
                 if self.diffuser_model and choice==0:
                     self.choice_number = -1
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return "_DFmodel"
                 
                 if 1<=choice<=len(file_value):
                     choice_path=file_value[choice-1]
                     self.choice_number = choice
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return choice_path
                 else:
                     print(f"\033[33mPlease enter numbers from 1~{len(file_value)}\033[34m")

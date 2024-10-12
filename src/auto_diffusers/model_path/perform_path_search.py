@@ -304,8 +304,9 @@ class Search_cls(Config_Mix):
                         raise ValueError("No models matching the criteria were found.")
                 
         self.return_dict["model_path"] = model_path
-        #It is not called, but should not be deleted because it is updating the dictionary.
-        update_model_path = self.check_func_hist(key="model_path",value=model_path)
+        self.update_json_dict(
+            key = "model_path",
+            value = model_path)
         if return_path:
             return model_path
         else:
