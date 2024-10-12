@@ -167,19 +167,19 @@ class Civitai(Basic_config):
                 print("\n\n\n")
 
             max_number = min(self.max_number_of_choices, len(sorted_list)) if recursive else len(sorted_list)
-            print(f"\033[34m0. Search for huggingface")
+            print(f"\033[34m0. Search for huggingface\033[0m")
             for number, states_dict in enumerate(sorted_list[:max_number]):
-                print(f"\033[34m{number + 1}. Repo_id: {states_dict['CreatorName']} / {states_dict['repo_name']}, download: {states_dict['downloadCount']}")
+                print(f"\033[34m{number + 1}. Repo_id: {states_dict['CreatorName']} / {states_dict['repo_name']}, download: {states_dict['downloadCount']}\033[0m")
 
             if Limit_choice:
                 max_number += 1
-                print(f"\033[34m{max_number}. Other than above")
+                print(f"\033[34m{max_number}. Other than above\033[0m")
 
             while True:
                 try:
                     choice = int(input(f"choice repo [1~{max_number}]: "))
                 except ValueError:
-                    print("\033[33mOnly natural numbers are valid.\033[34m")
+                    print("\033[33mOnly natural numbers are valid.\033[0m")
                     continue
 
                 if Limit_choice and choice == max_number:
@@ -192,7 +192,7 @@ class Civitai(Basic_config):
                     self.return_dict["repo_status"]["repo_id"] = repo_dict["repo_id"]
                     return repo_dict
                 else:
-                    print(f"\033[33mPlease enter the numbers 1~{max_number}\033[34m")
+                    print(f"\033[33mPlease enter the numbers 1~{max_number}\033[0m")
 
 
     def version_select_civitai(self, state, auto, recursive: bool = True):
@@ -234,18 +234,18 @@ class Civitai(Basic_config):
             max_number = min(self.max_number_of_choices, len(ver_list)) if recursive else len(ver_list)
 
             for number_, state_dict_ in enumerate(ver_list[:max_number]):
-                print(f"\033[34m{number_ + 1}. model_version: {state_dict_['name']}, download: {state_dict_['downloadCount']}")
+                print(f"\033[34m{number_ + 1}. model_version: {state_dict_['name']}, download: {state_dict_['downloadCount']}\033[0m")
 
             if Limit_choice:
                 max_number += 1
-                print(f"{max_number}. Other than above")
+                print(f"\033[34m{max_number}. Other than above\033[0m")
 
 
             while True:
                 try:
                     choice = int(input("Select the model path to use: "))
                 except ValueError:
-                    print("\033[33mOnly natural numbers are valid.\033[34m")
+                    print("\033[33mOnly natural numbers are valid.\033[0m")
                     continue
                 if Limit_choice and choice == max_number:
                     return self.version_select_civitai(state=state, auto=auto, recursive=False)
@@ -254,7 +254,7 @@ class Civitai(Basic_config):
                     self.return_dict["repo_status"]["version_id"] = return_dict["id"]
                     return return_dict["files"]
                 else:
-                    print(f"\033[33mPlease enter the numbers 1~{max_number}\033[34m")
+                    print(f"\033[33mPlease enter the numbers 1~{max_number}\033[0m")
 
 
     def file_select_civitai(self, state_list, auto,recursive:bool=True):
@@ -281,13 +281,13 @@ class Civitai(Basic_config):
 
             if Limit_choice:
                 max_number += 1
-                print(f"{max_number}. Other than above")
+                print(f"\033[34m{max_number}. Other than above\033[0m")
 
             while True:
                 try:
                     choice = int(input(f"Select the file to download[1~{max_number}]: "))
                 except ValueError:
-                    print("\033[33mOnly natural numbers are valid.\033[34m")
+                    print("\033[33mOnly natural numbers are valid.\033[0m")
                     continue
                 if Limit_choice and choice == max_number:
                     return self.file_select_civitai(state_list=state_list, auto=auto, recursive=False)
@@ -297,7 +297,7 @@ class Civitai(Basic_config):
                     self.return_dict["model_status"].update(file_dict)
                     return file_dict
                 else:
-                    print(f"\033[33mPlease enter the numbers 1~{len(state_list)}\033[34m")
+                    print(f"\033[33mPlease enter the numbers 1~{len(state_list)}\033[0m")
         else:
             file_dict = state_list[0]
             self.return_dict["model_status"].update(file_dict)

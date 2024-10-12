@@ -368,7 +368,7 @@ class Huggingface(Basic_config):
         if not auto_set:
             print("\033[34mThe following model paths were found\033[0m")
             if previous_model_selection is not None:
-                print(f"Previous Choice: {previous_model_selection}")
+                print(f"\033[34mPrevious Choice: {previous_model_selection}\033[0m")
             print("\033[34m0.Search civitai\033[0m")
             for (i,(model_dict)) in enumerate(repo_model_list,1):
                 _hf_model_id = model_dict["model_id"]
@@ -409,7 +409,7 @@ class Huggingface(Basic_config):
                             value = models_to_exclude
                             )
                         continue
-                    
+
                     else:
                         break
                 else:
@@ -448,8 +448,7 @@ class Huggingface(Basic_config):
                         choice_path = "_hf_no_model"
             else:
                 choice_path = "_hf_no_model"
-                
-        print("\033[0m",end="")#turn back the color
+
         return choice_path
     
 
@@ -493,10 +492,10 @@ class Huggingface(Basic_config):
 
             if self.diffuser_model:
                 start_number="0"
-                print("\033[34m0.Use Diffusers format model")
+                print("\033[34m0.Use Diffusers format model\033[0m")
             for i in range(self.num_prints):
                 print(f"\033[34m{i+1}.File name: {file_value[i]}\033[0m")
-            print(f"\033[34m{self.num_prints+1}.Other than the files listed above (all candidates will be displayed)\n")
+            print(f"\033[34m{self.num_prints+1}.Other than the files listed above (all candidates will be displayed)\033[0m\n")
             while True:
                 choice = input(f"select the file you want to use({start_number}~21): ")
                 try:
@@ -560,7 +559,7 @@ class Huggingface(Basic_config):
                         )
                     return choice_path
                 else:
-                    print(f"\033[33mPlease enter numbers from 1~{len(file_value)}\033[34m")
+                    print(f"\033[33mPlease enter numbers from 1~{len(file_value)}\033[0m")
                     
 
     def file_name_set(
