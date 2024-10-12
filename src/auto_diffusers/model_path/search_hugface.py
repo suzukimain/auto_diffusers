@@ -370,8 +370,9 @@ class Huggingface(Basic_config):
             print("\033[34m0.Search civitai\033[0m")
             for (i,(model_dict)) in enumerate(repo_model_list,1):
                 _hf_model_id = model_dict["model_id"]
+                _hf_model_like = model_dict["like"]
                 warning_txt = "\033[31m[danger]" if _hf_model_id in models_to_exclude else ""
-                print(f"\033[34m{i}. {warning_txt}model path: {_hf_model_id}, evaluation: {model_dict["like"]}\033[0m")
+                print(f"\033[34m{i}. {warning_txt}model path: {_hf_model_id}, evaluation: {_hf_model_like}\033[0m")
 
             if Recursive_execution:
                 print("\033[34m16.Other than above\033[0m")
