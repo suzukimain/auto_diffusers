@@ -16,11 +16,12 @@ class Search_cls(Config_Mix):
             download=False,
             model_type="Checkpoint",
             model_format = "single_file",
+            hf_token = None,
             branch = "main",
             priority = "hugface",
             local_file_only = False,
-            return_path = True,
-            include_unscanned_models=False
+            civitai_token = "",
+            include_parameters = True,
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -28,13 +29,13 @@ class Search_cls(Config_Mix):
         self.model_type = model_type
         self.branch = branch
         self.local_file_only=local_file_only
-        self.model_format =model_format
-        self.return_path = return_path
+        self.model_format = model_format
         self.single_file_only = True if "single_file" == model_format else False
-        self.include_unscanned_models = include_unscanned_models
 
         self.return_dict["model_status"]["search_word"] = seach_word
         self.return_dict["model_status"]["local"] = True if download or local_file_only else False
+
+        self.hf_login(hf_token)
 
         result = self.model_set(
                   model_select = seach_word,
@@ -45,7 +46,8 @@ class Search_cls(Config_Mix):
                   branch = branch,
                   priority = priority,
                   local_file_only = local_file_only,
-                  return_path = return_path
+                  civitai_token = civitai_token,
+                  include_parameters = include_parameters
                   )
         return result
         
@@ -150,7 +152,8 @@ class Search_cls(Config_Mix):
             branch = "main",
             priority = "hugface",
             local_file_only = False,
-            return_path = True
+            civitai_token = "",
+            include_parameters = False
             ):
         """
         parameter:
@@ -213,6 +216,7 @@ class Search_cls(Config_Mix):
                     auto=auto,
                     model_type=model_type,
                     download=download,
+                    civitai_token=civitai_token,
                     skip_error=False
                     )
                     
@@ -292,6 +296,7 @@ class Search_cls(Config_Mix):
                         auto=auto,
                         model_type=model_type,
                         download=download,
+                        civitai_token=civitai_token,
                         include_hugface=False
                         )
                     if not model_path:
@@ -303,6 +308,7 @@ class Search_cls(Config_Mix):
                     auto=auto,
                     model_type=model_type,
                     download=download,
+                    civitai_token=civitai_token,
                     include_hugface=True
                     )
                 if not model_path:
@@ -322,7 +328,9 @@ class Search_cls(Config_Mix):
             key = "model_path",
             value = model_path
             )
-        if return_path:
-            return model_path
-        else:
+        if include_parameters:
             return self.return_dict
+        else:
+            return model_path
+        
+            

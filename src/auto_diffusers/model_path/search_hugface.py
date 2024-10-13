@@ -7,7 +7,8 @@ from requests import HTTPError
 from diffusers import DiffusionPipeline #type: ignore
 from huggingface_hub import (
     hf_hub_download, 
-    HfApi
+    HfApi,
+    login
     )
 from dataclasses import asdict
     
@@ -29,7 +30,6 @@ class Huggingface(Basic_config):
         self.special_file=""
         self.hf_repo_id = ""
         self.force_download = False
-        self.hf_token = None
         self.hf_api = HfApi()
 
 
@@ -46,13 +46,16 @@ class Huggingface(Basic_config):
         weights_name = match.group(3)
         return repo_id, weights_name
     
+    def hf_login(self,token=None):
+        if token:
+            login(token)
+    
 
     def _hf_repo_download(self,path,branch="main"):
         return DiffusionPipeline.download(
             pretrained_model_name = path,
             revision=branch,
             force_download=self.force_download,
-            token=self.hf_token
             )
 
 
@@ -78,7 +81,6 @@ class Huggingface(Basic_config):
                     repo_id = hf_path,
                     filename=file_name,
                     force_download=self.force_download,
-                    token=self.hf_token
                     )
             elif hf_path and (not file_name):
                 if self.diffusers_model_check(hf_path):
@@ -206,7 +208,6 @@ class Huggingface(Basic_config):
             ) -> dict:
         hf_info = self.hf_api.model_info(
             repo_id = model_name,
-            token = self.hf_token,
             files_metadata=True,
             securityStatus = True
             )

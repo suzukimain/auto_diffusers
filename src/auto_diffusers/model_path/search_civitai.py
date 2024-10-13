@@ -53,8 +53,10 @@ class Civitai(Basic_config):
             auto,
             model_type,
             download=True,
+            civitai_token="",
             skip_error=True,
-            include_hugface=True):
+            include_hugface=True
+            ):
         """
         Function to download models from civitai.
 
@@ -85,6 +87,7 @@ class Civitai(Basic_config):
             query=search_word,
             auto=auto,
             model_type=model_type,
+            civitai_token=civitai_token,
             include_hugface=include_hugface
             )
         
@@ -98,7 +101,8 @@ class Civitai(Basic_config):
         if download:    
             self.download_model(
                 url=model_url,
-                save_path=model_save_path
+                save_path=model_save_path,
+                civitai_token=civitai_token
                 )
             
             model_path = model_save_path
@@ -134,6 +138,7 @@ class Civitai(Basic_config):
             query, 
             auto, 
             model_type,
+            civitai_token="",
             include_hugface=True
             ):
         """
@@ -162,8 +167,12 @@ class Civitai(Basic_config):
 
         params = {"query": query, "types": model_type, "sort": "Most Downloaded"}
 
+        headers = {}
+        if civitai_token:
+            headers['Authorization'] = f'Bearer {civitai_token}'
+
         try:
-            response = requests.get("https://civitai.com/api/v1/models", params=params)
+            response = requests.get("https://civitai.com/api/v1/models", params=params, headers=headers)
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
             raise HTTPError(f"Could not get elements from the URL. {err}")
@@ -236,7 +245,8 @@ class Civitai(Basic_config):
 
         file_status_dict = self.file_select_civitai(
             state_list = files_list,
-            auto = auto)
+            auto = auto
+            )
 
         save_path = self.civitai_save_path()
         return [file_status_dict["download_url"],save_path] 
@@ -310,11 +320,20 @@ class Civitai(Basic_config):
                     print(f"\033[33mPlease enter the numbers 1~{max_number}\033[0m")
                 
 
-    def download_model(self, url, save_path):
+    def download_model(
+            self, 
+            url, 
+            save_path, 
+            civitai_token=""
+            ):
         if not self.is_url_valid(url):
             raise requests.HTTPError("URL is invalid.")
+        
+        headers = {}
+        if civitai_token:
+            headers['Authorization'] = f'Bearer {civitai_token}'
 
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, headers=headers)
 
         try:
             response.raise_for_status()
