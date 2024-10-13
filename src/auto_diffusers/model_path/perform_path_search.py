@@ -92,23 +92,30 @@ class Search_cls(Config_Mix):
             auto,
             model_format,
             model_type,
-            download
+            download,
+            include_civitai=True
             ):
         model_path = ""
         model_name = self.model_name_search(
             model_name=model_select,
             auto_set=auto,
-            model_format=model_format)
+            model_format=model_format,
+            include_civitai=include_civitai
+            )
         #hf->civit
         if not model_name == "_hf_no_model":
             file_path = self.file_name_set(
                 model_select=model_name,
                 auto=auto,
                 model_format=model_format,
-                model_type=model_type)
+                model_type=model_type
+                )
             if file_path == "_DFmodel":
                 if download:
-                    model_path = self.run_hf_download(model_name,branch=self.branch)
+                    model_path = self.run_hf_download(
+                        model_name,
+                        branch=self.branch
+                        )
                 else:
                     model_path = model_name
                 self.return_dict["model_path"] = model_path
@@ -274,14 +281,16 @@ class Search_cls(Config_Mix):
                     auto=auto,
                     model_format=model_format,
                     model_type=model_type,
-                    download=download
+                    download=download,
+                    include_civitai=True
                     )
                 if model_path == "_hf_no_model":
                     model_path = self.civitai_model_set(
                         search_word=model_select,
                         auto=auto,
                         model_type=model_type,
-                        download=download
+                        download=download,
+                        include_hugface=False
                         )
                     if not model_path:
                         raise ValueError("No models matching the criteria were found.")
@@ -291,7 +300,8 @@ class Search_cls(Config_Mix):
                     search_word=model_select,
                     auto=auto,
                     model_type=model_type,
-                    download=download
+                    download=download,
+                    include_hugface=True
                     )
                 if not model_path:
                     model_path = self.hf_model_set(
@@ -299,7 +309,8 @@ class Search_cls(Config_Mix):
                         auto = auto,
                         model_format=model_format,
                         model_type=model_type,
-                        download=download
+                        download=download,
+                        include_civitai=False
                         )
                     if model_path == "_hf_no_model":
                         raise ValueError("No models matching the criteria were found.")
@@ -307,7 +318,8 @@ class Search_cls(Config_Mix):
         self.return_dict["model_path"] = model_path
         self.update_json_dict(
             key = "model_path",
-            value = model_path)
+            value = model_path
+            )
         if return_path:
             return model_path
         else:

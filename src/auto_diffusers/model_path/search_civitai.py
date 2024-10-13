@@ -53,7 +53,8 @@ class Civitai(Basic_config):
             auto,
             model_type,
             download=True,
-            skip_error=True):
+            skip_error=True,
+            include_hugface=True):
         """
         Function to download models from civitai.
 
@@ -83,7 +84,9 @@ class Civitai(Basic_config):
         model_state_list = self.requests_civitai(
             query=search_word,
             auto=auto,
-            model_type=model_type)
+            model_type=model_type,
+            include_hugface=include_hugface
+            )
         
         if not model_state_list:
             if skip_error:
@@ -110,30 +113,141 @@ class Civitai(Basic_config):
  
         self.return_dict["model_path"] = model_path
         return model_path
+    
 
+    def civitai_security_check(self,value):
+        """
+        Note:
+        The virus scan and pickle scan are used to make the decision.
+        Returns True if judged to be dangerous.
+        """
+        check_list = [value["pickleScanResult"],value["virusScanResult"]]
 
-    def download_model(self, url, save_path):
-        if not self.is_url_valid(url):
-            raise requests.HTTPError("URL is invalid.")
+        if all(status == "Success" for status in check_list):
+            return False
+        else:
+            return True
+    
 
-        response = requests.get(url, stream=True)
+    def requests_civitai(
+            self, 
+            query, 
+            auto, 
+            model_type,
+            include_hugface=True
+            ):
+        """
+        Fetch models from Civitai based on a query and model type.
+
+        Parameters:
+        - query: Search query string.
+        - auto: Flag for automatic selection.
+        - model_type: Type of model to search for.
+            arg:[Checkpoint,
+                 TextualInversion,
+                 Hypernetwork,
+                 AestheticGradient,
+                 LORA,
+                 Controlnet,
+                 Poses
+                ]
+
+        Returns:
+        - str: Download URL of the selected file.
+        (url, save_path)
+        """
+        state = []
+        model_ver_list = []
+        version_dict = {}
+
+        params = {"query": query, "types": model_type, "sort": "Most Downloaded"}
 
         try:
+            response = requests.get("https://civitai.com/api/v1/models", params=params)
             response.raise_for_status()
-        except requests.HTTPError:
-            raise requests.HTTPError(f"Invalid URL: {response.status_code}")
+        except requests.exceptions.HTTPError as err:
+            raise HTTPError(f"Could not get elements from the URL. {err}")
+        else:
+            try:
+                data = response.json()
+            except AttributeError:
+                raise ValueError("Invalid JSON response")
 
-        os.makedirs(os.path.dirname(save_path),exist_ok=True)
+        items = data["items"]
 
-        with tqdm.wrapattr(open(save_path, "wb"), "write",
-            miniters=1, desc="Downloading model",
-            total=int(response.headers.get('content-length', 0))) as fout:
-            for chunk in response.iter_content(chunk_size=8192):
-                fout.write(chunk)
-        self.logger.info(f"Downloaded file saved to {save_path}")
+        for item in items:
+            for model_ver in item["modelVersions"]:
+                files_list = []
+                for model_value in model_ver["files"]:
+                    security_risk = self.civitai_security_check(model_value)
+                    if (any(check_word in model_value for check_word in ["downloadUrl", "name"]) and
+                        not security_risk
+                        ):
+                        file_status = {
+                            "filename": model_value["name"],
+                            "file_id": model_value["id"],
+                            "fp": model_value["metadata"]["fp"],
+                            "file_format": model_value["metadata"]["format"],                
+                            "download_url": model_value["downloadUrl"],
+                        }
+                        files_list.append(file_status)
+
+                version_dict = {
+                    "id": model_ver["id"],
+                    "name": model_ver["name"],
+                    "downloadCount": model_ver["stats"]["downloadCount"],
+                    "files": files_list,
+                }
+
+                if files_list:
+                    model_ver_list.append(version_dict)
+
+            if all(check_txt in item.keys() for check_txt in ["name", "stats", "creator"]):
+                state_dict = {
+                    "repo_name": item["name"],
+                    "repo_id": item["id"],
+                    "favoriteCount": item["stats"]["favoriteCount"],
+                    "downloadCount": item["stats"]["downloadCount"],
+                    "CreatorName": item["creator"]["username"],
+                    "version_list": model_ver_list,
+                }
+
+                if model_ver_list:
+                    state.append(state_dict)
+
+        if not state:
+            self.logger.warning("There is no model in Civitai that fits the criteria.")
+            return {}
+            #raise ValueError("No matches found for your criteria")
+
+        dict_of_civitai_repo = self.repo_select_civitai(
+            state = state,
+            auto = auto,
+            include_hugface=include_hugface
+            )
+        
+        if not dict_of_civitai_repo:
+            return []
+        
+        files_list = self.version_select_civitai(
+            state = dict_of_civitai_repo,
+            auto = auto
+            )
+
+        file_status_dict = self.file_select_civitai(
+            state_list = files_list,
+            auto = auto)
+
+        save_path = self.civitai_save_path()
+        return [file_status_dict["download_url"],save_path] 
 
 
-    def repo_select_civitai(self, state: list, auto: bool, recursive: bool = True):
+    def repo_select_civitai(
+            self,
+            state: list, 
+            auto: bool, 
+            recursive: bool = True,
+            include_hugface: bool = True):
         """
         Set repository requests for Civitai.
 
@@ -167,7 +281,8 @@ class Civitai(Basic_config):
                 print("\n\n\n")
 
             max_number = min(self.max_number_of_choices, len(sorted_list)) if recursive else len(sorted_list)
-            print(f"\033[34m0. Search for huggingface\033[0m")
+            if include_hugface:
+                print(f"\033[34m0. Search for huggingface\033[0m")
             for number, states_dict in enumerate(sorted_list[:max_number]):
                 print(f"\033[34m{number + 1}. Repo_id: {states_dict['CreatorName']} / {states_dict['repo_name']}, download: {states_dict['downloadCount']}\033[0m")
 
@@ -184,7 +299,7 @@ class Civitai(Basic_config):
 
                 if Limit_choice and choice == max_number:
                     return self.repo_select_civitai(state=state, auto=auto, recursive=False)
-                elif choice == 0:
+                elif choice == 0 and include_hugface:
                     return {}
                 elif 1 <= choice <= max_number:
                     repo_dict = sorted_list[choice - 1]
@@ -193,6 +308,27 @@ class Civitai(Basic_config):
                     return repo_dict
                 else:
                     print(f"\033[33mPlease enter the numbers 1~{max_number}\033[0m")
+                
+
+    def download_model(self, url, save_path):
+        if not self.is_url_valid(url):
+            raise requests.HTTPError("URL is invalid.")
+
+        response = requests.get(url, stream=True)
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
+            raise requests.HTTPError(f"Invalid URL: {response.status_code}")
+
+        os.makedirs(os.path.dirname(save_path),exist_ok=True)
+
+        with tqdm.wrapattr(open(save_path, "wb"), "write",
+            miniters=1, desc="Downloading model",
+            total=int(response.headers.get('content-length', 0))) as fout:
+            for chunk in response.iter_content(chunk_size=8192):
+                fout.write(chunk)
+        self.logger.info(f"Downloaded file saved to {save_path}")
 
 
     def version_select_civitai(self, state, auto, recursive: bool = True):
@@ -317,124 +453,3 @@ class Civitai(Basic_config):
         save_path = os.path.join(self.base_civitai_dir, repo_level_dir, file_version_dir, save_file_name)
         self.return_dict["model_path"] = save_path
         return save_path
-    
-
-    def civitai_security_check(self,value):
-        """
-        Note:
-        The virus scan and pickle scan are used to make the decision.
-        Returns True if judged to be dangerous.
-        """
-        check_list = [value["pickleScanResult"],value["virusScanResult"]]
-
-        if all(status == "Success" for status in check_list):
-            return False
-        else:
-            return True
-        
-        
-
-    def requests_civitai(self, query, auto, model_type):
-        """
-        Fetch models from Civitai based on a query and model type.
-
-        Parameters:
-        - query: Search query string.
-        - auto: Flag for automatic selection.
-        - model_type: Type of model to search for.
-            arg:[Checkpoint,
-                 TextualInversion,
-                 Hypernetwork,
-                 AestheticGradient,
-                 LORA,
-                 Controlnet,
-                 Poses
-                ]
-
-        Returns:
-        - str: Download URL of the selected file.
-        (url, save_path)
-        """
-        state = []
-        model_ver_list = []
-        version_dict = {}
-
-        params = {"query": query, "types": model_type, "sort": "Most Downloaded"}
-
-        try:
-            response = requests.get("https://civitai.com/api/v1/models", params=params)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            raise HTTPError(f"Could not get elements from the URL. {err}")
-        else:
-            try:
-                data = response.json()
-            except AttributeError:
-                raise ValueError("Invalid JSON response")
-
-        items = data["items"]
-
-        for item in items:
-            for model_ver in item["modelVersions"]:
-                files_list = []
-                for model_value in model_ver["files"]:
-                    security_risk = self.civitai_security_check(model_value)
-                    if (any(check_word in model_value for check_word in ["downloadUrl", "name"]) and
-                        not security_risk
-                        ):
-                        file_status = {
-                            "filename": model_value["name"],
-                            "file_id": model_value["id"],
-                            "fp": model_value["metadata"]["fp"],
-                            "file_format": model_value["metadata"]["format"],                
-                            "download_url": model_value["downloadUrl"],
-                        }
-                        files_list.append(file_status)
-
-                version_dict = {
-                    "id": model_ver["id"],
-                    "name": model_ver["name"],
-                    "downloadCount": model_ver["stats"]["downloadCount"],
-                    "files": files_list,
-                }
-
-                if files_list:
-                    model_ver_list.append(version_dict)
-
-            if all(check_txt in item.keys() for check_txt in ["name", "stats", "creator"]):
-                state_dict = {
-                    "repo_name": item["name"],
-                    "repo_id": item["id"],
-                    "favoriteCount": item["stats"]["favoriteCount"],
-                    "downloadCount": item["stats"]["downloadCount"],
-                    "CreatorName": item["creator"]["username"],
-                    "version_list": model_ver_list,
-                }
-
-                if model_ver_list:
-                    state.append(state_dict)
-
-        if not state:
-            self.logger.warning("There is no model in Civitai that fits the criteria.")
-            return {}
-            #raise ValueError("No matches found for your criteria")
-
-        dict_of_civitai_repo = self.repo_select_civitai(
-            state = state,
-            auto = auto
-            )
-        
-        if not dict_of_civitai_repo:
-            return []
-        
-        files_list = self.version_select_civitai(
-            state = dict_of_civitai_repo,
-            auto = auto
-            )
-
-        file_status_dict = self.file_select_civitai(
-            state_list = files_list,
-            auto = auto)
-
-        save_path = self.civitai_save_path()
-        return [file_status_dict["download_url"],save_path]

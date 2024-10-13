@@ -338,7 +338,8 @@ class Huggingface(Basic_config):
             auto_set:bool,
             model_format:str = "single_file", # "all","diffusers"
             Recursive_execution:bool = False,
-            extra_limit=None
+            extra_limit=None,
+            include_civitai=False
             ):
         """
         auto_set: bool
@@ -356,7 +357,7 @@ class Huggingface(Basic_config):
             else:
                 limit = 15
         
-        repo_model_list = self.hf_models(model_name,limit)
+        original_repo_model_list = self.hf_models(model_name,limit)
         previous_model_selection = self.check_func_hist(
             key="hf_model_name",
             return_value=True
@@ -366,18 +367,19 @@ class Huggingface(Basic_config):
             return_value=True,
             missing_value=[]
             )
-  
+        repo_model_list = [model for model in original_repo_model_list if model["model_id"] not in models_to_exclude]
+
         if not auto_set:
             print("\033[34mThe following model paths were found\033[0m")
             if previous_model_selection is not None:
                 print(f"\033[34mPrevious Choice: {previous_model_selection}\033[0m")
-            print("\033[34m0.Search civitai\033[0m")
+            if include_civitai:
+                print("\033[34m0.Search civitai\033[0m")
             for (i,(model_dict)) in enumerate(repo_model_list,1):
                 _hf_model_id = model_dict["model_id"]
                 _hf_model_like = model_dict["like"]
-                warning_txt = "\033[31m[danger]" if _hf_model_id in models_to_exclude else ""
-                print(f"\033[34m{i}. {warning_txt}model path: {_hf_model_id}, evaluation: {_hf_model_like}\033[0m")
-
+                print(f"\033[34m{i}. model path: {_hf_model_id}, evaluation: {_hf_model_like}\033[0m")
+                
             if Recursive_execution:
                 print("\033[34m16.Other than above\033[0m")
 
@@ -387,7 +389,7 @@ class Huggingface(Basic_config):
                 except ValueError:
                     print("\033[33mOnly natural numbers are valid.\033[0m")
                     continue
-                if choice == 0:
+                if choice == 0 and include_civitai:
                     return "_hf_no_model"
                 elif (not Recursive_execution) and choice == len(repo_model_list)+1:
                     return self.model_name_search(
