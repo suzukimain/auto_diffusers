@@ -126,10 +126,12 @@ class data_config:
         "diffusion_pytorch_model.safetensors",
         ]
     
+    
     def __init__(self):
         self.single_file_only = False
         self.hf_token = None
         self.force_download = False
+        self.include_unscanned_models = False
         self.return_dict = {
             "model_path" : "",
             "load_type" : "",# "" or "from_single_file" or "from_pretrained"            

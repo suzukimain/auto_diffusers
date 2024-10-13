@@ -134,7 +134,7 @@ class Huggingface(Basic_config):
 
     def model_data_get(
             self,
-            path,
+            path:str,
             model_info=None
             ) -> dict:
         
@@ -274,7 +274,7 @@ class Huggingface(Basic_config):
             model_name,
             limit
             )
-        return_list = []
+        model_settings_list = []
         for item in data:
             model_id = item["id"]
             like = item["likes"]
@@ -286,8 +286,6 @@ class Huggingface(Basic_config):
                 (not private_value) and
                 (file_list or diffusers_model_exists)
                 ):
-                #model_status = self.model_data_get(model_id)
-                #if not model_status["security_risk"]:
                 model_dict = {
                     "model_id":model_id,
                     "like" : like,
@@ -296,10 +294,10 @@ class Huggingface(Basic_config):
                     "diffusers_model_exists": diffusers_model_exists,
                     "security_risk" : 1
                     }
-                return_list.append(model_dict)
-        if not return_list:
+                model_settings_list.append(model_dict)
+        if not model_settings_list:
             print("No models matching your criteria were found on huggingface.")            
-        return return_list
+        return model_settings_list
     
 
     def find_max_like(self,model_dict_list:list):
@@ -334,7 +332,7 @@ class Huggingface(Basic_config):
                     (not any(fi_path.endswith(ex) for ex in self.exclude)) and
                     (not any(fi_path.endswith(st) for st in self.config_file_list))):
                     check_file_value.append(fi_path)
-        return check_file_value
+        return check_file_value        
     
     
     def model_name_search(
@@ -361,7 +359,11 @@ class Huggingface(Basic_config):
             else:
                 limit = 15
         
-        repo_model_list = self.hf_models(model_name,limit)
+        original_repo_model_list = self.hf_models(
+            model_name=model_name,
+            limit=limit
+            )
+
         previous_model_selection = self.check_func_hist(
             key="hf_model_name",
             return_value=True
@@ -371,6 +373,8 @@ class Huggingface(Basic_config):
             return_value=True,
             missing_value=[]
             )
+        
+        repo_model_list = [model for model in original_repo_model_list if model["model_id"] not in models_to_exclude]
   
         if not auto_set:
             print("\033[34mThe following model paths were found\033[0m")
@@ -405,9 +409,10 @@ class Huggingface(Basic_config):
                 elif 1 <= choice <= len(repo_model_list):
                     choice_path_dict = repo_model_list[choice-1]
                     choice_path = choice_path_dict["model_id"]
-
+                    
                     # The process here excludes models that may have security problems.
-                    if self.model_data_get(path=choice_path)["security_risk"] == 1:
+                    security_risk = self.model_data_get(path=choice_path)["security_risk"]
+                    if security_risk == 2: # Dangerous Model
                         print("\033[31mThis model has a security problem.\033[0m")
                         if choice_path not in models_to_exclude:
                             models_to_exclude.append(choice_path)
@@ -416,9 +421,10 @@ class Huggingface(Basic_config):
                             value = models_to_exclude
                             )
                         continue
-
                     else:
-                        break
+                        if security_risk == 1:
+                            self.logger.warning("Warning: The specified model has not been security scanned")
+                        break     
                 else:
                     print(f"\033[34mPlease enter the numbers 1~{len(repo_model_list)}\033[0m")
         else:
@@ -428,16 +434,13 @@ class Huggingface(Basic_config):
                     check_repo = check_dict["model_id"]
 
                     # The process here excludes models that may have security problems.
-                    if not self.model_data_get(path=repo_info)["security_risk"] == 0:
+                    if not self.model_data_get(path=check_repo)["security_risk"] == 0:
                         continue
 
-                    if model_format == "diffusers" and self.diffusers_model_check(check_repo):
-                        choice_path = check_repo
-                        break
-                    elif model_format == "single_file" and self.get_hf_files(repo_info):
-                        choice_path = check_repo
-                        break
-                    elif model_format == "all" and (self.diffusers_model_check(check_repo) or self.get_hf_files(repo_info)):
+                    if ((model_format == "diffusers" and self.diffusers_model_check(check_repo)) or
+                        (model_format == "single_file" and self.get_hf_files(repo_info)) or
+                        (model_format == "all" and (self.diffusers_model_check(check_repo) or self.get_hf_files(repo_info)))
+                        ):
                         choice_path = check_repo
                         break
 

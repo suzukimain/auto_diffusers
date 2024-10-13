@@ -38,9 +38,6 @@ class ProcessBarRun:
                  fin_pofix="Finish!",
                  desc_dot: bool = False,
                  pofix_dot: bool = False,
-                 download_bar:bool = False,
-                 url:str = "",
-                 save_path:str = "",
                  **ex_word):
 
         self.total = total
