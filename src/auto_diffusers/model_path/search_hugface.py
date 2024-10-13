@@ -232,18 +232,23 @@ class Huggingface(Basic_config):
         return data
     
 
-    def hf_security_check(self,check_dict):
-        # Returns True if dangerous.
-        # Also returns False in case of failure.
+    def hf_security_check(self,check_dict) -> int:
+        """
+        Return:
+            0 for models that passed the scan,
+            1 for models not scanned or in error, and
+            2 if there is a security risk.
+        """
         try:
-            if (check_dict["securityStatus"]["hasUnsafeFile"] or
-                (not check_dict["securityStatus"]["scansDone"])
-                ):
-                return True
+            status = check_dict["securityStatus"]
+            if status["hasUnsafeFile"]:
+                return 2
+            elif not status["scansDone"]:
+                return 1 
             else:
-                return False
+                return 0
         except KeyError:
-            return False
+            return 2
         
 
     def check_if_file_exists(self,hf_repo_info):
@@ -289,7 +294,7 @@ class Huggingface(Basic_config):
                     "model_info" : item,
                     "file_list" : file_list,
                     "diffusers_model_exists": diffusers_model_exists,
-                    "security_risk" : False
+                    "security_risk" : 1
                     }
                 return_list.append(model_dict)
         if not return_list:
@@ -402,7 +407,7 @@ class Huggingface(Basic_config):
                     choice_path = choice_path_dict["model_id"]
 
                     # The process here excludes models that may have security problems.
-                    if self.model_data_get(path=choice_path)["security_risk"]:
+                    if self.model_data_get(path=choice_path)["security_risk"] == 1:
                         print("\033[31mThis model has a security problem.\033[0m")
                         if choice_path not in models_to_exclude:
                             models_to_exclude.append(choice_path)
@@ -423,7 +428,7 @@ class Huggingface(Basic_config):
                     check_repo = check_dict["model_id"]
 
                     # The process here excludes models that may have security problems.
-                    if self.model_data_get(path=repo_info)["security_risk"]:
+                    if not self.model_data_get(path=repo_info)["security_risk"] == 0:
                         continue
 
                     if model_format == "diffusers" and self.diffusers_model_check(check_repo):
