@@ -1,4 +1,4 @@
-from ..model_path.perform_path_search import Search_cls
+from auto_diffusers.model_path.perform_path_search import Search_cls
 
 
 test_cases = [
