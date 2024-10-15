@@ -88,7 +88,12 @@ display(image)
 | download       | bool   | False       | ー                | Returns the path where the file was downloaded. |
 | model_format   | string | "single_file" | `all`,<br> `diffusers`,<br> `single_file`| Specifies the format of the model. [Details](#model_format) |
 | model_type     | string | "Checkpoint"| `Checkpoint`,<br>`TextualInversion`,<br>`Hypernetwork`,<br>`AestheticGradient`,<br>`LORA`,<br>`Controlnet`,<br>`Poses` | Valid only in Civitai. |
+<<<<<<< HEAD
 | include_params | bool   | False       | ー                | Returns the model path or a dictionary with parameters. |
+=======
+| preferred_hub  | string | "hugface" | `hugface`,<br> `civitai` | Select the hubs you prefer to search. |
+| include_parameters  | bool   | True        | ー           | If False, only the model path is returned; if True, a dictionary with status is returned. |
+>>>>>>> 69939eb6659aeed338f06f35f7c2d4333afe26fc
 | branch         | string | "main"      | ー                | Specify the branches of huggingface and civitai. |
 | local_file_only| bool   | False       | ー                | Search local folders only.<br>**In the case of `auto`, files with names similar to `search_word` will be given priority.** |
 | hf_token       | string | None        | ー                | Token used for authentication with Hugging Face. |
