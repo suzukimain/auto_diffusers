@@ -91,51 +91,10 @@ jobs:
           name: release-dists
           path: dist/
 
-  test-combinations:
-    runs-on: ubuntu-latest
-    needs: release-build
-    strategy:
-      matrix:
-        combination:
-          - { search_word: "any", auto: true, model_format: "all" }
-          - { search_word: "any", auto: true, model_format: "diffusers" }
-          - { search_word: "any", auto: true, model_format: "single_file" }
-          - { search_word: "any", auto: false, model_format: "all" }
-          - { search_word: "any", auto: false, model_format: "diffusers" }
-          - { search_word: "any", auto: false, model_format: "single_file" }
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -U diffusers setuptools wheel twine build
-          pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Run tests
-        run: |
-          for combination in ${{ toJSON(matrix.combination) }}
-          do
-            search_word=$(echo $combination | jq -r .search_word)
-            auto=$(echo $combination | jq -r .auto)
-            model_format=$(echo $combination | jq -r .model_format)
-            echo "Running test with search_word=$search_word, auto=$auto, model_format=$model_format"
-            python -m unittest discover -s tests --search-word $search_word --auto $auto --model-format $model_format
-          done
-
   pypi-publish:
     name: Upload release to PyPI
     runs-on: ubuntu-latest
-    needs: test-combinations
-    if: success()
+    needs: release-build
     environment:
       name: pypi_release
       url: https://pypi.org/p/auto_diffusers
@@ -157,8 +116,29 @@ jobs:
 
       - name: Test installing auto_diffusers and importing
         run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install auto_diffusers && pip uninstall auto_diffusers -y
           pip install -i https://testpypi.python.org/pypi auto_diffusers
           python -c "from auto_diffusers import *"
+
+      - name: Test combinations
+        run: |
+          matrix='[
+            {"search_word": "any", "auto": true, "model_format": "all"},
+            {"search_word": "any", "auto": true, "model_format": "diffusers"},
+            {"search_word": "any", "auto": true, "model_format": "single_file"},
+            {"search_word": "any", "auto": false, "model_format": "all"},
+            {"search_word": "any", "auto": false, "model_format": "diffusers"},
+            {"search_word": "any", "auto": false, "model_format": "single_file"}
+          ]'
+          for combination in $(echo $matrix | jq -c '.[]'); do
+            search_word=$(echo $combination | jq -r .search_word)
+            auto=$(echo $combination | jq -r .auto)
+            model_format=$(echo $combination | jq -r .model_format)
+            echo "Running test with search_word=$search_word, auto=$auto, model_format=$model_format"
+            python -m unittest discover -s tests --search-word $search_word --auto $auto --model-format $model_format
+          done
 
       - name: Publish release distributions to PyPI
         if: success()
