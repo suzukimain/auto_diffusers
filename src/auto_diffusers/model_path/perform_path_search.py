@@ -11,7 +11,7 @@ class Search_cls(Config_Mix):
 
     def __call__(
             self,
-            seach_word,
+            search_word,
             auto=True,
             download=False,
             model_type="Checkpoint",
@@ -23,7 +23,7 @@ class Search_cls(Config_Mix):
             civitai_token = None,
             include_params = False,
             ):
-        self.seach_word = seach_word
+                
         self.auto = auto
         self.download = download
         self.model_type = model_type
@@ -38,7 +38,7 @@ class Search_cls(Config_Mix):
         self.hf_login(hf_token)
 
         result = self.model_set(
-                  model_select = seach_word,
+                  model_select = search_word,
                   auto = auto,
                   download = download,
                   model_format = model_format,
