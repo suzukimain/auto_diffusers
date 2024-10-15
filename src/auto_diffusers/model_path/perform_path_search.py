@@ -21,7 +21,7 @@ class Search_cls(Config_Mix):
             local_file_only = False,
             hf_token = None,
             civitai_token = None,
-            include_params = True,
+            include_params = False,
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -332,5 +332,3 @@ class Search_cls(Config_Mix):
             return self.return_dict
         else:
             return model_path
-        
-            
