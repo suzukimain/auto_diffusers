@@ -16,12 +16,12 @@ class Search_cls(Config_Mix):
             download=False,
             model_type="Checkpoint",
             model_format = "single_file",
-            hf_token = None,
             branch = "main",
-            priority = "hugface",
+            priority_hub = "hugface",
             local_file_only = False,
-            civitai_token = "",
-            include_parameters = True,
+            hf_token = None,
+            civitai_token = None,
+            include_params = True,
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -44,10 +44,10 @@ class Search_cls(Config_Mix):
                   model_format = model_format,
                   model_type = model_type,
                   branch = branch,
-                  priority = priority,
+                  priority_hub = priority_hub,
                   local_file_only = local_file_only,
                   civitai_token = civitai_token,
-                  include_parameters = include_parameters
+                  include_params = include_params
                   )
         return result
         
@@ -150,10 +150,10 @@ class Search_cls(Config_Mix):
             model_format = "single_file",
             model_type = "Checkpoint",
             branch = "main",
-            priority = "hugface",
+            priority_hub = "hugface",
             local_file_only = False,
-            civitai_token = "",
-            include_parameters = False
+            civitai_token = None,
+            include_params = False
             ):
         """
         parameter:
@@ -281,7 +281,7 @@ class Search_cls(Config_Mix):
             self.return_dict["repo_status"]["repo_name"] = repo_name
                 
         else:
-            if priority == "hugface":
+            if priority_hub == "hugface":
                 model_path = self.hf_model_set(
                     model_select=model_select,
                     auto=auto,
@@ -327,8 +327,8 @@ class Search_cls(Config_Mix):
         self.update_json_dict(
             key = "model_path",
             value = model_path
-            )
-        if include_parameters:
+            )       
+        if include_params:
             return self.return_dict
         else:
             return model_path

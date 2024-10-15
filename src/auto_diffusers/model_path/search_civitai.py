@@ -53,7 +53,7 @@ class Civitai(Basic_config):
             auto,
             model_type,
             download=True,
-            civitai_token="",
+            civitai_token=None,
             skip_error=True,
             include_hugface=True
             ):
@@ -138,7 +138,7 @@ class Civitai(Basic_config):
             query, 
             auto, 
             model_type,
-            civitai_token="",
+            civitai_token=None,
             include_hugface=True
             ):
         """
@@ -324,7 +324,7 @@ class Civitai(Basic_config):
             self, 
             url, 
             save_path, 
-            civitai_token=""
+            civitai_token=None
             ):
         if not self.is_url_valid(url):
             raise requests.HTTPError("URL is invalid.")
