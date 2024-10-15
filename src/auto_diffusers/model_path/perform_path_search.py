@@ -17,10 +17,11 @@ class Search_cls(Config_Mix):
             model_type="Checkpoint",
             model_format = "single_file",
             branch = "main",
-            priority = "hugface",
+            priority_hub = "hugface",
             local_file_only = False,
-            return_path = True,
-            exclude_untested_model = False
+            hf_token = None,
+            civitai_token = None,
+            include_params = False,
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -28,12 +29,13 @@ class Search_cls(Config_Mix):
         self.model_type = model_type
         self.branch = branch
         self.local_file_only=local_file_only
-        self.model_format =model_format
-        self.return_path = return_path
-        self.exclude_untested_model = exclude_untested_model
+        self.model_format = model_format
+        self.single_file_only = True if "single_file" == model_format else False
 
         self.return_dict["model_status"]["search_word"] = seach_word
         self.return_dict["model_status"]["local"] = True if download or local_file_only else False
+
+        self.hf_login(hf_token)
 
         result = self.model_set(
                   model_select = seach_word,
@@ -42,9 +44,10 @@ class Search_cls(Config_Mix):
                   model_format = model_format,
                   model_type = model_type,
                   branch = branch,
-                  priority = priority,
+                  priority_hub = priority_hub,
                   local_file_only = local_file_only,
-                  return_path = return_path
+                  civitai_token = civitai_token,
+                  include_params = include_params
                   )
         return result
         
@@ -86,29 +89,37 @@ class Search_cls(Config_Mix):
                 )
         return search_path
     
+
     def hf_model_set(
             self,
             model_select,
             auto,
             model_format,
             model_type,
-            download
+            download,
+            include_civitai=True
             ):
         model_path = ""
         model_name = self.model_name_search(
             model_name=model_select,
             auto_set=auto,
-            model_format=model_format)
+            model_format=model_format,
+            include_civitai=include_civitai
+            )
         #hf->civit
         if not model_name == "_hf_no_model":
             file_path = self.file_name_set(
                 model_select=model_name,
                 auto=auto,
                 model_format=model_format,
-                model_type=model_type)
+                model_type=model_type
+                )
             if file_path == "_DFmodel":
                 if download:
-                    model_path = self.run_hf_download(model_name,branch=self.branch)
+                    model_path = self.run_hf_download(
+                        model_name,
+                        branch=self.branch
+                        )
                 else:
                     model_path = model_name
                 self.return_dict["model_path"] = model_path
@@ -128,32 +139,7 @@ class Search_cls(Config_Mix):
             return model_path
         else:
             return "_hf_no_model"
-
-
-    def civitai_model_set(
-            self,
-            model_select,
-            auto,
-            model_type,
-            download,
-            skip_error=True
-            ):
-
-        model_path = self.civitai_download(
-            model_select,
-            auto,
-            model_type,
-            download=download)
-        
-        
-        self.return_dict["model_status"]["single_file"] = True
-        if (not skip_error) and (not model_path):
-            raise ValueError("No models were found in civitai.")
-        elif download:
-            self.return_dict["load_type"] = "from_single_file"
-        else:
-            self.return_dict["load_type"] = ""
-        return model_path
+    
 
 
     def model_set(
@@ -164,9 +150,10 @@ class Search_cls(Config_Mix):
             model_format = "single_file",
             model_type = "Checkpoint",
             branch = "main",
-            priority = "hugface",
+            priority_hub = "hugface",
             local_file_only = False,
-            return_path = True
+            civitai_token = None,
+            include_params = False
             ):
         """
         parameter:
@@ -182,9 +169,7 @@ class Search_cls(Config_Mix):
         
         if not model_format in ["all","diffusers","single_file"]:
             raise TypeError('The model_format is valid only for one of the following: "all","diffusers","single_file"')
-
-        
-        
+      
         model_path = model_select
         file_path = ""
         if model_select in self.model_dict:
@@ -227,12 +212,14 @@ class Search_cls(Config_Mix):
 
         elif model_select.startswith("https://civitai.com/"):
             model_path = self.civitai_model_set(
-                    model_select=model_select,
+                    search_word=model_select,
                     auto=auto,
                     model_type=model_type,
                     download=download,
+                    civitai_token=civitai_token,
                     skip_error=False
                     )
+                    
 
         elif os.path.isfile(model_select):
             model_path = model_select
@@ -294,30 +281,35 @@ class Search_cls(Config_Mix):
             self.return_dict["repo_status"]["repo_name"] = repo_name
                 
         else:
-            if priority == "hugface":
+            if priority_hub == "hugface":
                 model_path = self.hf_model_set(
                     model_select=model_select,
                     auto=auto,
                     model_format=model_format,
                     model_type=model_type,
-                    download=download
+                    download=download,
+                    include_civitai=True
                     )
                 if model_path == "_hf_no_model":
                     model_path = self.civitai_model_set(
-                        model_select=model_select,
+                        search_word=model_select,
                         auto=auto,
                         model_type=model_type,
-                        download=download
+                        download=download,
+                        civitai_token=civitai_token,
+                        include_hugface=False
                         )
                     if not model_path:
                         raise ValueError("No models matching the criteria were found.")
                 
             else:
                 model_path = self.civitai_model_set(
-                    model_select=model_select,
+                    search_word=model_select,
                     auto=auto,
                     model_type=model_type,
-                    download=download
+                    download=download,
+                    civitai_token=civitai_token,
+                    include_hugface=True
                     )
                 if not model_path:
                     model_path = self.hf_model_set(
@@ -325,15 +317,18 @@ class Search_cls(Config_Mix):
                         auto = auto,
                         model_format=model_format,
                         model_type=model_type,
-                        download=download
+                        download=download,
+                        include_civitai=False
                         )
                     if model_path == "_hf_no_model":
                         raise ValueError("No models matching the criteria were found.")
                 
         self.return_dict["model_path"] = model_path
-        #It is not called, but should not be deleted because it is updating the dictionary.
-        update_model_path = self.check_func_hist(key="model_path",value=model_path)
-        if return_path:
-            return model_path
-        else:
+        self.update_json_dict(
+            key = "model_path",
+            value = model_path
+            )       
+        if include_params:
             return self.return_dict
+        else:
+            return model_path

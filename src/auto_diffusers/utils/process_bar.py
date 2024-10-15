@@ -38,9 +38,6 @@ class ProcessBarRun:
                  fin_pofix="Finish!",
                  desc_dot: bool = False,
                  pofix_dot: bool = False,
-                 download_bar:bool = False,
-                 url:str = "",
-                 save_path:str = "",
                  **ex_word):
 
         self.total = total
@@ -119,7 +116,6 @@ class ProcessBarRun:
         because they cannot be used in the case of the download_with_bar function.
         """
         self.dot_count = 0
-        chenge_check = False
         while not self.stop_dot.is_set():
             for num in range(self.max_dots):
                 with self.tqdm_lock:

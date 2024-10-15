@@ -22,16 +22,18 @@ class download:
 
     """
 
-    def __init__(self,
-                 url: str,
-                 save_path: str,
-                 desc: str = "",
-                 fin_desc = "",
-                 pofix: str = "",
-                 fin_pofix = "Finish!",
-                 desc_dot: bool = False,
-                 pofix_dot: bool = False,
-                 **ex_word):
+    def __init__(
+            self,
+            url: str,
+            save_path: str,
+            desc: str = "",
+            fin_desc = "",
+            pofix: str = "",
+            fin_pofix = "Finish!",
+            desc_dot: bool = False,
+            pofix_dot: bool = False,
+            **ex_word
+            ):
         super().__init__()
         self.url = url
         self.save_path = save_path
@@ -71,14 +73,11 @@ class download:
             for chunk in self.response.iter_content(chunk_size=4096):
                 self.tqdm_obj.write(chunk)
 
-
     def __del__(self):
         self.stop()
 
-
     def __enter__(self):
         return self
-
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
@@ -97,14 +96,11 @@ class download:
 
     
     def response_get(self,url):
-        if not self.is_url_valid(url):
-            raise requests.HTTPError("URL is invalid.")
-        response = requests.get(url, stream=True)
         try:
+            response = requests.get(url, stream=True)    
             response.raise_for_status()
         except requests.HTTPError:
             raise requests.HTTPError(f"Invalid URL: {response.status_code}")
-        
         return response
     
 
@@ -131,7 +127,7 @@ class download:
 
                     setattr(self.tqdm_obj, "desc", self.desc + desc_dot_txt)
                     setattr(self.tqdm_obj, "postfix", self.pofix + pofix_dot_txt)
-                    self.tqdm_obj.refresh()
+                    self.tqdm_obj.refresh() #type: ignore
 
                     if self.stop_dot.is_set():
                         break

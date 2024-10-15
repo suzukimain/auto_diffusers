@@ -1,9 +1,17 @@
+import os
 import re
+from numpy import full
 import requests
 from requests import HTTPError
 
-from diffusers import DiffusionPipeline
-from huggingface_hub import hf_hub_download
+from diffusers import DiffusionPipeline #type: ignore
+from huggingface_hub import (
+    hf_hub_download, 
+    HfApi,
+    login
+    )
+from dataclasses import asdict
+    
 
 from ..setup.base_config import Basic_config
 
@@ -19,10 +27,10 @@ class Huggingface(Basic_config):
         self.diffuser_model=False
         self.check_choice_key = ""
         self.choice_number = -1
-        self.file_path_dict={}
         self.special_file=""
         self.hf_repo_id = ""
-        
+        self.force_download = False
+        self.hf_api = HfApi()
 
 
     def repo_name_or_path(self,model_name_or_path):
@@ -37,16 +45,29 @@ class Huggingface(Basic_config):
         repo_id = f"{match.group(1)}/{match.group(2)}"
         weights_name = match.group(3)
         return repo_id, weights_name
+    
+    def hf_login(self,token=None):
+        if token:
+            login(token)
+    
+
+    def _hf_repo_download(self,path,branch="main"):
+        return DiffusionPipeline.download(
+            pretrained_model_name = path,
+            revision=branch,
+            force_download=self.force_download,
+            )
 
 
-    def run_hf_download(self,url_or_path,branch="main") -> str:
+    def run_hf_download(
+            self,
+            url_or_path,
+            branch="main",
+            ) -> str:
         """
         retrun:
         os.path(str)
-        """
-        def _hf_repo_download(path,branch="main"):
-            model_path = DiffusionPipeline.download(path,revision=branch)
-            return model_path
+        """     
         model_file_path = ""
         if any(url_or_path.startswith(checked) for checked in self.VALID_URL_PREFIXES):
             if not self.is_url_valid(url_or_path):
@@ -56,11 +77,18 @@ class Huggingface(Basic_config):
             self.logger.debug(f"hf_path: {hf_path} \nfile_name: {file_name}")
             if hf_path and file_name:
                 #single_file = True
-                model_file_path = hf_hub_download(hf_path, file_name)
+                model_file_path = hf_hub_download(
+                    repo_id = hf_path,
+                    filename=file_name,
+                    force_download=self.force_download,
+                    )
             elif hf_path and (not file_name):
                 if self.diffusers_model_check(hf_path):
                     #single_file = False
-                    model_file_path = _hf_repo_download(url_or_path,branch=branch)
+                    model_file_path = self._hf_repo_download(
+                        url_or_path,
+                        branch=branch
+                        )
                 else:
                     raise HTTPError("Invalid hf_path")
             else:
@@ -69,7 +97,7 @@ class Huggingface(Basic_config):
         elif self.diffusers_model_check(url_or_path):
             self.logger.debug(f"url_or_path: {url_or_path}")
             #single_file = False
-            model_file_path = _hf_repo_download(url_or_path,branch=branch)
+            model_file_path = self._hf_repo_download(url_or_path,branch=branch)
         else:
             raise TypeError(f"Invalid path_or_url: {url_or_path}")
         return model_file_path # type: ignore
@@ -78,89 +106,201 @@ class Huggingface(Basic_config):
     def model_safe_check(self,model_list) ->str:
         if len(model_list)>1:
            for check_model in model_list:
-                match = bool(re.search(r"(?i)[-ー_＿]sfw", check_model))
-                if match:
+                if bool(re.search(r"(?i)[-ー_＿](sfw|safe)", check_model)):
                     return check_model
         return model_list[0]
 
 
-    def list_safe_check(self,model_list) -> list:
+    def list_safe_sort(self,model_list) -> list:
         for check_model in model_list:
-            if bool(re.search(r"(?i)[-ー_＿]sfw", check_model)):
+            if bool(re.search(r"(?i)[-ー_＿](sfw|safe)", check_model)):
                 model_list.remove(check_model)
                 model_list.insert(0, check_model)
                 break
         return model_list
 
 
-    def diffusers_model_check(self,checked_model: str) -> bool:
-        index_url=f"https://huggingface.co/{checked_model}/blob/main/model_index.json"
+    def diffusers_model_check(
+            self,
+            checked_model: str,
+            branch = "main"
+            ) -> bool:
+        index_url=f"https://huggingface.co/{checked_model}/blob/{branch}/model_index.json"
         return self.is_url_valid(index_url)
 
 
     def hf_model_check(self,path) -> bool:
+        # Determine if a repository exists on the huggingface.
         return self.is_url_valid(f"https://huggingface.co/{path}")
 
 
-    def data_get(self,path) -> list:
-        url = f"https://huggingface.co/api/models/{path}"
-        data = requests.get(url).json()
+    def model_data_get(
+            self,
+            path:str,
+            model_info=None
+            ) -> dict:
+        
+        data = model_info or self.hf_model_info(path)
         file_value_list = []
-        df_model_bool=False
-        #fix error': 'Repo model <repo_id>/<model> is gated. You must be authenticated to access it.
+        df_model=False
+        # fix error': 'Repo model <repo_id>/<model> is gated. You must be authenticated to access it.
         try:
             siblings=data["siblings"]
         except KeyError:
-            return []
+            return {}
 
         for item in siblings:
-            data["siblings"]
             file_path=item["rfilename"]
-            #model_index.json outside the root directory is not recognized
-            if file_path=="model_index.json" and (not self.single_file_only):
-                df_model_bool=True
+            # model_index.json outside the root directory is not recognized
+            if "model_index.json"==file_path and (not self.single_file_only):
+                df_model=True
             elif (
                 any(file_path.endswith(ext) for ext in self.exts) and
                 not any(file_path.endswith(ex) for ex in self.exclude)
                 ):
                 file_value_list.append(file_path)
-        #↓{df_model,file_value_list}
-        self.file_path_dict.update({path:(df_model_bool,file_value_list)})
-        return file_value_list
+        return {
+            "model_info" : data,
+            "file_list" : file_value_list,
+            "diffusers_model_exists" : df_model,
+            "security_risk" : self.hf_security_check(data),
+            }
 
 
-    def hf_model_search(self,
-                        model_path,
-                        limit_num):
-        url = f"https://huggingface.co/api/models"#?search={model_name}"
-        params={"search":model_path,"sort":"likes","direction":-1,"limit":limit_num}#"downloads",}
+    def hf_model_search(
+            self,
+            model_path,
+            limit_num
+            ) -> list:
+        params={
+            "search" : model_path,
+            "sort" : "likes",
+            "direction" : -1,
+            "limit" : limit_num,
+            "fetch_config":True,
+            "full":True
+            }
+        return [asdict(value) for value in list(self.hf_api.list_models(**params))]
+
+
+    def old_hf_model_search(
+            self,
+            model_path,
+            limit_num
+            ):
+        """
+        NOTE:
+        It is not already in use, but is kept as a spare.
+        """
+        url = f"https://huggingface.co/api/models"
+        params = {
+            "search" : model_path,
+            "sort" : "likes",
+            "direction" : -1,
+            "limit" : limit_num
+            }
         return requests.get(url,params=params).json()
+    
+
+    def hf_model_info(
+            self,
+            model_name
+            ) -> dict:
+        hf_info = self.hf_api.model_info(
+            repo_id = model_name,
+            files_metadata=True,
+            securityStatus = True
+            )
+        model_dict = asdict(hf_info)
+        # When using asdict, securityStatus is not added to the dictionary and must be added separately.
+        if "securityStatus" not in model_dict.keys():
+            model_dict["securityStatus"] = hf_info.__dict__["securityStatus"]
+        return model_dict
+    
+
+    def old_hf_model_info(self,model_select) -> dict:
+        """
+        NOTE:
+        It is not already in use, but is kept as a spare.
+        """
+        url = f"https://huggingface.co/api/models/{model_select}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            raise HTTPError("A hugface login or token is required")
+        data = response.json()
+        return data
+    
+
+    def hf_security_check(self,check_dict) -> int:
+        """
+        Return:
+            0 for models that passed the scan,
+            1 for models not scanned or in error, and
+            2 if there is a security risk.
+        """
+        try:
+            status = check_dict["securityStatus"]
+            if status["hasUnsafeFile"]:
+                return 2
+            elif not status["scansDone"]:
+                return 1 
+            else:
+                return 0
+        except KeyError:
+            return 2
+        
+
+    def check_if_file_exists(self,hf_repo_info):
+        try:
+            return any(
+                item['rfilename'].endswith(ext) for item in hf_repo_info['siblings'] for ext in self.exts
+                )
+        except KeyError:
+            return False
 
 
-    def hf_models(self,
-                  model_name,
-                  limit):
+    def hf_models(
+            self,
+            model_name,
+            limit
+            ) -> list:
         """
         return:
         repo_model_list,with_like : list
         """
-        #self.logger.debug(f"model_name: {model_name}")
-        data=self.hf_model_search(model_name,limit)
-        final_list = []
-        if data:
-            for item in data:
-                model_id,like,private_value,tag_value = item["modelId"],item["likes"],item["private"],item["tags"]
-                if  ("audio-to-audio" not in tag_value and
-                    (not private_value)):
-                    if self.data_get(model_id):
-                        model_dict = {"model_id":model_id,
-                                      "like":like,}
-                        final_list.append(model_dict)
-        else:
-            print("No models matching your criteria were found on huggingface.")
-            return []
-        return final_list
+        exclude_tag = ["audio-to-audio"]
+        data = self.hf_model_search(
+            model_name,
+            limit
+            )
+        model_settings_list = []
+        for item in data:
+            model_id = item["id"]
+            like = item["likes"]
+            private_value = item["private"]
+            tag_value = item["tags"]
+            file_list = self.get_hf_files(item)
+            diffusers_model_exists = "model_index.json" in file_list and (not self.single_file_only)
+            if (all(tag not in tag_value for tag in exclude_tag) and
+                (not private_value) and
+                (file_list or diffusers_model_exists)
+                ):
+                model_dict = {
+                    "model_id":model_id,
+                    "like" : like,
+                    "model_info" : item,
+                    "file_list" : file_list,
+                    "diffusers_model_exists": diffusers_model_exists,
+                    "security_risk" : 1
+                    }
+                model_settings_list.append(model_dict)
+        if not model_settings_list:
+            print("No models matching your criteria were found on huggingface.")            
+        return model_settings_list
     
+
     def find_max_like(self,model_dict_list:list):
         """
         Finds the dictionary with the highest "like" value in a list of dictionaries.
@@ -181,15 +321,29 @@ class Huggingface(Basic_config):
 
     def sort_by_likes(self,model_dict_list: list):
         return sorted(model_dict_list, key=lambda x: x.get("like", 0), reverse=True)
+    
 
-
+    def get_hf_files(self,check_data) -> list:
+        check_file_value = []
+        if check_data:
+            siblings = check_data["siblings"]
+            for item in siblings:
+                fi_path=item["rfilename"]
+                if (any(fi_path.endswith(ext) for ext in self.exts) and
+                    (not any(fi_path.endswith(ex) for ex in self.exclude)) and
+                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
+                    check_file_value.append(fi_path)
+        return check_file_value        
+    
+    
     def model_name_search(
             self,
             model_name:str,
             auto_set:bool,
-            model_format:str = "single_file",#"all","diffusers"
+            model_format:str = "single_file", # "all","diffusers"
             Recursive_execution:bool = False,
-            extra_limit=None
+            extra_limit=None,
+            include_civitai=False
             ):
         """
         auto_set: bool
@@ -207,59 +361,88 @@ class Huggingface(Basic_config):
             else:
                 limit = 15
         
-        only_single_file = True if model_format == "single_file" else False
-        only_diffusers_model = True if model_format == "diffusers" else False
-        
-        repo_model_list = self.hf_models(model_name,limit)
-        model_history = self.check_func_hist(key="hf_model_name",
-                                             return_value=True)
-        if not auto_set:
-            print("\033[34mThe following model paths were found")
-            if model_history is not None:
-                print(f"Previous Choice: {model_history}")
-            print("0.Search civitai")
-            for (i,(model_dict)) in enumerate(repo_model_list,1):
-                model_name = model_dict["model_id"]
-                like = model_dict["like"]
-                print(f"{i}.model path: {model_name}, evaluation: {like}")
+        original_repo_model_list = self.hf_models(
+            model_name=model_name,
+            limit=limit
+            )
 
+        previous_model_selection = self.check_func_hist(
+            key="hf_model_name",
+            return_value=True
+            )
+        models_to_exclude:list = self.check_func_hist(
+            key="dangerous_model",
+            return_value=True,
+            missing_value=[]
+            )
+        
+        repo_model_list = [model for model in original_repo_model_list if model["model_id"] not in models_to_exclude]
+  
+        if not auto_set:
+            print("\033[34mThe following model paths were found\033[0m")
+            if previous_model_selection is not None:
+                print(f"\033[34mPrevious Choice: {previous_model_selection}\033[0m")
+            if include_civitai:
+                print("\033[34m0.Search civitai\033[0m")
+            for (i,(model_dict)) in enumerate(repo_model_list,1):
+                _hf_model_id = model_dict["model_id"]
+                _hf_model_like = model_dict["like"]
+                print(f"\033[34m{i}. model path: {_hf_model_id}, evaluation: {_hf_model_like}\033[0m")
+                
             if Recursive_execution:
-                print("16.Other than above")
+                print("\033[34m16.Other than above\033[0m")
 
             while True:
                 try:
                     choice = int(input("Select the model path to use: "))
                 except ValueError:
-                    print("\033[33mOnly natural numbers are valid.\033[34m")
+                    print("\033[33mOnly natural numbers are valid.\033[0m")
                     continue
-                if choice == 0:
+                if choice == 0 and include_civitai:
                     return "_hf_no_model"
-                elif (not Recursive_execution) and choice>=16 and choice == len(repo_model_list)+1:
+                elif (not Recursive_execution) and choice == len(repo_model_list)+1:
                     return self.model_name_search(
                         model_name = model_name,
                         auto_set = auto_set,
                         model_format=model_format,
-                        Recursive_execution = True,
+                        Recursive_execution = True, 
                         extra_limit=extra_limit
                         )
                 elif 1 <= choice <= len(repo_model_list):
                     choice_path_dict = repo_model_list[choice-1]
                     choice_path = choice_path_dict["model_id"]
-                    break
+                    
+                    # The process here excludes models that may have security problems.
+                    security_risk = self.model_data_get(path=choice_path)["security_risk"]
+                    if security_risk == 2: # Dangerous Model
+                        print("\033[31mThis model has a security problem.\033[0m")
+                        if choice_path not in models_to_exclude:
+                            models_to_exclude.append(choice_path)
+                        self.update_json_dict(
+                            key = "dangerous_model",
+                            value = models_to_exclude
+                            )
+                        continue
+                    else:
+                        if security_risk == 1:
+                            self.logger.warning("Warning: The specified model has not been security scanned")
+                        break     
                 else:
-                    print(f"Please enter the numbers 1~{len(repo_model_list)}")
-
+                    print(f"\033[34mPlease enter the numbers 1~{len(repo_model_list)}\033[0m")
         else:
             if repo_model_list:
                 for check_dict in self.sort_by_likes(repo_model_list):
+                    repo_info = check_dict["model_info"]
                     check_repo = check_dict["model_id"]
-                    if model_format == "diffusers" and self.diffusers_model_check(check_repo):
-                        choice_path = check_repo
-                        break
-                    elif model_format == "single_file" and self.hf_config_check(check_repo):
-                        choice_path = check_repo
-                        break
-                    elif model_format == "all" and (self.diffusers_model_check(check_repo) or self.hf_config_check(check_repo)):
+
+                    # The process here excludes models that may have security problems.
+                    if not self.model_data_get(path=check_repo)["security_risk"] == 0:
+                        continue
+
+                    if ((model_format == "diffusers" and self.diffusers_model_check(check_repo)) or
+                        (model_format == "single_file" and self.get_hf_files(repo_info)) or
+                        (model_format == "all" and (self.diffusers_model_check(check_repo) or self.get_hf_files(repo_info)))
+                        ):
                         choice_path = check_repo
                         break
 
@@ -275,42 +458,11 @@ class Huggingface(Basic_config):
                     else:
                         self.logger.warning("No models in diffusers format were found.")
                         choice_path = "_hf_no_model"
-            
-                #else:
-                #    choice_path = self.find_max_like(repo_model_list)
             else:
                 choice_path = "_hf_no_model"
 
         return choice_path
     
-
-    def get_hf_model_config(self,model_select):
-        url = f"https://huggingface.co/api/models/{model_select}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError:
-            raise HTTPError("A hugface login or token is required")
-        data = response.json()
-        return data
-    
-
-    def hf_config_check(self,model_select) -> bool:
-        try:
-            check_data = self.get_hf_model_config(model_select)
-        except Exception:
-            return False
-        check_file_value = []
-        if check_data:
-            siblings = check_data["siblings"]
-            for item in siblings:
-                fi_path=item["rfilename"]
-                if (any(fi_path.endswith(ext) for ext in self.exts) and
-                    (not any(fi_path.endswith(ex) for ex in self.exclude)) and
-                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
-                    check_file_value.append(fi_path)
-        return len(check_file_value)>0
-
 
     def file_name_set_sub(
             self,
@@ -327,7 +479,7 @@ class Huggingface(Basic_config):
                 else:
                     raise ValueError("No available files were found in the specified repository")
             else:
-                print("\033[34mOnly models in Diffusers format found")
+                print("\033[34mOnly models in Diffusers format found\033[0m")
                 while True:
                     result=input("Do you want to use it?[y/n]: ")
                     if result.lower() in ["y","yes"]:
@@ -339,9 +491,9 @@ class Huggingface(Basic_config):
                         elif sec_result.lower() in ["n","no"]:
                             raise ValueError("Processing was stopped because no corresponding model was found.")
                     else:
-                        print("Please enter only [y,n]")
+                        print("\033[34mPlease enter only [y,n]\033[0m")
 
-        file_value=self.list_safe_check(file_value)
+        file_value=self.list_safe_sort(file_value)
         if len(file_value)>=self.num_prints: #15
             start_number="1"
             choice_history = self.check_func_hist(key = check_key,return_value=True)
@@ -352,21 +504,23 @@ class Huggingface(Basic_config):
 
             if self.diffuser_model:
                 start_number="0"
-                print("\033[34m0.Use Diffusers format model")
+                print("\033[34m0.Use Diffusers format model\033[0m")
             for i in range(self.num_prints):
                 print(f"\033[34m{i+1}.File name: {file_value[i]}\033[0m")
-            print(f"\033[34m{self.num_prints+1}.Other than the files listed above (all candidates will be displayed)\n")
+            print(f"\033[34m{self.num_prints+1}.Other than the files listed above (all candidates will be displayed)\033[0m\n")
             while True:
                 choice = input(f"select the file you want to use({start_number}~21): ")
                 try:
                     choice=int(choice)
                 except ValueError:
-                    print("\033[33mOnly natural numbers are valid\033[34m")
+                    print("\033[33mOnly natural numbers are valid\033[0m")
                     continue
                 if self.diffuser_model and choice==0:
                     self.choice_number = -1
-                    print("\033[0m",end="")
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return "_DFmodel"
                 
                 elif choice==(self.num_prints+1): #other_file
@@ -374,12 +528,13 @@ class Huggingface(Basic_config):
                 elif 1<=choice<=self.num_prints:
                     choice_path=file_value[choice-1]
                     self.choice_number = choice
-                    print("\033[0m",end="")
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return choice_path
                 else:
-                    print(f"\033[33mPlease enter numbers from 1~{self.num_prints}\033[34m")
-            print("\033[0m",end="")
+                    print(f"\033[33mPlease enter numbers from 1~{self.num_prints}\033[0m")
             print("\n\n")
 
         choice_history = self.check_func_hist(key = check_key,return_value=True)
@@ -391,28 +546,32 @@ class Huggingface(Basic_config):
             start_number="0"
             print("\033[34m0.Use Diffusers format model\033[0m")
         for i, file_name in enumerate(file_value, 1):
-            print(f"\033[34m{i}.File name: {file_name}")
+            print(f"\033[34m{i}.File name: {file_name}\033[0m")
         while True:
             choice = input(f"Select the file you want to use({start_number}~{len(file_value)}): ")
             try:
                 choice=int(choice)
             except ValueError:
-                print("\033[33mOnly natural numbers are valid\033[34m")
+                print("\033[33mOnly natural numbers are valid\033[0m")
             else:
                 if self.diffuser_model and choice==0:
-                    print("\033[0m",end="")
                     self.choice_number = -1
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return "_DFmodel"
                 
                 if 1<=choice<=len(file_value):
                     choice_path=file_value[choice-1]
                     self.choice_number = choice
-                    print("\033[0m",end="")
-                    choice_history_update = self.check_func_hist(key=check_key,value=choice,update=True)
+                    self.update_json_dict(
+                        key = check_key,
+                        value = choice
+                        )
                     return choice_path
                 else:
-                    print(f"\033[33mPlease enter numbers from 1~{len(file_value)}\033[34m")
+                    print(f"\033[33mPlease enter numbers from 1~{len(file_value)}\033[0m")
                     
 
     def file_name_set(
@@ -430,17 +589,11 @@ class Huggingface(Basic_config):
         else:
             skip_difusers = False
 
-        data = self.get_hf_model_config(model_select)
+        data = self.hf_model_info(model_select)
         choice_path=""
         file_value = []
-        siblings = data["siblings"]
         if data:
-            for item in siblings:
-                fi_path=item["rfilename"]
-                if (any(fi_path.endswith(ext) for ext in self.exts) and
-                    (not any(fi_path.endswith(ex) for ex in self.exclude)) and
-                    (not any(fi_path.endswith(st) for st in self.config_file_list))):
-                    file_value.append(fi_path)
+            file_value = self.get_hf_files(check_data=data)
         else:
             raise ValueError("No available file was found.\nPlease check the name.")
         if file_value:
@@ -455,13 +608,9 @@ class Huggingface(Basic_config):
                     choice_path=self.model_safe_check(file_value)
 
         elif self.diffuser_model:
-            #When “auto” is selected, the presence or absence of “single_file” is determined when selecting a repo, so it is not necessary.
+            # When “auto” is selected, the presence or absence of “single_file” is determined when selecting a repo, so it is not necessary.
             choice_path = "_DFmodel"
         else:
-            raise FileNotFoundError("No available files found in the specified repository")
-        
-        #if download:
-        #    if choice_path == "_DFmodel"
-        #        choice_path=hf_hub_download(repo_id=model_select, filename=choice_path)
+            raise FileNotFoundError("No available files found in the specified repository")        
         return choice_path
 
