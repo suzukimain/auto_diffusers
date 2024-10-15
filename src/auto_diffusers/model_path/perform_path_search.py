@@ -17,19 +17,11 @@ class Search_cls(Config_Mix):
             model_type="Checkpoint",
             model_format = "single_file",
             branch = "main",
-<<<<<<< HEAD
             priority_hub = "hugface",
             local_file_only = False,
             hf_token = None,
             civitai_token = None,
             include_params = True,
-=======
-            preferred_hub = "hugface",
-            local_file_only = False,
-            hf_token = None,
-            civitai_token = "",
-            include_parameters = True,
->>>>>>> 69939eb6659aeed338f06f35f7c2d4333afe26fc
             ):
         self.seach_word = seach_word
         self.auto = auto
@@ -52,11 +44,7 @@ class Search_cls(Config_Mix):
                   model_format = model_format,
                   model_type = model_type,
                   branch = branch,
-<<<<<<< HEAD
                   priority_hub = priority_hub,
-=======
-                  preferred_hub = preferred_hub,
->>>>>>> 69939eb6659aeed338f06f35f7c2d4333afe26fc
                   local_file_only = local_file_only,
                   civitai_token = civitai_token,
                   include_params = include_params
@@ -162,11 +150,7 @@ class Search_cls(Config_Mix):
             model_format = "single_file",
             model_type = "Checkpoint",
             branch = "main",
-<<<<<<< HEAD
             priority_hub = "hugface",
-=======
-            preferred_hub = "hugface",
->>>>>>> 69939eb6659aeed338f06f35f7c2d4333afe26fc
             local_file_only = False,
             civitai_token = None,
             include_params = False
@@ -297,11 +281,7 @@ class Search_cls(Config_Mix):
             self.return_dict["repo_status"]["repo_name"] = repo_name
                 
         else:
-<<<<<<< HEAD
             if priority_hub == "hugface":
-=======
-            if preferred_hub == "hugface":
->>>>>>> 69939eb6659aeed338f06f35f7c2d4333afe26fc
                 model_path = self.hf_model_set(
                     model_select=model_select,
                     auto=auto,
