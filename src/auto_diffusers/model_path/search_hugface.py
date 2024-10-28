@@ -213,8 +213,11 @@ class Huggingface(Basic_config):
             )
         model_dict = asdict(hf_info)
         # When using asdict, securityStatus is not added to the dictionary and must be added separately.
-        if "securityStatus" not in model_dict.keys():
-            model_dict["securityStatus"] = hf_info.__dict__["securityStatus"]
+        try:
+            if "securityStatus" not in model_dict.keys():
+                model_dict["securityStatus"] = hf_info.__dict__["securityStatus"]
+        except AttributeError:
+            self.logger.info("The key for securityStatus does not exist.")
         return model_dict
     
 
@@ -236,8 +239,8 @@ class Huggingface(Basic_config):
     def hf_security_check(self,check_dict) -> int:
         """
         Return:
-            0 for models that passed the scan,
-            1 for models not scanned or in error, and
+            0 for models that passed the scan or in error,
+            1 for models not scanned , and
             2 if there is a security risk.
         """
         try:
@@ -249,7 +252,9 @@ class Huggingface(Basic_config):
             else:
                 return 0
         except KeyError:
-            return 2
+            self.logger.warning("Failed to acquire security status. Use with caution.")
+            return 0
+
         
 
     def check_if_file_exists(self,hf_repo_info):
