@@ -216,7 +216,7 @@ class Huggingface(Basic_config):
         try:
             if "securityStatus" not in model_dict.keys():
                 model_dict["securityStatus"] = hf_info.__dict__["securityStatus"]
-        except AttributeError:
+        except KeyError:
             self.logger.info("The key for securityStatus does not exist.")
         return model_dict
     
