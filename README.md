@@ -19,10 +19,13 @@
 + [License](#License)
 + [Acknowledgement](#Acknowledgement)
 
+## Announcements📢
+Due to changes in the `hf_api` specification, the function was stopped for a while. \
+I apologize for any inconvenience this may have caused.
+
 ## About The Project<a name = "About_The_Project"></a>
 Enhance the functionality of diffusers.
 * Search models from huggingface and Civitai. 
-(etc..)
 
 
 ##  How to use<a name = "How_to_use"></a>
