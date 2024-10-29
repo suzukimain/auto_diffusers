@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 _deps = [
     "diffusers",
     "transformers",
-    "huggingface-hub",
+    "huggingface-hub>=0.26.2",
     "safetensors",
     "requests",
     "torch",
