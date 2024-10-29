@@ -24,7 +24,7 @@ Due to changes in the `hf_api` specification, the function was stopped for a whi
 I apologize for any inconvenience this may have caused. 
 
 **[Updated on October 29, 2024]**\
-The recent fix to `hf_api` has restored security to its standard level.
+Fixed an error that security status could not be acquired due to `hf_api` specification changes
 
 ## About The Project<a name = "About_The_Project"></a>
 Enhance the functionality of diffusers.
