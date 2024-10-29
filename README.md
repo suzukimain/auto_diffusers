@@ -21,7 +21,10 @@
 
 ## Announcements📢
 Due to changes in the `hf_api` specification, the function was stopped for a while. \
-I apologize for any inconvenience this may have caused.
+I apologize for any inconvenience this may have caused. 
+
+**[Updated on October 29, 2024]**\
+The recent fix to `hf_api` has restored security to its standard level.
 
 ## About The Project<a name = "About_The_Project"></a>
 Enhance the functionality of diffusers.
