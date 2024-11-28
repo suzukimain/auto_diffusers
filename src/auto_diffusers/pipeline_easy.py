@@ -564,6 +564,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             Whether to include parameters in the returned data.
         cache_dir (`str`, `Path`, *optional*):
             Path to the folder where cached files are stored.
+        resume (`bool`, *optional*, defaults to `False`):
+            Whether to resume an incomplete download.
         skip_error (`bool`, *optional*, defaults to `False`):
             Whether to skip errors and return None.
 
@@ -578,6 +580,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     force_download = kwargs.pop("force_download", False)
     token = kwargs.pop("token", None)
     include_params = kwargs.pop("include_params", False)
+    resume = kwargs.pop("resume", False)
     cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
 
@@ -590,7 +593,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     selected_repo = {}
     selected_model = {}
     selected_version = {}
-    civitai_cache_dir = os.path.join(CACHE_HOME, "Civitai")
+    civitai_cache_dir = cache_dir or os.path.join(CACHE_HOME, "Civitai")
 
     # Set up parameters and headers for the CivitAI API request
     params = {
@@ -686,6 +689,12 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             headers = {}
             if token:
                 headers["Authorization"] = f"Bearer {token}"
+            
+            mode = "wb"
+            if resume and os.path.exists(model_path):
+                mode = "ab"
+                file_size = os.path.getsize(model_path)
+                headers["Range"] =  f"bytes={file_size}-"
 
             try:
                 response = requests.get(download_url, stream=True, headers=headers)
@@ -698,7 +707,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 "write",
                 miniters=1,
                 desc=file_name,
-                total=int(response.headers.get("content-length", 0)),
+                total=int(response.headers.get("content-length", 0)) + (file_size if resume and os.path.exists(model_path) else 0),
             ) as fetched_model_info:
                 for chunk in response.iter_content(chunk_size=8192):
                     fetched_model_info.write(chunk)
@@ -897,8 +906,12 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
                     [`~DiffusionPipeline.save_pretrained`].
             model_type (`str`, *optional*, defaults to `Checkpoint`):
                 The type of model to search for. (for example `Checkpoint`, `TextualInversion`, `LORA`, `Controlnet`)
-            pipeline_tag (`str`, *optional*):
-                Tag to filter models by pipeline.
+            base_model (`str`, *optional*):
+                The base model to filter by.
+            cache_dir (`str`, `Path`, *optional*):
+                Path to the folder where cached files are stored.
+            resume (`bool`, *optional*, defaults to `False`):
+                Whether to resume an incomplete download.
             torch_dtype (`str` or `torch.dtype`, *optional*):
                 Override the default `torch.dtype` and load the model with another dtype. If "auto" is passed, the
                 dtype is automatically derived from the model's weights.
@@ -1150,8 +1163,12 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
                     [`~DiffusionPipeline.save_pretrained`].
             model_type (`str`, *optional*, defaults to `Checkpoint`):
                 The type of model to search for. (for example `Checkpoint`, `TextualInversion`, `LORA`, `Controlnet`)
-            pipeline_tag (`str`, *optional*):
-                Tag to filter models by pipeline.
+            base_model (`str`, *optional*):
+                The base model to filter by.
+            cache_dir (`str`, `Path`, *optional*):
+                Path to the folder where cached files are stored.
+            resume (`bool`, *optional*, defaults to `False`):
+                Whether to resume an incomplete download.
             torch_dtype (`str` or `torch.dtype`, *optional*):
                 Override the default `torch.dtype` and load the model with another dtype. If "auto" is passed, the
                 dtype is automatically derived from the model's weights.
@@ -1403,8 +1420,12 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
                     [`~DiffusionPipeline.save_pretrained`].
             model_type (`str`, *optional*, defaults to `Checkpoint`):
                 The type of model to search for. (for example `Checkpoint`, `TextualInversion`, `LORA`, `Controlnet`)
-            pipeline_tag (`str`, *optional*):
-                Tag to filter models by pipeline.
+            base_model (`str`, *optional*):
+                The base model to filter by.
+            cache_dir (`str`, `Path`, *optional*):
+                Path to the folder where cached files are stored.
+            resume (`bool`, *optional*, defaults to `False`):
+                Whether to resume an incomplete download.
             torch_dtype (`str` or `torch.dtype`, *optional*):
                 Override the default `torch.dtype` and load the model with another dtype. If "auto" is passed, the
                 dtype is automatically derived from the model's weights.
