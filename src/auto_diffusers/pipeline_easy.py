@@ -401,6 +401,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 revision=revision,
                 token=token,
                 force_download=force_download,
+                **kwargs,
             )
         else:
             model_path = search_word
@@ -489,6 +490,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 model_path = DiffusionPipeline.download(
                     repo_id=repo_id,
                     token=token,
+                    **kwargs,
                 )
             else:
                 model_path = repo_id
