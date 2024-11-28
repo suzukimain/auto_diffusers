@@ -3,6 +3,7 @@ name: Version Update and Upload Python Package
 # Requirements:
 # ・Add this file to "trusted publishers" in pypi and test pypi.
 # ・Version.txt exists in root
+
 on:
   workflow_dispatch:
   release:
@@ -84,6 +85,10 @@ jobs:
       - name: Build release distributions
         run: |
           python -m build
+
+      - name: Remove unnecessary files
+        run: |
+          rm -f dist/*.publish.attestation
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
