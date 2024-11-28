@@ -133,6 +133,7 @@ INPAINT_PIPELINE_KEYS = [
 
 EXTENSION =  [".safetensors", ".ckpt", ".bin"]
 
+CACHE_HOME = os.path.expanduser("~/.cache")
 
 @dataclass
 class RepoStatus:
@@ -561,6 +562,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             API token for Civitai authentication.
         include_params (`bool`, *optional*, defaults to `False`):
             Whether to include parameters in the returned data.
+        cache_dir (`str`, `Path`, *optional*):
+            Path to the folder where cached files are stored.
         skip_error (`bool`, *optional*, defaults to `False`):
             Whether to skip errors and return None.
 
@@ -575,6 +578,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     force_download = kwargs.pop("force_download", False)
     token = kwargs.pop("token", None)
     include_params = kwargs.pop("include_params", False)
+    cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
 
     # Initialize additional variables with default values
@@ -586,6 +590,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     selected_repo = {}
     selected_model = {}
     selected_version = {}
+    civitai_cache_dir = os.path.join(CACHE_HOME, "Civitai")
 
     # Set up parameters and headers for the CivitAI API request
     params = {
@@ -673,7 +678,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     # Handle file download and setting model information
     if download:
-        model_path = f"/root/.cache/Civitai/{repo_id}/{version_id}/{file_name}"
+        model_path = os.path.join(
+            civitai_cache_dir, repo_id, version_id, file_name
+        )
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         if (not os.path.exists(model_path)) or force_download:
             headers = {}
