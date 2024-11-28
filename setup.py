@@ -34,7 +34,7 @@ setup(
     description="Customized diffusers with model search and other functions.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    keywords="diffusers model search deep learning diffusion jax pytorch stable diffusion",
+    keywords="huggingface civitai diffusers model search deep learning diffusion pytorch stable diffusion",
     license="Apache 2.0 License",
     author="suzukimain",
     author_email="subarucosmosmain@gmail.com",
