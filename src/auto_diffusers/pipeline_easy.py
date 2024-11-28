@@ -268,7 +268,7 @@ def load_pipeline_from_single_file(pretrained_model_or_path, pipeline_mapping, *
 
     else:
         # Instantiate and return the pipeline with the loaded checkpoint and any additional kwargs
-        return pipeline_class.from_single_file(pretrained_model_or_path, checkpoint=checkpoint, **kwargs)
+        return pipeline_class.from_single_file(pretrained_model_or_path, **kwargs)
 
 
 def get_keyword_types(keyword):
