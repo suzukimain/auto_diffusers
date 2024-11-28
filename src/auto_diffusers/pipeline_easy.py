@@ -859,7 +859,8 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         _status = {
             "download": True,
             "include_params": True,
-            "skip_error": False
+            "skip_error": False,
+            "pipeline_tag": "text-to-image",
         }
         kwargs.update(_status)
 
@@ -1112,6 +1113,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
             "download": True,
             "include_params": True,
             "skip_error": False,
+            "pipeline_tag": "image-to-image",
         }
         kwargs.update(_parmas)
 
@@ -1360,7 +1362,13 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
-        kwargs.update({"download": True, "include_params": True, "skip_error": False})
+        _status = {
+            "download": True,
+            "include_params": True,
+            "skip_error": False,
+            "pipeline_tag": "image-to-image",
+        }
+        kwargs.update(_status)
 
         # Search for the model on Hugging Face and get the model status
         model_status = search_huggingface(pretrained_model_link_or_path, **kwargs)   
