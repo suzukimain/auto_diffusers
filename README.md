@@ -175,7 +175,7 @@ pipeline.load_textual_inversion(TextualInversion, token="EasyNegative")
 
 
 ## License<a name = "License"></a>
-In accordance with [Apache-2.0 license](https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE)
+In accordance with [Apache-2.0 license](https://github.com/suzukimain/auto_diffusers/blob/master/LICENSE)
 
 
 ## Acknowledgement<a name = "Acknowledgement"></a>
