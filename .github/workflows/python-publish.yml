@@ -1,10 +1,8 @@
 name: Version Update and Upload Python Package
-
-#Upload to pypi when tagged release.
-#Requirements:
-#・Add this file to "trusted publishers" in pypi and test pypi.
-#・Version.txt exists in root
-
+# Upload to pypi when tagged release.
+# Requirements:
+# ・Add this file to "trusted publishers" in pypi and test pypi.
+# ・Version.txt exists in root
 on:
   workflow_dispatch:
   release:
@@ -16,12 +14,11 @@ permissions:
 jobs:
   update-version:
     runs-on: ubuntu-22.04
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-          ref: master
+          ref: main
           fetch-depth: 0
 
     - name: Extract version from tag
@@ -59,21 +56,19 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git pull origin master
+          git pull origin main
         git add Version.txt
         git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
-        git push origin master
+          git push origin main
 
   release-build:
     name: Build the release
     runs-on: ubuntu-22.04
-    needs: 
-      - update-version
-      
+    needs: update-version
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
           fetch-depth: 0
       
       - uses: actions/setup-python@v5
@@ -99,17 +94,13 @@ jobs:
   pypi-publish:
     name: Upload release to PyPI
     runs-on: ubuntu-22.04
-    needs:
-      - release-build
-      
+    needs: release-build
     environment:
       name: pypi_release
       url: https://pypi.org/p/auto_diffusers
-      
     permissions:
       id-token: write
       contents: read
-
     steps:
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
@@ -125,6 +116,8 @@ jobs:
           
       - name: Test installing auto_diffusers and importing
         run: |
+          python -m venv venv
+          source venv/bin/activate
           pip install auto_diffusers && pip uninstall auto_diffusers -y
           pip install -i https://testpypi.python.org/pypi auto_diffusers
           python -c "from auto_diffusers import *"
