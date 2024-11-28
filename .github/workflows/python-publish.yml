@@ -1,8 +1,9 @@
 name: Version Update and Upload Python Package
-# Upload to pypi when tagged release.
-# Requirements:
-# ・Add this file to "trusted publishers" in pypi and test pypi.
-# ・Version.txt exists in root
+
+#Upload to pypi when tagged release.
+#Requirements:
+#・Add this file to "trusted publishers" in pypi and test pypi.
+#・Version.txt exists in root
 
 on:
   workflow_dispatch:
@@ -15,63 +16,66 @@ permissions:
 jobs:
   update-version:
     runs-on: ubuntu-22.04
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
           ref: master
           fetch-depth: 0
 
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_OUTPUT
+    - name: Extract version from tag
+      id: extract_version
+      run: echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Get auto_diffusers version
-        id: get_auto_diffusers_version
-        run: |
-          pip install auto_diffusers
-          auto_diffusers_version=$(pip show auto_diffusers | grep Version | awk '{print $2}')
-          echo "auto_diffusers_version=$auto_diffusers_version" >> $GITHUB_OUTPUT
+    - name: Get auto_diffusers version
+      id: get_auto_diffusers_version
+      run: |
+        pip install auto_diffusers
+        auto_diffusers_version=$(pip show auto_diffusers | grep Version | awk '{print $2}')  
+        echo "auto_diffusers_version=$auto_diffusers_version" >> $GITHUB_OUTPUT
 
-      - name: Determine final version
-        id: determine_version
-        run: |
-          version=${{ steps.extract_version.outputs.version }}
-          auto_diffusers_version=${{ steps.get_auto_diffusers_version.outputs.auto_diffusers_version }}
-          if [[ "$auto_diffusers_version" == *"$version"* ]]; then
-            dev_version=0
-            while [[ "$auto_diffusers_version" == *"$version.dev$dev_version"* ]]; do
-              dev_version=$((dev_version + 1))
-            done
-            version="$version.dev$dev_version"
-          fi
-          echo "final_version=$version" >> $GITHUB_OUTPUT
+    - name: Determine final version
+      id: determine_version
+      run: |
+        version=${{ steps.extract_version.outputs.version }}
+        auto_diffusers_version=${{ steps.get_auto_diffusers_version.outputs.auto_diffusers_version }}
+        if [[ "$auto_diffusers_version" == *"$version"* ]]; then
+          dev_version=0
+          while [[ "$auto_diffusers_version" == *"$version.dev$dev_version"* ]]; do
+            dev_version=$((dev_version + 1))
+          done
+          version="$version.dev$dev_version"
+        fi
+        echo "final_version=$version" >> $GITHUB_OUTPUT
 
-      - name: Set version as environment variable
-        run: echo "VERSION=${{ steps.determine_version.outputs.final_version }}" >> $GITHUB_ENV
+    - name: Set version as environment variable
+      run: echo "VERSION=${{ steps.determine_version.outputs.final_version }}" >> $GITHUB_ENV
 
-      - name: Update VERSION file
-        run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
+    - name: Update VERSION file
+      run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
 
-      - name: Commit
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git pull origin master
-          git add Version.txt
-          git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
-          git push origin master
+    - name: Commit
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git pull origin master
+        git add Version.txt
+        git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
+        git push origin master
 
   release-build:
     name: Build the release
     runs-on: ubuntu-22.04
-    needs: update-version
+    needs: 
+      - update-version
+      
     steps:
       - uses: actions/checkout@v4
         with:
           ref: master
           fetch-depth: 0
-
+      
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
@@ -90,18 +94,22 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-dists
-          path: dist/*
+          path: dist/
 
   pypi-publish:
     name: Upload release to PyPI
     runs-on: ubuntu-22.04
-    needs: release-build
+    needs:
+      - release-build
+      
     environment:
       name: pypi_release
       url: https://pypi.org/p/auto_diffusers
+      
     permissions:
       id-token: write
       contents: read
+
     steps:
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
@@ -114,17 +122,14 @@ jobs:
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
-
+          
       - name: Test installing auto_diffusers and importing
         run: |
-          python -m venv venv
-          source venv/bin/activate
           pip install auto_diffusers && pip uninstall auto_diffusers -y
           pip install -i https://testpypi.python.org/pypi auto_diffusers
           python -c "from auto_diffusers import *"
 
       - name: Publish release distributions to PyPI
-        if: success()
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
