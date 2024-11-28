@@ -679,7 +679,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     # Handle file download and setting model information
     if download:
         model_path = os.path.join(
-            civitai_cache_dir, repo_id, version_id, file_name
+            str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
         )
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         if (not os.path.exists(model_path)) or force_download:
