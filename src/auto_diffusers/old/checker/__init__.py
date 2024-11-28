@@ -1,1 +1,0 @@
-from .memorize_config import config_check
