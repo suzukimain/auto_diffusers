@@ -41,10 +41,12 @@ from ..loaders.single_file_utils import (
     _extract_repo_id_and_weights_name,
     VALID_URL_PREFIXES,
 )
-
-from .aura_flow import AuraFlowPipeline
-from .cogview3 import CogView3PlusPipeline
-from .controlnet import (
+from diffusers import (
+    AutoPipelineForText2Image,
+    AutoPipelineForImage2Image,
+    AutoPipelineForInpainting,
+)
+from diffusers.pipelines.controlnet import (
     StableDiffusionControlNetImg2ImgPipeline,
     StableDiffusionControlNetInpaintPipeline,
     StableDiffusionControlNetPipeline,
