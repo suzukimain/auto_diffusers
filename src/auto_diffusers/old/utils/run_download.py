@@ -68,10 +68,10 @@ class download:
             **ex_word
             )
       
-        self.dot_thread.start()
+        self.dot_thread.start() #type: ignore
         with self.tqdm_lock:
             for chunk in self.response.iter_content(chunk_size=4096):
-                self.tqdm_obj.write(chunk)
+                self.tqdm_obj.write(chunk) #type: ignore
 
     def __del__(self):
         self.stop()
@@ -86,13 +86,13 @@ class download:
     def stop(self):
         self.stop_event.set()
         self.stop_dot.set()
-        self.tqdm_obj.n = self.total
+        self.tqdm_obj.n = self.total #type: ignore
         if self.fin_desc:
             setattr(self.tqdm_obj,"desc",self.fin_desc)
         if self.fin_pofix:
             setattr(self.tqdm_obj,"postfix",self.fin_pofix)
-        self.tqdm_obj.refresh()
-        self.tqdm_obj.close()
+        self.tqdm_obj.refresh() #type: ignore
+        self.tqdm_obj.close() #type: ignore
 
     
     def response_get(self,url):

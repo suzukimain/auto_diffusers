@@ -1,5 +1,9 @@
 # coding=utf-8
+<<<<<<< HEAD
 # Copyright 2024 The HuggingFace Inc. team.
+=======
+# Copyright 2024 suzukimain
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +21,10 @@ import os
 import re
 import requests
 from tqdm.auto import tqdm
+<<<<<<< HEAD
+=======
+from typing import Union
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 from collections import OrderedDict
 from dataclasses import (
     dataclass,
@@ -30,17 +38,24 @@ from huggingface_hub import (
     hf_hub_download,
 )
 
+<<<<<<< HEAD
 from ..configuration_utils import ConfigMixin
 from ..utils import (
     logging,
     is_sentencepiece_available
 )
 from ..loaders.single_file_utils import (
+=======
+
+from diffusers.utils import logging
+from diffusers.loaders.single_file_utils import (
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     infer_diffusers_model_type,
     load_single_file_checkpoint,
     _extract_repo_id_and_weights_name,
     VALID_URL_PREFIXES,
 )
+<<<<<<< HEAD
 
 from .aura_flow import AuraFlowPipeline
 from .cogview3 import CogView3PlusPipeline
@@ -98,27 +113,51 @@ from .pag import (
 from .pixart_alpha import PixArtAlphaPipeline, PixArtSigmaPipeline
 from .stable_cascade import StableCascadeCombinedPipeline, StableCascadeDecoderPipeline
 from .stable_diffusion import (
+=======
+from diffusers.pipelines.auto_pipeline import (
+    AutoPipelineForText2Image,
+    AutoPipelineForImage2Image,
+    AutoPipelineForInpainting,
+)
+from diffusers.pipelines.controlnet import (
+    StableDiffusionControlNetImg2ImgPipeline,
+    StableDiffusionControlNetInpaintPipeline,
+    StableDiffusionControlNetPipeline,
+)
+from diffusers.pipelines.stable_diffusion import (
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     StableDiffusionImg2ImgPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionPipeline,
 )
+<<<<<<< HEAD
 from .stable_diffusion_3 import (
     StableDiffusion3Img2ImgPipeline,
     StableDiffusion3InpaintPipeline,
     StableDiffusion3Pipeline,
 )
 from .stable_diffusion_xl import (
+=======
+from diffusers.pipelines.stable_diffusion_xl import (
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     StableDiffusionXLImg2ImgPipeline,
     StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
 )
+<<<<<<< HEAD
 from .wuerstchen import WuerstchenCombinedPipeline, WuerstchenDecoderPipeline
 from .pipeline_utils import DiffusionPipeline
+=======
+from diffusers.pipelines.pipeline_utils import DiffusionPipeline
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 
 logger = logging.get_logger(__name__)
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
     [
         ("xl_base", StableDiffusionXLPipeline),
@@ -188,9 +227,13 @@ INPAINT_PIPELINE_KEYS = [
 
 EXTENSION =  [".safetensors", ".ckpt", ".bin"]
 
+<<<<<<< HEAD
 
 
 
+=======
+CACHE_HOME = os.path.expanduser("~/.cache")
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 
 @dataclass
 class RepoStatus:
@@ -247,13 +290,21 @@ class SearchResult:
             The status of the model.
     """
     model_path: str = ""
+<<<<<<< HEAD
     loading_method: str = None  
     checkpoint_format: str = None
+=======
+    loading_method: Union[str, None] = None  
+    checkpoint_format: Union[str, None] = None
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     repo_status: RepoStatus = RepoStatus()
     model_status: ModelStatus = ModelStatus()
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 @validate_hf_hub_args
 def load_pipeline_from_single_file(pretrained_model_or_path, pipeline_mapping, **kwargs):
     r"""
@@ -409,7 +460,11 @@ def get_keyword_types(keyword):
     return status
 
 
+<<<<<<< HEAD
 def search_huggingface(search_word: str, **kwargs):
+=======
+def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     r"""
     Downloads a model from Hugging Face.
 
@@ -493,9 +548,17 @@ def search_huggingface(search_word: str, **kwargs):
             token=token
         )
         model_dicts = [asdict(value) for value in list(hf_models)]
+<<<<<<< HEAD
         
         hf_repo_info = {}
         file_list = []
+=======
+
+        file_list = []
+        hf_repo_info = {}
+        hf_security_info = {}
+        model_path = ""
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
         repo_id, file_name = "", ""
         diffusers_model_exists = False
 
@@ -573,7 +636,11 @@ def search_huggingface(search_word: str, **kwargs):
     if file_name:
         download_url = f"https://huggingface.co/{repo_id}/blob/main/{file_name}"
     else:
+<<<<<<< HEAD
             download_url = f"https://huggingface.co/{repo_id}"
+=======
+        download_url = f"https://huggingface.co/{repo_id}"
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     
     output_info = get_keyword_types(model_path)
 
@@ -599,7 +666,11 @@ def search_huggingface(search_word: str, **kwargs):
         return model_path
     
 
+<<<<<<< HEAD
 def search_civitai(search_word: str, **kwargs):
+=======
+def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     r"""
     Downloads a model from Civitai.
 
@@ -618,6 +689,11 @@ def search_civitai(search_word: str, **kwargs):
             API token for Civitai authentication.
         include_params (`bool`, *optional*, defaults to `False`):
             Whether to include parameters in the returned data.
+<<<<<<< HEAD
+=======
+        cache_dir (`str`, `Path`, *optional*):
+            Path to the folder where cached files are stored.
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
         skip_error (`bool`, *optional*, defaults to `False`):
             Whether to skip errors and return None.
 
@@ -632,6 +708,10 @@ def search_civitai(search_word: str, **kwargs):
     force_download = kwargs.pop("force_download", False)
     token = kwargs.pop("token", None)
     include_params = kwargs.pop("include_params", False)
+<<<<<<< HEAD
+=======
+    cache_dir = kwargs.pop("cache_dir", None)
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     skip_error = kwargs.pop("skip_error", False)
 
     # Initialize additional variables with default values
@@ -643,6 +723,10 @@ def search_civitai(search_word: str, **kwargs):
     selected_repo = {}
     selected_model = {}
     selected_version = {}
+<<<<<<< HEAD
+=======
+    civitai_cache_dir = os.path.join(CACHE_HOME, "Civitai")
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 
     # Set up parameters and headers for the CivitAI API request
     params = {
@@ -730,7 +814,13 @@ def search_civitai(search_word: str, **kwargs):
 
     # Handle file download and setting model information
     if download:
+<<<<<<< HEAD
         model_path = f"/root/.cache/Civitai/{repo_id}/{version_id}/{file_name}"
+=======
+        model_path = os.path.join(
+            civitai_cache_dir, repo_id, version_id, file_name
+        )
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         if (not os.path.exists(model_path)) or force_download:
             headers = {}
@@ -778,7 +868,11 @@ def search_civitai(search_word: str, **kwargs):
         )
 
 
+<<<<<<< HEAD
 class AutoPipelineForText2Image(ConfigMixin):
+=======
+class EasyPipelineForText2Image(AutoPipelineForText2Image):
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     r"""
 
     [`AutoPipelineForText2Image`] is a generic pipeline class that instantiates a text-to-image pipeline class. The
@@ -797,9 +891,16 @@ class AutoPipelineForText2Image(ConfigMixin):
     config_name = "model_index.json"
 
     def __init__(self, *args, **kwargs):
+<<<<<<< HEAD
         super().__init__()
 
         
+=======
+        # EnvironmentError is returned
+        super().__init__()
+
+    
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     @classmethod
     @validate_hf_hub_args
     def from_huggingface(cls, pretrained_model_link_or_path, **kwargs):
@@ -905,6 +1006,7 @@ class AutoPipelineForText2Image(ConfigMixin):
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
+<<<<<<< HEAD
         kwargs.update({"download": True, "include_params": True, "skip_error": False})
 
         # Search for the model on Hugging Face and get the model status
@@ -914,6 +1016,22 @@ class AutoPipelineForText2Image(ConfigMixin):
         
         # Check the format of the model checkpoint
         if model_status.checkpoint_format == "single_file":
+=======
+        _status = {
+            "download": True,
+            "include_params": True,
+            "skip_error": False
+        }
+        kwargs.update(_status)
+
+        # Search for the model on Hugging Face and get the model status
+        hf_model_status = search_huggingface(pretrained_model_link_or_path, **kwargs)   
+        logger.warning(f"checkpoint_path: {hf_model_status.model_status.download_url}")
+        checkpoint_path = hf_model_status.model_path
+        
+        # Check the format of the model checkpoint
+        if hf_model_status.checkpoint_format == "single_file":
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
             # Load the pipeline from a single file checkpoint
             return load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1044,8 +1162,13 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
     config_name = "model_index.json"
 
     def __init__(self, *args, **kwargs):
+<<<<<<< HEAD
         super().__init__()
 
+=======
+        # EnvironmentError is returned
+        super().__init__()
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     
     @classmethod
     @validate_hf_hub_args
@@ -1152,7 +1275,16 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
+<<<<<<< HEAD
         kwargs.update({"download": True, "include_params": True, "skip_error": False})
+=======
+        _parmas = {
+            "download": True,
+            "include_params": True,
+            "skip_error": False,
+        }
+        kwargs.update(_parmas)
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
 
         # Search for the model on Hugging Face and get the model status
         model_status = search_huggingface(pretrained_model_link_or_path, **kwargs)   
@@ -1272,7 +1404,11 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
 
     
 
+<<<<<<< HEAD
 class AutoPipelineForInpainting(ConfigMixin):
+=======
+class EasyPipelineForInpainting(AutoPipelineForInpainting):
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     r"""
 
     [`AutoPipelineForInpainting`] is a generic pipeline class that instantiates an inpainting pipeline class. The
@@ -1291,8 +1427,13 @@ class AutoPipelineForInpainting(ConfigMixin):
     config_name = "model_index.json"
 
     def __init__(self, *args, **kwargs):
+<<<<<<< HEAD
         super().__init__()
 
+=======
+        # EnvironmentError is returned
+        super().__init__()
+>>>>>>> d470c2a0a376b945c00c1fdbf5bd5c0a0752bc5d
     
     @classmethod
     @validate_hf_hub_args

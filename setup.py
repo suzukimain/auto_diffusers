@@ -35,7 +35,7 @@ setup(
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     keywords="diffusers model search deep learning diffusion jax pytorch stable diffusion",
-    license="BSD 3-Clause License",
+    license="Apache 2.0 License",
     author="suzukimain",
     author_email="subarucosmosmain@gmail.com",
     url="https://github.com/suzukimain/auto_diffusers",

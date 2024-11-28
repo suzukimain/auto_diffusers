@@ -2,7 +2,7 @@
 
 
 <p>
-    <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-BSD%203--Clause-blue.svg?style=social"></a>
+    <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=social"></a>
 </p>
 <p>
     <a href="https://pepy.tech/project/auto_diffusers"><img alt="GitHub release" src="https://static.pepy.tech/badge/auto_diffusers"></a>
