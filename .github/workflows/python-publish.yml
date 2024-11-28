@@ -121,7 +121,7 @@ jobs:
           
       - name: Test installing auto_diffusers and importing
         run: |
-          python -m venv 
+          python -m venv venv
           source venv/bin/activate
           pip install auto_diffusers && pip uninstall auto_diffusers -y
           pip install -i https://testpypi.python.org/pypi auto_diffusers
