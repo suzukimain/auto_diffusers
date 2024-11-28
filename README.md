@@ -86,7 +86,7 @@ pipeline.load_textual_inversion(TextualInversion, token="EasyNegative")
 | pipeline_tag          | string                          | None           | ー                 | Tag to filter models by pipeline.                                                                                    |
 | torch_dtype           | str or torch.dtype              | None           | ー                 | Override the default `torch.dtype` and load the model with another dtype. If "auto" is passed, the dtype is automatically derived from the model's weights. |
 | force_download        | bool                            | False          | ー                 | Whether or not to force the (re-)download of the model weights and configuration files, overriding the cached versions if they exist. |
-| cache_dir             | Union[str, os.PathLike]         | None           | ー                 | Path to a directory where a downloaded pretrained model configuration is cached if the standard cache is not used.   |
+| cache_dir             | str, os.PathLike         | None           | ー                 | Path to a directory where a downloaded pretrained model configuration is cached if the standard cache is not used.   |
 | token                 | str or bool                     | None           | ー                 | The token to use as HTTP bearer authorization for remote files.                                                      |
 
 <a id="model_format"></a>
@@ -107,7 +107,7 @@ pipeline.load_textual_inversion(TextualInversion, token="EasyNegative")
   
 | Name                  | Type                            | Default        | Input Available   | Description                                                                                                          |
 |:---------------------:|:------------------------------:|:--------------:|:-----------------:|:--------------------------------------------------------------------------------------------------------------------:|
-| proxies               | Dict[str, str]                  | None           | ー                 | A dictionary of proxy servers to use by protocol or endpoint.                                                        |
+| proxies               | Dict[str]                  | None           | ー                 | A dictionary of proxy servers to use by protocol or endpoint.                                                        |
 | output_loading_info   | bool                            | False          | ー                 | Whether or not to also return a dictionary containing missing keys, unexpected keys and error messages.              |
 | local_files_only      | bool                            | False          | ー                 | Whether to only load local model weights and configuration files or not.                                             |
 | revision              | str                             | "main"         | ー                 | The specific model version to use.                                                                                   |
@@ -137,7 +137,7 @@ pipeline.load_textual_inversion(TextualInversion, token="EasyNegative")
 | Name            | Type   | Default       | Input Available   | Description                                                                         |
 |:---------------:|:------:|:-------------:|:-----------------:|:-----------------------------------------------------------------------------------:|
 | search_word     | string | ー            | ー                 | Keywords to search models                                                             |
-| model_type      | string | `Checkpoint`  | ー                 | The type of model to search for.                                                      |
+| model_type      | string | `Checkpoint`  | [Details](#model_type)            | The type of model to search for.                                                      |
 | base_model      | string | None          | ー                 | Trained model tag (example:  `SD 1.5`, `SD 3.5`, `SDXL 1.0`)                          |
 | download        | bool   | False         | ー                 | Whether to download the model.                                                        |
 | force_download  | bool   | False         | ー                 | Whether to force the download if the model already exists.                            |
