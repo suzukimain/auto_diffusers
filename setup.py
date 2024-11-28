@@ -6,13 +6,7 @@ from setuptools import find_packages, setup
 
 _deps = [
     "diffusers",
-    "transformers",
-    "huggingface-hub",
-    "safetensors",
-    "requests",
-    "torch",
-    "jax",
-    "natsort",
+    "huggingface-hub>=0.26.2",
 ]
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}
