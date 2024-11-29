@@ -554,7 +554,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         if diffusers_model_exists:
             if download:
                 model_path = DiffusionPipeline.download(
-                    repo_id=repo_id,
+                    repo_id,
                     token=token,
                     **kwargs,
                 )
