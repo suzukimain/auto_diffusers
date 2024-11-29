@@ -371,6 +371,9 @@ def file_downloader(
             Dictionary mapping protocol to the URL of the proxy passed to `requests.request`.
         force_download (`bool`, *optional*, defaults to `False`):
             Whether to force the download even if the file already exists.
+        displayed_filename (`str`, *optional*):
+            The filename of the file that is being downloaded. Value is used only to display a nice progress bar. If
+            not set, the filename is guessed from the URL or the `Content-Disposition` header.
     
     returns:
         None
@@ -381,7 +384,7 @@ def file_downloader(
     headers = kwargs.pop("headers", None)
     proxies = kwargs.pop("proxies", None)
     force_download = kwargs.pop("force_download", False)
-    
+    displayed_filename = kwargs.pop("displayed_filename", None)
     # Default mode for file writing and initial file size
     mode = "wb"
     file_size = 0
@@ -407,6 +410,7 @@ def file_downloader(
             url=url,
             temp_file=model_file,
             resume_size=file_size,
+            displayed_filename=displayed_filename,
             headers=headers,
             proxies=proxies,
             **kwargs,
@@ -757,6 +761,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             save_path=model_path,
             resume=resume,
             force_download=force_download,
+            displayed_filename=file_name,
             headers=headers,
             **kwargs,
         )
