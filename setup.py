@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 _deps = [
     "torch",
     "diffusers",
-    "huggingface-hub",
+    "huggingface-hub>=0.26.2",
 ]
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}
