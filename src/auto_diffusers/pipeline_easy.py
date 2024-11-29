@@ -24,13 +24,12 @@ from dataclasses import (
     asdict
 )
 
-
+from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
 from huggingface_hub import (
     hf_api,
     hf_hub_download,
 )
-
 
 from diffusers.utils import logging
 from diffusers.loaders.single_file_utils import (
@@ -349,6 +348,69 @@ def get_keyword_types(keyword):
         status["loading_method"] = None
     
     return status
+
+
+def file_downloader(
+        url,
+        save_path,
+        **kwargs,
+    ) -> None:
+    """
+    Downloads a file from a given URL and saves it to the specified path.
+
+    parameters:
+        url (`str`):
+            The URL of the file to download.
+        save_path (`str`):
+            The local path where the file will be saved.
+        resume (`bool`, *optional*, defaults to `False`):
+            Whether to resume an incomplete download.
+        headers (`dict`, *optional*, defaults to `None`):
+            Dictionary of HTTP Headers to send with the request.
+        proxies (`dict`, *optional*, defaults to `None`):
+            Dictionary mapping protocol to the URL of the proxy passed to `requests.request`.
+        force_download (`bool`, *optional*, defaults to `False`):
+            Whether to force the download even if the file already exists.
+    
+    returns:
+        None
+    """
+
+    # Get optional parameters from kwargs, with their default values
+    resume = kwargs.pop("resume", False)
+    headers = kwargs.pop("headers", None)
+    proxies = kwargs.pop("proxies", None)
+    force_download = kwargs.pop("force_download", False)
+    
+    # Default mode for file writing and initial file size
+    mode = "wb"
+    file_size = 0
+
+    # Create directory
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    # Check if the file already exists at the save path
+    if os.path.exists(save_path):
+        if not force_download:
+            # If the file exists and force_download is False, skip the download
+            logger.warning(f"File already exists: {save_path}, skipping download.")
+            return None
+        elif resume:
+            # If resuming, set mode to append binary and get current file size
+            mode = "ab"
+            file_size = os.path.getsize(save_path)
+
+    # Open the file in the appropriate mode (write or append)
+    with open(save_path, mode) as model_file:
+        # Call the http_get function to perform the file download
+        return http_get(
+            url=url,
+            temp_file=model_file,
+            resume_size=file_size,
+            headers=headers,
+            proxies=proxies,
+            **kwargs,
+        )
 
 
 def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
@@ -671,48 +733,34 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         else:
             continue
         break
-
+    
+    # Exception handling when search candidates are not found
     if not selected_model:
         if skip_error:
             return None
         else:
             raise ValueError("No model found. Please try changing the word you are searching for.")
-
+    
+    # Define model file status
     file_name = selected_model["filename"]
     download_url = selected_model["download_url"]
 
     # Handle file download and setting model information
     if download:
+        # The path where the model is to be saved.
         model_path = os.path.join(
             str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
         )
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        if (not os.path.exists(model_path)) or force_download:
-            headers = {}
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-            
-            mode = "wb"
-            if resume and os.path.exists(model_path):
-                mode = "ab"
-                file_size = os.path.getsize(model_path)
-                headers["Range"] =  f"bytes={file_size}-"
+        # Download Model File
+        file_downloader(
+            url=download_url,
+            save_path=model_path,
+            resume=resume,
+            force_download=force_download,
+            headers=headers,
+            **kwargs,
+        )
 
-            try:
-                response = requests.get(download_url, stream=True, headers=headers)
-                response.raise_for_status()
-            except requests.HTTPError:
-                raise requests.HTTPError(f"Invalid URL: {download_url}, {response.status_code}")
-
-            with tqdm.wrapattr(
-                open(model_path, "wb"),
-                "write",
-                miniters=1,
-                desc=file_name,
-                total=int(response.headers.get("content-length", 0)) + (file_size if resume and os.path.exists(model_path) else 0),
-            ) as fetched_model_info:
-                for chunk in response.iter_content(chunk_size=8192):
-                    fetched_model_info.write(chunk)
     else:
         model_path = download_url
 
