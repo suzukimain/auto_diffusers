@@ -385,6 +385,7 @@ def file_downloader(
     proxies = kwargs.pop("proxies", None)
     force_download = kwargs.pop("force_download", False)
     displayed_filename = kwargs.pop("displayed_filename", None)
+
     # Default mode for file writing and initial file size
     mode = "wb"
     file_size = 0
@@ -891,9 +892,9 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForText2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -999,9 +1000,9 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForText2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForText2Image.from_civitai("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1147,9 +1148,9 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForImage2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForImage2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1255,9 +1256,9 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForImage2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForImage2Image.from_civitai("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1403,9 +1404,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForImage2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1511,9 +1512,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForText2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
