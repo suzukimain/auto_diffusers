@@ -1404,9 +1404,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         Examples:
 
         ```py
-        >>> from pipeline_easy import EasyPipelineForImage2Image
+        >>> from pipeline_easy import EasyPipelineForInpainting
 
-        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1512,9 +1512,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         Examples:
 
         ```py
-        >>> from pipeline_easy import EasyPipelineForText2Image
+        >>> from pipeline_easy import EasyPipelineForInpainting
 
-        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForInpainting.from_civitai("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
