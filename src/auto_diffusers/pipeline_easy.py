@@ -879,9 +879,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 class EasyPipelineForText2Image(AutoPipelineForText2Image):
     r"""
 
-    [`AutoPipelineForText2Image`] is a generic pipeline class that instantiates a text-to-image pipeline class. The
+    [`EasyPipelineForText2Image`] is a generic pipeline class that instantiates a text-to-image pipeline class. The
     specific underlying pipeline class is automatically selected from either the
-    [`~AutoPipelineForText2Image.from_pretrained`] or [`~AutoPipelineForText2Image.from_pipe`] methods.
+    [`~EasyPipelineForText2Image.from_pretrained`], [`~EasyPipelineForText2Image.from_pipe`], [`~EasyPipelineForText2Image.from_huggingface`] or [`~EasyPipelineForText2Image.from_civitai`] methods.
 
     This class cannot be instantiated using `__init__()` (throws an error).
 
@@ -1135,9 +1135,9 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
 class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
     r"""
 
-    [`AutoPipelineForImage2Image`] is a generic pipeline class that instantiates an image-to-image pipeline class. The
+    [`EasyPipelineForImage2Image`] is a generic pipeline class that instantiates an image-to-image pipeline class. The
     specific underlying pipeline class is automatically selected from either the
-    [`~AutoPipelineForImage2Image.from_pretrained`] or [`~AutoPipelineForImage2Image.from_pipe`] methods.
+    [`~EasyPipelineForImage2Image.from_pretrained`], [`~EasyPipelineForImage2Image.from_pipe`], [`~EasyPipelineForImage2Image.from_huggingface`] or [`~EasyPipelineForImage2Image.from_civitai`] methods.
 
     This class cannot be instantiated using `__init__()` (throws an error).
 
@@ -1391,9 +1391,9 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
 class EasyPipelineForInpainting(AutoPipelineForInpainting):
     r"""
 
-    [`AutoPipelineForInpainting`] is a generic pipeline class that instantiates an inpainting pipeline class. The
+    [`EasyPipelineForInpainting`] is a generic pipeline class that instantiates an inpainting pipeline class. The
     specific underlying pipeline class is automatically selected from either the
-    [`~AutoPipelineForInpainting.from_pretrained`] or [`~AutoPipelineForInpainting.from_pipe`] methods.
+    [`~EasyPipelineForInpainting.from_pretrained`], [`~EasyPipelineForInpainting.from_pipe`], [`~EasyPipelineForInpainting.from_huggingface`] or [`~EasyPipelineForInpainting.from_civitai`] methods.
 
     This class cannot be instantiated using `__init__()` (throws an error).
 
