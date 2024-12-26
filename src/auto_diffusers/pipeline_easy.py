@@ -210,7 +210,13 @@ CONFIG_FILE_LIST = [
     "diffusion_pytorch_model.non_ema.safetensors",
 ]
 
-DIFFUSERS_CONFIG_DIR = ["safety_checker", "unet", "vae", "text_encoder", "text_encoder_2"]
+DIFFUSERS_CONFIG_DIR = [
+    "safety_checker",
+    "unet",
+    "vae",
+    "text_encoder",
+    "text_encoder_2",
+]
 
 INPAINT_PIPELINE_KEYS = [
     "xl_inpaint",
@@ -290,7 +296,9 @@ class SearchResult:
 
 
 @validate_hf_hub_args
-def load_pipeline_from_single_file(pretrained_model_or_path, pipeline_mapping, **kwargs):
+def load_pipeline_from_single_file(
+    pretrained_model_or_path, pipeline_mapping, **kwargs
+):
     r"""
     Instantiate a [`DiffusionPipeline`] from pretrained pipeline weights saved in the `.ckpt` or `.safetensors`
     format. The pipeline is set in evaluation mode (`model.eval()`) by default.
@@ -582,7 +590,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         if skip_error:
             return None
         else:
-            raise ValueError("The URL for Civitai is invalid with `for_hf`. Please use `for_civitai` instead.")
+            raise ValueError(
+                "The URL for Civitai is invalid with `for_hf`. Please use `for_civitai` instead."
+            )
     else:
         # Get model data from HF API
         hf_models = hf_api.list_models(
@@ -617,7 +627,10 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             if hf_security_info["scansDone"]:
                 for info in repo_info["siblings"]:
                     file_path = info["rfilename"]
-                    if "model_index.json" == file_path and checkpoint_format in ["diffusers", "all"]:
+                    if "model_index.json" == file_path and checkpoint_format in [
+                        "diffusers",
+                        "all",
+                    ]:
                         diffusers_model_exists = True
                         break
 
@@ -625,7 +638,8 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         any(file_path.endswith(ext) for ext in EXTENSION)
                         and not any(config in file_path for config in CONFIG_FILE_LIST)
                         and not any(exc in file_path for exc in exclusion)
-                        and os.path.basename(os.path.dirname(file_path)) not in DIFFUSERS_CONFIG_DIR
+                        and os.path.basename(os.path.dirname(file_path))
+                        not in DIFFUSERS_CONFIG_DIR
                     ):
                         file_list.append(file_path)
 
@@ -637,7 +651,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             if skip_error:
                 return None
             else:
-                raise ValueError("No models matching your criteria were found on huggingface.")
+                raise ValueError(
+                    "No models matching your criteria were found on huggingface."
+                )
 
         if diffusers_model_exists:
             if download:
@@ -652,7 +668,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         elif file_list:
             # Sort and find the safest model
             file_name = next(
-                (model for model in sorted(file_list, reverse=True) if re.search(r"(?i)[-_](safe|sfw)", model)),
+                (
+                    model
+                    for model in sorted(file_list, reverse=True)
+                    if re.search(r"(?i)[-_](safe|sfw)", model)
+                ),
                 file_list[0],
             )
 
@@ -677,7 +697,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             model_path=model_path or download_url,
             loading_method=output_info["loading_method"],
             checkpoint_format=output_info["checkpoint_format"],
-            repo_status=RepoStatus(repo_id=repo_id, repo_hash=hf_repo_info.sha, version=revision),
+            repo_status=RepoStatus(
+                repo_id=repo_id, repo_hash=hf_repo_info.sha, version=revision
+            ),
             model_status=ModelStatus(
                 search_word=search_word,
                 download_url=download_url,
@@ -758,7 +780,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     try:
         # Make the request to the CivitAI API
-        response = requests.get("https://civitai.com/api/v1/models", params=params, headers=headers)
+        response = requests.get(
+            "https://civitai.com/api/v1/models", params=params, headers=headers
+        )
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         raise requests.HTTPError(f"Could not get elements from the URL: {err}")
@@ -772,7 +796,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 raise ValueError("Invalid JSON response")
 
     # Sort repositories by download count in descending order
-    sorted_repos = sorted(data["items"], key=lambda x: x["stats"]["downloadCount"], reverse=True)
+    sorted_repos = sorted(
+        data["items"], key=lambda x: x["stats"]["downloadCount"], reverse=True
+    )
 
     for selected_repo in sorted_repos:
         repo_name = selected_repo["name"]
@@ -780,7 +806,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
         # Sort versions within the selected repo by download count
         sorted_versions = sorted(
-            selected_repo["modelVersions"], key=lambda x: x["stats"]["downloadCount"], reverse=True
+            selected_repo["modelVersions"],
+            key=lambda x: x["stats"]["downloadCount"],
+            reverse=True,
         )
         for selected_version in sorted_versions:
             version_id = selected_version["id"]
@@ -792,7 +820,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     model_data["pickleScanResult"] == "Success"
                     and model_data["virusScanResult"] == "Success"
                     and any(file_name.endswith(ext) for ext in EXTENSION)
-                    and os.path.basename(os.path.dirname(file_name)) not in DIFFUSERS_CONFIG_DIR
+                    and os.path.basename(os.path.dirname(file_name))
+                    not in DIFFUSERS_CONFIG_DIR
                 ):
                     file_status = {
                         "filename": file_name,
@@ -802,12 +831,16 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
             if models_list:
                 # Sort the models list by filename and find the safest model
-                sorted_models = sorted(models_list, key=lambda x: x["filename"], reverse=True)
+                sorted_models = sorted(
+                    models_list, key=lambda x: x["filename"], reverse=True
+                )
                 selected_model = next(
                     (
                         model_data
                         for model_data in sorted_models
-                        if bool(re.search(r"(?i)[-_](safe|sfw)", model_data["filename"]))
+                        if bool(
+                            re.search(r"(?i)[-_](safe|sfw)", model_data["filename"])
+                        )
                     ),
                     sorted_models[0],
                 )
@@ -822,7 +855,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         if skip_error:
             return None
         else:
-            raise ValueError("No model found. Please try changing the word you are searching for.")
+            raise ValueError(
+                "No model found. Please try changing the word you are searching for."
+            )
 
     # Define model file status
     file_name = selected_model["filename"]
@@ -831,7 +866,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     # Handle file download and setting model information
     if download:
         # The path where the model is to be saved.
-        model_path = os.path.join(str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name))
+        model_path = os.path.join(
+            str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+        )
         # Download Model File
         file_downloader(
             url=download_url,
@@ -855,7 +892,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             model_path=model_path,
             loading_method=output_info["loading_method"],
             checkpoint_format=output_info["checkpoint_format"],
-            repo_status=RepoStatus(repo_id=repo_name, repo_hash=repo_id, version=version_id),
+            repo_status=RepoStatus(
+                repo_id=repo_name, repo_hash=repo_id, version=version_id
+            ),
             model_status=ModelStatus(
                 search_word=search_word,
                 download_url=download_url,
