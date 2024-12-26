@@ -20,10 +20,6 @@ from dataclasses import asdict, dataclass
 from typing import Union
 
 import requests
-from huggingface_hub import hf_api, hf_hub_download
-from huggingface_hub.file_download import http_get
-from huggingface_hub.utils import validate_hf_hub_args
-
 from diffusers.loaders.single_file_utils import (
     VALID_URL_PREFIXES,
     _extract_repo_id_and_weights_name,
