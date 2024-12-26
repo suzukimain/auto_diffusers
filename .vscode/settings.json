@@ -2,4 +2,8 @@
     "github-actions.workflows.pinned.workflows": [
         ".github/workflows/python-publish.yml"
     ],
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    }
 }
