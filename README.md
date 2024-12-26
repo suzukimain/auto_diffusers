@@ -35,13 +35,13 @@ pip install --quiet auto_diffusers
 from auto_diffusers import EasyPipelineForText2Image
 
 # Search for Huggingface
-pipe = EasyPipelineForText2Image.from_huggingface("any").to("cuda")
+pipe = EasyPipelineForText2Image.from_huggingface("search_word").to("cuda")
 img = pipe("cat").images[0]
 img.save("cat.png")
 
 
 # Search for Civitai
-pipe = EasyPipelineForText2Image.from_civitai("any").to("cuda")
+pipe = EasyPipelineForText2Image.from_civitai("search_word").to("cuda")
 image = pipe("cat").images[0]
 image.save("cat.png")
 
