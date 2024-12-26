@@ -484,6 +484,7 @@ def file_downloader(
     proxies = kwargs.pop("proxies", None)
     force_download = kwargs.pop("force_download", False)
     displayed_filename = kwargs.pop("displayed_filename", None)
+
     # Default mode for file writing and initial file size
     mode = "wb"
     file_size = 0
