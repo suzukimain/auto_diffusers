@@ -26,6 +26,10 @@ from diffusers.loaders.single_file_utils import (
     infer_diffusers_model_type,
     load_single_file_checkpoint,
 )
+from diffusers.pipelines.animate_diff import (
+    AnimateDiffPipeline,
+    AnimateDiffSDXLPipeline,
+)
 from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
@@ -36,65 +40,164 @@ from diffusers.pipelines.controlnet import (
     StableDiffusionControlNetInpaintPipeline,
     StableDiffusionControlNetPipeline,
 )
+from diffusers.pipelines.flux import FluxImg2ImgPipeline, FluxPipeline
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion import (
     StableDiffusionImg2ImgPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionPipeline,
 )
+from diffusers.pipelines.stable_diffusion_3 import (
+    StableDiffusion3Img2ImgPipeline,
+    StableDiffusion3Pipeline,
+)
+from diffusers.pipelines.stable_diffusion_upscale import StableDiffusionUpscalePipeline
 from diffusers.pipelines.stable_diffusion_xl import (
     StableDiffusionXLImg2ImgPipeline,
     StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
 )
+from diffusers.pipelines.stable_diffusion_xl_controlnet import (
+    StableDiffusionXLControlNetImg2ImgPipeline,
+    StableDiffusionXLControlNetPipeline,
+)
 from diffusers.utils import logging
-
+from huggingface_hub import hf_api, hf_hub_download
+from huggingface_hub.file_download import http_get
+from huggingface_hub.utils import validate_hf_hub_args
 
 logger = logging.get_logger(__name__)
 
 
 SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
     [
-        ("xl_base", StableDiffusionXLPipeline),
-        ("xl_refiner", StableDiffusionXLPipeline),
-        ("xl_inpaint", None),
-        ("playground-v2-5", StableDiffusionXLPipeline),
-        ("upscale", None),
+        ("animatediff_rgb", AnimateDiffPipeline),
+        ("animatediff_scribble", AnimateDiffPipeline),
+        ("animatediff_sdxl_beta", AnimateDiffSDXLPipeline),
+        ("animatediff_v1", AnimateDiffPipeline),
+        ("animatediff_v2", AnimateDiffPipeline),
+        ("animatediff_v3", AnimateDiffPipeline),
+        ("autoencoder-dc-f128c512", None),
+        ("autoencoder-dc-f32c32", None),
+        ("autoencoder-dc-f32c32-sana", None),
+        ("autoencoder-dc-f64c128", None),
+        ("controlnet", StableDiffusionControlNetPipeline),
+        ("controlnet_xl", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_large", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_mid", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_small", StableDiffusionXLControlNetPipeline),
+        ("flux-depth", FluxPipeline),
+        ("flux-dev", FluxPipeline),
+        ("flux-fill", FluxPipeline),
+        ("flux-schnell", FluxPipeline),
         ("inpainting", None),
         ("inpainting_v2", None),
-        ("controlnet", StableDiffusionControlNetPipeline),
-        ("v2", StableDiffusionPipeline),
+        ("ltx-video", None),
+        ("ltx-video-0.9.1", None),
+        ("hunyuan-video", None),
+        ("mochi-1-preview", None),
+        ("playground-v2-5", StableDiffusionXLPipeline),
+        ("sd3", StableDiffusion3Pipeline),
+        ("sd35_large", StableDiffusion3Pipeline),
+        ("sd35_medium", StableDiffusion3Pipeline),
+        ("stable_cascade_stage_b", None),
+        ("stable_cascade_stage_b_lite", None),
+        ("stable_cascade_stage_c", None),
+        ("stable_cascade_stage_c_lite", None),
+        ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionPipeline),
+        ("v2", StableDiffusionPipeline),
+        ("xl_base", StableDiffusionXLPipeline),
+        ("xl_inpaint", None),
+        ("xl_refiner", StableDiffusionXLPipeline),
     ]
 )
 
 SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
     [
-        ("xl_base", StableDiffusionXLImg2ImgPipeline),
-        ("xl_refiner", StableDiffusionXLImg2ImgPipeline),
-        ("xl_inpaint", None),
-        ("playground-v2-5", StableDiffusionXLImg2ImgPipeline),
-        ("upscale", None),
+        ("animatediff_rgb", AnimateDiffPipeline),
+        ("animatediff_scribble", AnimateDiffPipeline),
+        ("animatediff_sdxl_beta", AnimateDiffSDXLPipeline),
+        ("animatediff_v1", AnimateDiffPipeline),
+        ("animatediff_v2", AnimateDiffPipeline),
+        ("animatediff_v3", AnimateDiffPipeline),
+        ("autoencoder-dc-f128c512", None),
+        ("autoencoder-dc-f32c32", None),
+        ("autoencoder-dc-f32c32-sana", None),
+        ("autoencoder-dc-f64c128", None),
+        ("controlnet", StableDiffusionControlNetImg2ImgPipeline),
+        ("controlnet_xl", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_large", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_mid", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_small", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("flux-depth", FluxImg2ImgPipeline),
+        ("flux-dev", FluxImg2ImgPipeline),
+        ("flux-fill", FluxImg2ImgPipeline),
+        ("flux-schnell", FluxImg2ImgPipeline),
         ("inpainting", None),
         ("inpainting_v2", None),
-        ("controlnet", StableDiffusionControlNetImg2ImgPipeline),
-        ("v2", StableDiffusionImg2ImgPipeline),
+        ("ltx-video", None),
+        ("ltx-video-0.9.1", None),
+        ("hunyuan-video", None),
+        ("mochi-1-preview", None),
+        ("playground-v2-5", StableDiffusionXLImg2ImgPipeline),
+        ("sd3", StableDiffusion3Img2ImgPipeline),
+        ("sd35_large", StableDiffusion3Img2ImgPipeline),
+        ("sd35_medium", StableDiffusion3Img2ImgPipeline),
+        ("stable_cascade_stage_b", None),
+        ("stable_cascade_stage_b_lite", None),
+        ("stable_cascade_stage_c", None),
+        ("stable_cascade_stage_c_lite", None),
+        ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionImg2ImgPipeline),
+        ("v2", StableDiffusionImg2ImgPipeline),
+        ("xl_base", StableDiffusionXLImg2ImgPipeline),
+        ("xl_inpaint", None),
+        ("xl_refiner", StableDiffusionXLImg2ImgPipeline),
     ]
 )
 
 SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
     [
-        ("xl_base", None),
-        ("xl_refiner", None),
-        ("xl_inpaint", StableDiffusionXLInpaintPipeline),
-        ("playground-v2-5", None),
-        ("upscale", None),
+        ("animatediff_rgb", None),
+        ("animatediff_scribble", None),
+        ("animatediff_sdxl_beta", None),
+        ("animatediff_v1", None),
+        ("animatediff_v2", None),
+        ("animatediff_v3", None),
+        ("autoencoder-dc-f128c512", None),
+        ("autoencoder-dc-f32c32", None),
+        ("autoencoder-dc-f32c32-sana", None),
+        ("autoencoder-dc-f64c128", None),
+        ("controlnet", StableDiffusionControlNetInpaintPipeline),
+        ("controlnet_xl", None),
+        ("controlnet_xl_large", None),
+        ("controlnet_xl_mid", None),
+        ("controlnet_xl_small", None),
+        ("flux-depth", None),
+        ("flux-dev", None),
+        ("flux-fill", None),
+        ("flux-schnell", None),
         ("inpainting", StableDiffusionInpaintPipeline),
         ("inpainting_v2", StableDiffusionInpaintPipeline),
-        ("controlnet", StableDiffusionControlNetInpaintPipeline),
-        ("v2", None),
+        ("ltx-video", None),
+        ("ltx-video-0.9.1", None),
+        ("hunyuan-video", None),
+        ("mochi-1-preview", None),
+        ("playground-v2-5", None),
+        ("sd3", None),
+        ("sd35_large", None),
+        ("sd35_medium", None),
+        ("stable_cascade_stage_b", None),
+        ("stable_cascade_stage_b_lite", None),
+        ("stable_cascade_stage_c", None),
+        ("stable_cascade_stage_c_lite", None),
+        ("upscale", StableDiffusionUpscalePipeline),
         ("v1", None),
+        ("v2", None),
+        ("xl_base", None),
+        ("xl_inpaint", StableDiffusionXLInpaintPipeline),
+        ("xl_refiner", None),
     ]
 )
 
