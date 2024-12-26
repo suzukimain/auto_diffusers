@@ -26,10 +26,7 @@ from diffusers.loaders.single_file_utils import (
     infer_diffusers_model_type,
     load_single_file_checkpoint,
 )
-from diffusers.pipelines.animate_diff import (
-    AnimateDiffPipeline,
-    AnimateDiffSDXLPipeline,
-)
+from diffusers.pipelines.animatediff import AnimateDiffPipeline, AnimateDiffSDXLPipeline
 from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
@@ -39,6 +36,8 @@ from diffusers.pipelines.controlnet import (
     StableDiffusionControlNetImg2ImgPipeline,
     StableDiffusionControlNetInpaintPipeline,
     StableDiffusionControlNetPipeline,
+    StableDiffusionXLControlNetImg2ImgPipeline,
+    StableDiffusionXLControlNetPipeline,
 )
 from diffusers.pipelines.flux import FluxImg2ImgPipeline, FluxPipeline
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
@@ -46,20 +45,16 @@ from diffusers.pipelines.stable_diffusion import (
     StableDiffusionImg2ImgPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionPipeline,
+    StableDiffusionUpscalePipeline,
 )
 from diffusers.pipelines.stable_diffusion_3 import (
     StableDiffusion3Img2ImgPipeline,
     StableDiffusion3Pipeline,
 )
-from diffusers.pipelines.stable_diffusion_upscale import StableDiffusionUpscalePipeline
 from diffusers.pipelines.stable_diffusion_xl import (
     StableDiffusionXLImg2ImgPipeline,
     StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
-)
-from diffusers.pipelines.stable_diffusion_xl_controlnet import (
-    StableDiffusionXLControlNetImg2ImgPipeline,
-    StableDiffusionXLControlNetPipeline,
 )
 from diffusers.utils import logging
 from huggingface_hub import hf_api, hf_hub_download
