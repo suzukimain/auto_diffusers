@@ -1012,12 +1012,12 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         kwargs.update(_status)
 
         # Search for the model on Hugging Face and get the model status
-        hf_model_status = search_huggingface(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {hf_model_status.model_status.download_url}")
-        checkpoint_path = hf_model_status.model_path
+        hf_checkpoint_status = search_huggingface(pretrained_model_link_or_path, **kwargs)
+        logger.warning(f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}")
+        checkpoint_path = hf_checkpoint_status.model_path
 
         # Check the format of the model checkpoint
-        if hf_model_status.checkpoint_format == "single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":
             # Load the pipeline from a single file checkpoint
             return load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1120,9 +1120,9 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         kwargs.update(_status)
 
         # Search for the model on Civitai and get the model status
-        model_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {model_status.model_status.download_url}")
-        checkpoint_path = model_status.model_path
+        checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.download_url}")
+        checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
         return load_pipeline_from_single_file(
@@ -1268,12 +1268,12 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         kwargs.update(_parmas)
 
         # Search for the model on Hugging Face and get the model status
-        model_status = search_huggingface(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {model_status.model_status.download_url}")
-        checkpoint_path = model_status.model_path
+        hf_checkpoint_status = search_huggingface(pretrained_model_link_or_path, **kwargs)
+        logger.warning(f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}")
+        checkpoint_path = hf_checkpoint_status.model_path
 
         # Check the format of the model checkpoint
-        if model_status.checkpoint_format == "single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":
             # Load the pipeline from a single file checkpoint
             return load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1376,9 +1376,9 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         kwargs.update(_status)
 
         # Search for the model on Civitai and get the model status
-        model_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {model_status.model_status.download_url}")
-        checkpoint_path = model_status.model_path
+        checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.download_url}")
+        checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
         return load_pipeline_from_single_file(
@@ -1524,12 +1524,12 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         kwargs.update(_status)
 
         # Search for the model on Hugging Face and get the model status
-        model_status = search_huggingface(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {model_status.model_status.download_url}")
-        checkpoint_path = model_status.model_path
+        hf_checkpoint_status = search_huggingface(pretrained_model_link_or_path, **kwargs)
+        logger.warning(f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}")
+        checkpoint_path = hf_checkpoint_status.model_path
 
         # Check the format of the model checkpoint
-        if model_status.checkpoint_format == "single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":
             # Load the pipeline from a single file checkpoint
             return load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1632,9 +1632,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         kwargs.update(_status)
 
         # Search for the model on Civitai and get the model status
-        model_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {model_status.model_status.download_url}")
-        checkpoint_path = model_status.model_path
+        checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.download_url}")
+        checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
         return load_pipeline_from_single_file(
