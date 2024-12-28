@@ -1126,7 +1126,7 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.download_url}")
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
         checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
@@ -1382,7 +1382,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.download_url}")
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
         checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
@@ -1638,7 +1638,7 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.download_url}")
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
         checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
@@ -1792,7 +1792,7 @@ class test:
                 kwargs.update(_status)
                 # Search for the model on Civitai and get the model status
                 _status = search_civitai(_search_word **kwargs)
-                logger.warning(f"textual_inversion_path: {_search_word} -> {_status.model_status.download_url}")
+                logger.warning(f"textual_inversion_path: {_search_word} -> {_status.model_status.site_url}")
                 textual_inversion_path = _status.model_path
 
                 pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(_search_word)] = textual_inversion_path
