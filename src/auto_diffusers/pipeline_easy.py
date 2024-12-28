@@ -1659,8 +1659,8 @@ class test:
         self,
         pretrained_model_name_or_path: Union[str, List[str]],
         token: Optional[Union[str, List[str]]] = None,
-        tokenizer: Optional["PreTrainedTokenizer"] = None,  # noqa: F821
-        text_encoder: Optional["PreTrainedModel"] = None,  # noqa: F821
+        tokenizer = None,
+        text_encoder = None,
         **kwargs,
     ):
         r"""
@@ -1671,6 +1671,7 @@ class test:
             pretrained_model_name_or_path (`str` or `os.PathLike` or `List[str or os.PathLike]` or `Dict` or `List[Dict]`):
                 Can be either one of the following or a list of them:
 
+                    - Search keywords for pretrained model (for example `EasyNegative`).
                     - A string, the *model id* (for example `sd-concepts-library/low-poly-hd-logos-icons`) of a
                       pretrained model hosted on the Hub.
                     - A path to a *directory* (for example `./my_text_inversion_directory/`) containing the textual
@@ -1773,8 +1774,7 @@ class test:
         tokens = [token] if not isinstance(token, list) else token
         if tokens[0] is None:
             tokens = tokens * len(pretrained_model_name_or_paths)
-
-        # main_pipe.tokenizer.get_vocab()に渡されたトークンが含まれていないかチェック。もしあればf"使用済みトークン: {main_pipe.tokenizer.get_vocab()}"を返す。"        
+   
         for check_token in tokens:
             if check_token in tokenizer.get_vocab():
                 raise ValueError(f"Token TEST_ONE is already in use.")            
