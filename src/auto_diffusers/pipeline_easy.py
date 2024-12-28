@@ -217,11 +217,21 @@ DIFFUSERS_CONFIG_DIR = [
     "text_encoder_2",
 ]
 
-INPAINT_PIPELINE_KEYS = [
-    "xl_inpaint",
-    "inpainting",
-    "inpainting_v2",
-]
+TOKENIZER_IMAGE_SIZE_MAP = {
+    768: "v1.5",
+    1024: "SDXL 1.0",
+}
+
+"""
+def update_base_model(tokenizer, base_model):
+
+    if expected_shape in TOKENIZER_IMAGE_SIZE_MAP:
+        base_model.update({"model_type": TOKENIZER_IMAGE_SIZE_MAP[expected_shape]})
+    else:
+        raise ValueError(f"Unexpected tokenizer shape: {expected_shape}")
+
+    return base_model
+"""
 
 EXTENSION = [".safetensors", ".ckpt", ".bin"]
 
@@ -1783,8 +1793,8 @@ class test:
                     )            
 
 
-        for _search_word in pretrained_model_name_or_paths:
-            if isinstance(_search_word, str):
+        for search_word in pretrained_model_name_or_paths:
+            if isinstance(search_word, str):
                 # Update kwargs to ensure the model is downloaded and parameters are included
                 _status = {
                     "download": True,
@@ -1794,11 +1804,11 @@ class test:
                 }
                 kwargs.update(_status)
                 # Search for the model on Civitai and get the model status
-                _status = search_civitai(_search_word **kwargs)
-                logger.warning(f"textual_inversion_path: {_search_word} -> {_status.model_status.site_url}")
+                _status = search_civitai(search_word **kwargs)
+                logger.warning(f"textual_inversion_path: {search_word} -> {_status.model_status.site_url}")
                 textual_inversion_path = _status.model_path
 
-                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(_search_word)] = textual_inversion_path
+                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path
 
                 
         
