@@ -17,7 +17,7 @@ import os
 import re
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
-from typing import Union
+from typing import List, Union, Optional
 
 import requests
 from huggingface_hub import hf_api, hf_hub_download
@@ -261,12 +261,15 @@ class ModelStatus:
             The name of the model file.
         local (`bool`):
             Whether the model exists locally
+        site_url (`str`):
+            The URL of the site where the model is hosted.
     """
 
     search_word: str = ""
     download_url: str = ""
     file_name: str = ""
     local: bool = False
+    site_url: str = ""
 
 
 @dataclass
@@ -689,6 +692,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             repo_status=RepoStatus(repo_id=repo_id, repo_hash=hf_repo_info.sha, version=revision),
             model_status=ModelStatus(
                 search_word=search_word,
+                site_url=download_url,
                 download_url=download_url,
                 file_name=file_name,
                 local=download,
@@ -869,6 +873,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             repo_status=RepoStatus(repo_id=repo_name, repo_hash=repo_id, version=version_id),
             model_status=ModelStatus(
                 search_word=search_word,
+                site_url=f"https://civitai.com/models/{repo_id}?modelVersionId={version_id}",
                 download_url=download_url,
                 file_name=file_name,
                 local=output_info["type"]["local"],
@@ -1652,7 +1657,7 @@ class test:
     @validate_hf_hub_args
     def load_textual_inversion(
         self,
-        pretrained_model_name_or_path: Union[str, List[str], Dict[str, torch.Tensor], List[Dict[str, torch.Tensor]]],
+        pretrained_model_name_or_path: Union[str, List[str]],
         token: Optional[Union[str, List[str]]] = None,
         tokenizer: Optional["PreTrainedTokenizer"] = None,  # noqa: F821
         text_encoder: Optional["PreTrainedModel"] = None,  # noqa: F821
@@ -1764,6 +1769,17 @@ class test:
             else pretrained_model_name_or_path
         )
 
+        # 2.1 Normalize tokens
+        tokens = [token] if not isinstance(token, list) else token
+        if tokens[0] is None:
+            tokens = tokens * len(pretrained_model_name_or_paths)
+
+        # main_pipe.tokenizer.get_vocab()に渡されたトークンが含まれていないかチェック。もしあればf"使用済みトークン: {main_pipe.tokenizer.get_vocab()}"を返す。"        
+        for check_token in tokens:
+            if check_token in tokenizer.get_vocab():
+                raise ValueError(f"Token TEST_ONE is already in use.")            
+
+
         for _search_word in pretrained_model_name_or_paths:
             if isinstance(_search_word, str):
                 # Update kwargs to ensure the model is downloaded and parameters are included
@@ -1782,9 +1798,7 @@ class test:
                 pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(_search_word)] = textual_inversion_path
 
                 
-        tokens = [token] if not isinstance(token, list) else token
-        if tokens[0] is None:
-            tokens = tokens * len(pretrained_model_name_or_paths)
+        
 
 
     #---Erase beyond this point.---#
