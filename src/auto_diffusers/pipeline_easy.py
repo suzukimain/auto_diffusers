@@ -1777,7 +1777,10 @@ class test:
    
         for check_token in tokens:
             if check_token in tokenizer.get_vocab():
-                raise ValueError(f"Token TEST_ONE is already in use.")            
+                raise ValueError(
+                    f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
+                    f"Tokenizer Vocabulary: {tokenizer.get_vocab()}"
+                    )            
 
 
         for _search_word in pretrained_model_name_or_paths:
