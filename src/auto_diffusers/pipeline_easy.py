@@ -217,10 +217,20 @@ DIFFUSERS_CONFIG_DIR = [
     "text_encoder_2",
 ]
 
-TOKENIZER_IMAGE_SIZE_MAP = {
-    512: [],
-    768: ["v1.5"],
-    1024: ["SDXL 1.0"],
+TOKENIZER_SHAPE_MAP = {
+    512: ["SD 1.4", "SD 1.5", "SD 1.5 LCM"],
+    768: ["SD 2.0", "SD 2.0 768", "SD 2.1", "SD 2.1 768", "SD 2.1 Unclip"],
+    1024: [
+        "SDXL 0.9",
+        "SDXL 1.0",
+        "SDXL 1.0 LCM",
+        "SDXL Distilled",
+        "SDXL Turbo",
+        "SDXL Lightning",
+        "PixArt a",
+        "Playground v2",
+        "Pony",
+    ],
 }
 
 
@@ -1665,6 +1675,7 @@ class test:
         self,
         pretrained_model_name_or_path: Union[str, List[str]],
         token: Optional[Union[str, List[str]]] = None,
+        base_model: Optional[Union[str, List[str]]] = None,
         tokenizer = None,
         text_encoder = None,
         **kwargs,
@@ -1801,108 +1812,22 @@ class test:
                     "skip_error": False,
                     "model_type": "TextualInversion",
                 }
-                if expected_shape in TOKENIZER_IMAGE_SIZE_MAP:
-                    _status["base_model"] = TOKENIZER_IMAGE_SIZE_MAP[expected_shape]
+                if expected_shape in TOKENIZER_SHAPE_MAP:
+                    tags = TOKENIZER_SHAPE_MAP[expected_shape]
+                    if base_model is not None:
+                        if isinstance(base_model, list):
+                            tags.extend(base_model)
+                        else:
+                            tags.append(base_model)
+                    _status["base_model"] = tags
 
                 kwargs.update(_status)
                 # Search for the model on Civitai and get the model status
-                _status = search_civitai(search_word **kwargs)
-                logger.warning(f"textual_inversion_path: {search_word} -> {_status.model_status.site_url}")
-                textual_inversion_path = _status.model_path
-                
+                textual_inversion_path = search_civitai(search_word **kwargs)
+                logger.warning(f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}")
 
-                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path
-
-                
-        
-
-
-    #---Erase beyond this point.---#
-
-        # 3. Check inputs
-        self._check_text_inv_inputs(tokenizer, text_encoder, pretrained_model_name_or_paths, tokens)
-
-        # 4. Load state dicts of textual embeddings
-        state_dicts = load_textual_inversion_state_dicts(pretrained_model_name_or_paths, **kwargs)
-
-        # 4.1 Handle the special case when state_dict is a tensor that contains n embeddings for n tokens
-        if len(tokens) > 1 and len(state_dicts) == 1:
-            if isinstance(state_dicts[0], torch.Tensor):
-                state_dicts = list(state_dicts[0])
-                if len(tokens) != len(state_dicts):
-                    raise ValueError(
-                        f"You have passed a state_dict contains {len(state_dicts)} embeddings, and list of tokens of length {len(tokens)} "
-                        f"Make sure both have the same length."
-                    )
-
-        # 4. Retrieve tokens and embeddings
-        tokens, embeddings = self._retrieve_tokens_and_embeddings(tokens, state_dicts, tokenizer)
-
-        # 5. Extend tokens and embeddings for multi vector
-        tokens, embeddings = self._extend_tokens_and_embeddings(tokens, embeddings, tokenizer)
-
-        # 6. Make sure all embeddings have the correct size
-        expected_emb_dim = text_encoder.get_input_embeddings().weight.shape[-1]
-        if any(expected_emb_dim != emb.shape[-1] for emb in embeddings):
-            raise ValueError(
-                "Loaded embeddings are of incorrect shape. Expected each textual inversion embedding "
-                "to be of shape {input_embeddings.shape[-1]}, but are {embeddings.shape[-1]} "
-            )
-
-        # 7. Now we can be sure that loading the embedding matrix works
-        # < Unsafe code:
-
-        # 7.1 Offload all hooks in case the pipeline was cpu offloaded before make sure, we offload and onload again
-        is_model_cpu_offload = False
-        is_sequential_cpu_offload = False
-        if self.hf_device_map is None:
-            for _, component in self.components.items():
-                if isinstance(component, nn.Module):
-                    if hasattr(component, "_hf_hook"):
-                        is_model_cpu_offload = isinstance(getattr(component, "_hf_hook"), CpuOffload)
-                        is_sequential_cpu_offload = (
-                            isinstance(getattr(component, "_hf_hook"), AlignDevicesHook)
-                            or hasattr(component._hf_hook, "hooks")
-                            and isinstance(component._hf_hook.hooks[0], AlignDevicesHook)
-                        )
-                        logger.info(
-                            "Accelerate hooks detected. Since you have called `load_textual_inversion()`, the previous hooks will be first removed. Then the textual inversion parameters will be loaded and the hooks will be applied again."
-                        )
-                        remove_hook_from_module(component, recurse=is_sequential_cpu_offload)
-
-        # 7.2 save expected device and dtype
-        device = text_encoder.device
-        dtype = text_encoder.dtype
-
-        # 7.3 Increase token embedding matrix
-        text_encoder.resize_token_embeddings(len(tokenizer) + len(tokens))
-        input_embeddings = text_encoder.get_input_embeddings().weight
-
-        # 7.4 Load token and embedding
-        for token, embedding in zip(tokens, embeddings):
-            # add tokens and get ids
-            tokenizer.add_tokens(token)
-            token_id = tokenizer.convert_tokens_to_ids(token)
-            input_embeddings.data[token_id] = embedding
-            logger.info(f"Loaded textual inversion embedding for {token}.")
-
-        input_embeddings.to(dtype=dtype, device=device)
-
-        # 7.5 Offload the model again
-        if is_model_cpu_offload:
-            self.enable_model_cpu_offload()
-        elif is_sequential_cpu_offload:
-            self.enable_sequential_cpu_offload()
-
-
-
-"""
-def update_base_model(tokenizer, base_model):
-
-    if expected_shape in TOKENIZER_IMAGE_SIZE_MAP:
-        base_model.update({"model_type": TOKENIZER_IMAGE_SIZE_MAP[expected_shape]})
-    else:
-        raise ValueError(f"Unexpected tokenizer shape: {expected_shape}")
-
-    return base_model
-"""
+                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path.model_path
+    
+        self.load_textual_inversion(
+            pretrained_model_name_or_paths, token=tokens, tokenizer=tokenizer, text_encoder=text_encoder, **kwargs
+        )
