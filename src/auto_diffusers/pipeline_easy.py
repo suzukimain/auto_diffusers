@@ -218,20 +218,12 @@ DIFFUSERS_CONFIG_DIR = [
 ]
 
 TOKENIZER_IMAGE_SIZE_MAP = {
-    768: "v1.5",
-    1024: "SDXL 1.0",
+    512: [],
+    768: ["v1.5"],
+    1024: ["SDXL 1.0"],
 }
 
-"""
-def update_base_model(tokenizer, base_model):
 
-    if expected_shape in TOKENIZER_IMAGE_SIZE_MAP:
-        base_model.update({"model_type": TOKENIZER_IMAGE_SIZE_MAP[expected_shape]})
-    else:
-        raise ValueError(f"Unexpected tokenizer shape: {expected_shape}")
-
-    return base_model
-"""
 
 EXTENSION = [".safetensors", ".ckpt", ".bin"]
 
@@ -773,6 +765,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         "limit": 20,
     }
     if base_model is not None:
+        if not isinstance(base_model, list):
+            base_model = [base_model]
         params["baseModel"] = base_model
 
     headers = {}
@@ -810,20 +804,22 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         for selected_version in sorted_versions:
             version_id = selected_version["id"]
             models_list = []
-            for model_data in selected_version["files"]:
-                # Check if the file passes security scans and has a valid extension
-                file_name = model_data["name"]
-                if (
-                    model_data["pickleScanResult"] == "Success"
-                    and model_data["virusScanResult"] == "Success"
-                    and any(file_name.endswith(ext) for ext in EXTENSION)
-                    and os.path.basename(os.path.dirname(file_name)) not in DIFFUSERS_CONFIG_DIR
-                ):
-                    file_status = {
-                        "filename": file_name,
-                        "download_url": model_data["downloadUrl"],
-                    }
-                    models_list.append(file_status)
+            # When searching for textual inversion, results other than the values entered for the base model may come up, so check again.
+            if base_model is not None and selected_version["baseModel"] in base_model:
+                for model_data in selected_version["files"]:
+                    # Check if the file passes security scans and has a valid extension
+                    file_name = model_data["name"]
+                    if (
+                        model_data["pickleScanResult"] == "Success"
+                        and model_data["virusScanResult"] == "Success"
+                        and any(file_name.endswith(ext) for ext in EXTENSION)
+                        and os.path.basename(os.path.dirname(file_name)) not in DIFFUSERS_CONFIG_DIR
+                    ):
+                        file_status = {
+                            "filename": file_name,
+                            "download_url": model_data["downloadUrl"],
+                        }
+                        models_list.append(file_status)
 
             if models_list:
                 # Sort the models list by filename and find the safest model
@@ -1790,8 +1786,11 @@ class test:
                 raise ValueError(
                     f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
                     f"Tokenizer Vocabulary: {tokenizer.get_vocab()}"
-                    )            
-
+                    )
+        
+        
+        expected_shape = text_encoder.get_input_embeddings().weight.shape[-1] # Expected shape of tokenizer
+        
 
         for search_word in pretrained_model_name_or_paths:
             if isinstance(search_word, str):
@@ -1802,11 +1801,15 @@ class test:
                     "skip_error": False,
                     "model_type": "TextualInversion",
                 }
+                if expected_shape in TOKENIZER_IMAGE_SIZE_MAP:
+                    _status["base_model"] = TOKENIZER_IMAGE_SIZE_MAP[expected_shape]
+
                 kwargs.update(_status)
                 # Search for the model on Civitai and get the model status
                 _status = search_civitai(search_word **kwargs)
                 logger.warning(f"textual_inversion_path: {search_word} -> {_status.model_status.site_url}")
                 textual_inversion_path = _status.model_path
+                
 
                 pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path
 
@@ -1890,3 +1893,16 @@ class test:
             self.enable_model_cpu_offload()
         elif is_sequential_cpu_offload:
             self.enable_sequential_cpu_offload()
+
+
+
+"""
+def update_base_model(tokenizer, base_model):
+
+    if expected_shape in TOKENIZER_IMAGE_SIZE_MAP:
+        base_model.update({"model_type": TOKENIZER_IMAGE_SIZE_MAP[expected_shape]})
+    else:
+        raise ValueError(f"Unexpected tokenizer shape: {expected_shape}")
+
+    return base_model
+"""
