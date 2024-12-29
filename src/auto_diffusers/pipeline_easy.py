@@ -897,9 +897,173 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         )
 
 
-class EasyPipelineForText2Image(AutoPipelineForText2Image):
-    r"""
 
+class AutoConfig:
+    @validate_hf_hub_args
+    def auto_load_textual_inversion(
+        self,
+        pretrained_model_name_or_path: Union[str, List[str]],
+        token: Optional[Union[str, List[str]]] = None,
+        base_model: Optional[Union[str, List[str]]] = None,
+        tokenizer = None,
+        text_encoder = None,
+        **kwargs,
+    ):
+        r"""
+        Load Textual Inversion embeddings into the text encoder of [`StableDiffusionPipeline`] (both 🤗 Diffusers and
+        Automatic1111 formats are supported).
+
+        Parameters:
+            pretrained_model_name_or_path (`str` or `os.PathLike` or `List[str or os.PathLike]` or `Dict` or `List[Dict]`):
+                Can be either one of the following or a list of them:
+
+                    - Search keywords for pretrained model (for example `EasyNegative`).
+                    - A string, the *model id* (for example `sd-concepts-library/low-poly-hd-logos-icons`) of a
+                      pretrained model hosted on the Hub.
+                    - A path to a *directory* (for example `./my_text_inversion_directory/`) containing the textual
+                      inversion weights.
+                    - A path to a *file* (for example `./my_text_inversions.pt`) containing textual inversion weights.
+                    - A [torch state
+                      dict](https://pytorch.org/tutorials/beginner/saving_loading_models.html#what-is-a-state-dict).
+
+            token (`str` or `List[str]`, *optional*):
+                Override the token to use for the textual inversion weights. If `pretrained_model_name_or_path` is a
+                list, then `token` must also be a list of equal length.
+            text_encoder ([`~transformers.CLIPTextModel`], *optional*):
+                Frozen text-encoder ([clip-vit-large-patch14](https://huggingface.co/openai/clip-vit-large-patch14)).
+                If not specified, function will take self.tokenizer.
+            tokenizer ([`~transformers.CLIPTokenizer`], *optional*):
+                A `CLIPTokenizer` to tokenize text. If not specified, function will take self.tokenizer.
+            weight_name (`str`, *optional*):
+                Name of a custom weight file. This should be used when:
+
+                    - The saved textual inversion file is in 🤗 Diffusers format, but was saved under a specific weight
+                      name such as `text_inv.bin`.
+                    - The saved textual inversion file is in the Automatic1111 format.
+            cache_dir (`Union[str, os.PathLike]`, *optional*):
+                Path to a directory where a downloaded pretrained model configuration is cached if the standard cache
+                is not used.
+            force_download (`bool`, *optional*, defaults to `False`):
+                Whether or not to force the (re-)download of the model weights and configuration files, overriding the
+                cached versions if they exist.
+
+            proxies (`Dict[str, str]`, *optional*):
+                A dictionary of proxy servers to use by protocol or endpoint, for example, `{'http': 'foo.bar:3128',
+                'http://hostname': 'foo.bar:4012'}`. The proxies are used on each request.
+            local_files_only (`bool`, *optional*, defaults to `False`):
+                Whether to only load local model weights and configuration files or not. If set to `True`, the model
+                won't be downloaded from the Hub.
+            token (`str` or *bool*, *optional*):
+                The token to use as HTTP bearer authorization for remote files. If `True`, the token generated from
+                `diffusers-cli login` (stored in `~/.huggingface`) is used.
+            revision (`str`, *optional*, defaults to `"main"`):
+                The specific model version to use. It can be a branch name, a tag name, a commit id, or any identifier
+                allowed by Git.
+            subfolder (`str`, *optional*, defaults to `""`):
+                The subfolder location of a model file within a larger model repository on the Hub or locally.
+            mirror (`str`, *optional*):
+                Mirror source to resolve accessibility issues if you're downloading a model in China. We do not
+                guarantee the timeliness or safety of the source, and you should refer to the mirror site for more
+                information.
+
+        Example:
+
+        To load a Textual Inversion embedding vector in 🤗 Diffusers format:
+
+        ```py
+        from diffusers import StableDiffusionPipeline
+        import torch
+
+        model_id = "runwayml/stable-diffusion-v1-5"
+        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
+
+        pipe.load_textual_inversion("sd-concepts-library/cat-toy")
+
+        prompt = "A <cat-toy> backpack"
+
+        image = pipe(prompt, num_inference_steps=50).images[0]
+        image.save("cat-backpack.png")
+        ```
+
+        To load a Textual Inversion embedding vector in Automatic1111 format, make sure to download the vector first
+        (for example from [civitAI](https://civitai.com/models/3036?modelVersionId=9857)) and then load the vector
+        locally:
+
+        ```py
+        from diffusers import StableDiffusionPipeline
+        import torch
+
+        model_id = "runwayml/stable-diffusion-v1-5"
+        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
+
+        pipe.load_textual_inversion("./charturnerv2.pt", token="charturnerv2")
+
+        prompt = "charturnerv2, multiple views of the same character in the same outfit, a character turnaround of a woman wearing a black jacket and red shirt, best quality, intricate details."
+
+        image = pipe(prompt, num_inference_steps=50).images[0]
+        image.save("character.png")
+        ```
+
+        """
+        # 1. Set correct tokenizer and text encoder
+        tokenizer = tokenizer or getattr(self, "tokenizer", None)
+        text_encoder = text_encoder or getattr(self, "text_encoder", None)
+
+        # 2. Normalize inputs
+        pretrained_model_name_or_paths = (
+            [pretrained_model_name_or_path]
+            if not isinstance(pretrained_model_name_or_path, list)
+            else pretrained_model_name_or_path
+        )
+
+        # 2.1 Normalize tokens
+        tokens = [token] if not isinstance(token, list) else token
+        if tokens[0] is None:
+            tokens = tokens * len(pretrained_model_name_or_paths)
+   
+        for check_token in tokens:
+            if check_token in tokenizer.get_vocab():
+                raise ValueError(
+                    f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
+                    f"Tokenizer Vocabulary: {tokenizer.get_vocab()}"
+                    )
+        
+        
+        expected_shape = text_encoder.get_input_embeddings().weight.shape[-1] # Expected shape of tokenizer
+        
+
+        for search_word in pretrained_model_name_or_paths:
+            if isinstance(search_word, str):
+                # Update kwargs to ensure the model is downloaded and parameters are included
+                _status = {
+                    "download": True,
+                    "include_params": True,
+                    "skip_error": False,
+                    "model_type": "TextualInversion",
+                }
+                if expected_shape in TOKENIZER_SHAPE_MAP:
+                    tags = TOKENIZER_SHAPE_MAP[expected_shape]
+                    if base_model is not None:
+                        if isinstance(base_model, list):
+                            tags.extend(base_model)
+                        else:
+                            tags.append(base_model)
+                    _status["base_model"] = tags
+
+                kwargs.update(_status)
+                # Search for the model on Civitai and get the model status
+                textual_inversion_path = search_civitai(search_word **kwargs)
+                logger.warning(f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}")
+
+                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path.model_path
+    
+        self.load_textual_inversion(
+            pretrained_model_name_or_paths, token=tokens, tokenizer=tokenizer, text_encoder=text_encoder, **kwargs
+        )
+
+
+class EasyPipelineForText2Image(AutoPipelineForText2Image, AutoConfig):
+    r"""
     [`EasyPipelineForText2Image`] is a generic pipeline class that instantiates a text-to-image pipeline class. The
     specific underlying pipeline class is automatically selected from either the
     [`~EasyPipelineForText2Image.from_pretrained`], [`~EasyPipelineForText2Image.from_pipe`], [`~EasyPipelineForText2Image.from_huggingface`] or [`~EasyPipelineForText2Image.from_civitai`] methods.
@@ -1666,168 +1830,4 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
 
 
 
-# TODO:
-#Get the expected shape of tokenizer and update base_model. If XL is included in the pipeline, add “SDXL 1.0”.
 
-class test:
-    @validate_hf_hub_args
-    def load_textual_inversion(
-        self,
-        pretrained_model_name_or_path: Union[str, List[str]],
-        token: Optional[Union[str, List[str]]] = None,
-        base_model: Optional[Union[str, List[str]]] = None,
-        tokenizer = None,
-        text_encoder = None,
-        **kwargs,
-    ):
-        r"""
-        Load Textual Inversion embeddings into the text encoder of [`StableDiffusionPipeline`] (both 🤗 Diffusers and
-        Automatic1111 formats are supported).
-
-        Parameters:
-            pretrained_model_name_or_path (`str` or `os.PathLike` or `List[str or os.PathLike]` or `Dict` or `List[Dict]`):
-                Can be either one of the following or a list of them:
-
-                    - Search keywords for pretrained model (for example `EasyNegative`).
-                    - A string, the *model id* (for example `sd-concepts-library/low-poly-hd-logos-icons`) of a
-                      pretrained model hosted on the Hub.
-                    - A path to a *directory* (for example `./my_text_inversion_directory/`) containing the textual
-                      inversion weights.
-                    - A path to a *file* (for example `./my_text_inversions.pt`) containing textual inversion weights.
-                    - A [torch state
-                      dict](https://pytorch.org/tutorials/beginner/saving_loading_models.html#what-is-a-state-dict).
-
-            token (`str` or `List[str]`, *optional*):
-                Override the token to use for the textual inversion weights. If `pretrained_model_name_or_path` is a
-                list, then `token` must also be a list of equal length.
-            text_encoder ([`~transformers.CLIPTextModel`], *optional*):
-                Frozen text-encoder ([clip-vit-large-patch14](https://huggingface.co/openai/clip-vit-large-patch14)).
-                If not specified, function will take self.tokenizer.
-            tokenizer ([`~transformers.CLIPTokenizer`], *optional*):
-                A `CLIPTokenizer` to tokenize text. If not specified, function will take self.tokenizer.
-            weight_name (`str`, *optional*):
-                Name of a custom weight file. This should be used when:
-
-                    - The saved textual inversion file is in 🤗 Diffusers format, but was saved under a specific weight
-                      name such as `text_inv.bin`.
-                    - The saved textual inversion file is in the Automatic1111 format.
-            cache_dir (`Union[str, os.PathLike]`, *optional*):
-                Path to a directory where a downloaded pretrained model configuration is cached if the standard cache
-                is not used.
-            force_download (`bool`, *optional*, defaults to `False`):
-                Whether or not to force the (re-)download of the model weights and configuration files, overriding the
-                cached versions if they exist.
-
-            proxies (`Dict[str, str]`, *optional*):
-                A dictionary of proxy servers to use by protocol or endpoint, for example, `{'http': 'foo.bar:3128',
-                'http://hostname': 'foo.bar:4012'}`. The proxies are used on each request.
-            local_files_only (`bool`, *optional*, defaults to `False`):
-                Whether to only load local model weights and configuration files or not. If set to `True`, the model
-                won't be downloaded from the Hub.
-            token (`str` or *bool*, *optional*):
-                The token to use as HTTP bearer authorization for remote files. If `True`, the token generated from
-                `diffusers-cli login` (stored in `~/.huggingface`) is used.
-            revision (`str`, *optional*, defaults to `"main"`):
-                The specific model version to use. It can be a branch name, a tag name, a commit id, or any identifier
-                allowed by Git.
-            subfolder (`str`, *optional*, defaults to `""`):
-                The subfolder location of a model file within a larger model repository on the Hub or locally.
-            mirror (`str`, *optional*):
-                Mirror source to resolve accessibility issues if you're downloading a model in China. We do not
-                guarantee the timeliness or safety of the source, and you should refer to the mirror site for more
-                information.
-
-        Example:
-
-        To load a Textual Inversion embedding vector in 🤗 Diffusers format:
-
-        ```py
-        from diffusers import StableDiffusionPipeline
-        import torch
-
-        model_id = "runwayml/stable-diffusion-v1-5"
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
-
-        pipe.load_textual_inversion("sd-concepts-library/cat-toy")
-
-        prompt = "A <cat-toy> backpack"
-
-        image = pipe(prompt, num_inference_steps=50).images[0]
-        image.save("cat-backpack.png")
-        ```
-
-        To load a Textual Inversion embedding vector in Automatic1111 format, make sure to download the vector first
-        (for example from [civitAI](https://civitai.com/models/3036?modelVersionId=9857)) and then load the vector
-        locally:
-
-        ```py
-        from diffusers import StableDiffusionPipeline
-        import torch
-
-        model_id = "runwayml/stable-diffusion-v1-5"
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
-
-        pipe.load_textual_inversion("./charturnerv2.pt", token="charturnerv2")
-
-        prompt = "charturnerv2, multiple views of the same character in the same outfit, a character turnaround of a woman wearing a black jacket and red shirt, best quality, intricate details."
-
-        image = pipe(prompt, num_inference_steps=50).images[0]
-        image.save("character.png")
-        ```
-
-        """
-        # 1. Set correct tokenizer and text encoder
-        tokenizer = tokenizer or getattr(self, "tokenizer", None)
-        text_encoder = text_encoder or getattr(self, "text_encoder", None)
-
-        # 2. Normalize inputs
-        pretrained_model_name_or_paths = (
-            [pretrained_model_name_or_path]
-            if not isinstance(pretrained_model_name_or_path, list)
-            else pretrained_model_name_or_path
-        )
-
-        # 2.1 Normalize tokens
-        tokens = [token] if not isinstance(token, list) else token
-        if tokens[0] is None:
-            tokens = tokens * len(pretrained_model_name_or_paths)
-   
-        for check_token in tokens:
-            if check_token in tokenizer.get_vocab():
-                raise ValueError(
-                    f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
-                    f"Tokenizer Vocabulary: {tokenizer.get_vocab()}"
-                    )
-        
-        
-        expected_shape = text_encoder.get_input_embeddings().weight.shape[-1] # Expected shape of tokenizer
-        
-
-        for search_word in pretrained_model_name_or_paths:
-            if isinstance(search_word, str):
-                # Update kwargs to ensure the model is downloaded and parameters are included
-                _status = {
-                    "download": True,
-                    "include_params": True,
-                    "skip_error": False,
-                    "model_type": "TextualInversion",
-                }
-                if expected_shape in TOKENIZER_SHAPE_MAP:
-                    tags = TOKENIZER_SHAPE_MAP[expected_shape]
-                    if base_model is not None:
-                        if isinstance(base_model, list):
-                            tags.extend(base_model)
-                        else:
-                            tags.append(base_model)
-                    _status["base_model"] = tags
-
-                kwargs.update(_status)
-                # Search for the model on Civitai and get the model status
-                textual_inversion_path = search_civitai(search_word **kwargs)
-                logger.warning(f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}")
-
-                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path.model_path
-    
-        self.load_textual_inversion(
-            pretrained_model_name_or_paths, token=tokens, tokenizer=tokenizer, text_encoder=text_encoder, **kwargs
-        )
