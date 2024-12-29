@@ -815,7 +815,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             version_id = selected_version["id"]
             models_list = []
             # When searching for textual inversion, results other than the values entered for the base model may come up, so check again.
-            if base_model is not None and selected_version["baseModel"] in base_model:
+            if base_model is None or selected_version["baseModel"] in base_model:
                 for model_data in selected_version["files"]:
                     # Check if the file passes security scans and has a valid extension
                     file_name = model_data["name"]
