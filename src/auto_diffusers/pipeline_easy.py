@@ -1426,7 +1426,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         >>> from auto_diffusers import EasyPipelineForImage2Image
 
         >>> pipeline = EasyPipelineForImage2Image.from_huggingface("stable-diffusion-v1-5")
-        >>> image = pipeline(prompt).images[0]
+        >>> image = pipeline(prompt, image).images[0]
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
@@ -1536,7 +1536,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         >>> from auto_diffusers import EasyPipelineForImage2Image
 
         >>> pipeline = EasyPipelineForImage2Image.from_huggingface("stable-diffusion-v1-5")
-        >>> image = pipeline(prompt).images[0]
+        >>> image = pipeline(prompt, image).images[0]
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
@@ -1683,8 +1683,8 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         ```py
         >>> from auto_diffusers import EasyPipelineForInpainting
 
-        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-v1-5")
-        >>> image = pipeline(prompt).images[0]
+        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-2-inpainting")
+        >>> image = pipeline(prompt, image=init_image, mask_image=mask_image).images[0]
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
@@ -1791,8 +1791,8 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         ```py
         >>> from auto_diffusers import EasyPipelineForInpainting
 
-        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-v1-5")
-        >>> image = pipeline(prompt).images[0]
+        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-2-inpainting")
+        >>> image = pipeline(prompt, image=init_image, mask_image=mask_image).images[0]
         ```
         """
         # Update kwargs to ensure the model is downloaded and parameters are included
