@@ -17,7 +17,7 @@ import os
 import re
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
-from types import MethodType
+import types
 from typing import List, Optional, Union
 
 import requests
@@ -900,12 +900,18 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
 
 def add_methods(pipeline):
+    r"""
+    Add methods from `AutoConfig` to the pipeline.
+    
+    Parameters:
+        pipeline (`Pipeline`):
+            The pipeline to which the methods will be added.    
+    """
     for attr_name in dir(AutoConfig):
         attr_value = getattr(AutoConfig, attr_name)
         if callable(attr_value) and not attr_name.startswith("__"):
-            setattr(pipeline, attr_name, MethodType(attr_value, pipeline))
+            setattr(pipeline, attr_name, types.MethodType(attr_value, pipeline))
     return pipeline
-
 
 class AutoConfig:
     @validate_hf_hub_args
@@ -988,7 +994,7 @@ class AutoConfig:
         ```
 
         """
-        # 1. Set correct tokenizer and text encoder
+        # 1. Set tokenizer and text encoder
         tokenizer = tokenizer or getattr(self, "tokenizer", None)
         text_encoder = text_encoder or getattr(self, "text_encoder", None)
 
@@ -1005,7 +1011,7 @@ class AutoConfig:
             tokens = tokens * len(pretrained_model_name_or_paths)
 
         for check_token in tokens:
-            # Copied from diffusers.loaders.textual_inversion
+            # Check if token is already in tokenizer vocabulary
             if check_token in tokenizer.get_vocab():
                 raise ValueError(
                     f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
