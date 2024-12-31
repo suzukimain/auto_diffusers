@@ -14,11 +14,12 @@
 # limitations under the License.
 
 import os
+import torch
 import re
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
 import types
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 
 import requests
 from huggingface_hub import hf_api, hf_hub_download
@@ -914,7 +915,6 @@ def add_methods(pipeline):
     return pipeline
 
 class AutoConfig:
-    @validate_hf_hub_args
     def auto_load_textual_inversion(
         self,
         pretrained_model_name_or_path: Union[str, List[str]],
@@ -1059,6 +1059,53 @@ class AutoConfig:
         self.load_textual_inversion(
             pretrained_model_name_or_paths, token=tokens, tokenizer=tokenizer, text_encoder=text_encoder, **kwargs
         )
+
+
+    def auto_load_lora_weights(
+            self, pretrained_model_name_or_path_or_dict: Union[str, Dict[str, torch.Tensor]], adapter_name=None, **kwargs
+    ):
+        r"""
+        Load LoRA weights specified in `pretrained_model_name_or_path_or_dict` into `self.unet` and
+        `self.text_encoder`.
+
+        All kwargs are forwarded to `self.lora_state_dict`.
+
+        See [`~loaders.StableDiffusionLoraLoaderMixin.lora_state_dict`] for more details on how the state dict is
+        loaded.
+
+        See [`~loaders.StableDiffusionLoraLoaderMixin.load_lora_into_unet`] for more details on how the state dict is
+        loaded into `self.unet`.
+
+        See [`~loaders.StableDiffusionLoraLoaderMixin.load_lora_into_text_encoder`] for more details on how the state
+        dict is loaded into `self.text_encoder`.
+
+        Parameters:
+            pretrained_model_name_or_path_or_dict (`str` or `os.PathLike` or `dict`):
+                See [`~loaders.StableDiffusionLoraLoaderMixin.lora_state_dict`].
+            adapter_name (`str`, *optional*):
+                Adapter name to be used for referencing the loaded adapter model. If not specified, it will use
+                `default_{i}` where i is the total number of adapters being loaded.
+            low_cpu_mem_usage (`bool`, *optional*):
+                Speed up model loading by only loading the pretrained LoRA weights and not initializing the random
+                weights.
+            kwargs (`dict`, *optional*):
+                See [`~loaders.StableDiffusionLoraLoaderMixin.lora_state_dict`].
+        """
+        if isinstance(pretrained_model_name_or_path_or_dict, str):
+            # Update kwargs to ensure the model is downloaded and parameters are included
+            _status = {
+                "download": True,
+                "include_params": True,
+                "skip_error": False,
+                "model_type": "LORA",
+            }
+            kwargs.update(_status)
+            # Search for the model on Civitai and get the model status
+            lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
+            logger.warning(f"lora_path: {pretrained_model_name_or_path_or_dict} -> {lora_path.model_status.site_url}")
+            pretrained_model_name_or_path_or_dict = lora_path.model_path
+        
+        self.load_lora_weights(pretrained_model_name_or_path_or_dict, adapter_name=adapter_name, **kwargs)
 
 
 class EasyPipelineForText2Image(AutoPipelineForText2Image, AutoConfig):
