@@ -742,6 +742,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             The search query string.
         model_type (`str`, *optional*, defaults to `Checkpoint`):
             The type of model to search for.
+        sort (`str`, *optional*):
+        	The order in which you wish to sort the results(for example, `Highest Rated`, `Most Downloaded`, `Newest`).
         base_model (`str`, *optional*):
             The base model to filter by.
         download (`bool`, *optional*, defaults to `False`):
@@ -765,6 +767,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     # Extract additional parameters from kwargs
     model_type = kwargs.pop("model_type", "Checkpoint")
+    sort = kwargs.pop("sort", None)
     download = kwargs.pop("download", False)
     base_model = kwargs.pop("base_model", None)
     force_download = kwargs.pop("force_download", False)
@@ -790,13 +793,15 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     params = {
         "query": search_word,
         "types": model_type,
-        "sort": "Most Downloaded",
         "limit": 20,
     }
     if base_model is not None:
         if not isinstance(base_model, list):
             base_model = [base_model]
         params["baseModel"] = base_model
+
+    if sort is not None:
+        params["sort"] = sort
 
     headers = {}
     if token:
