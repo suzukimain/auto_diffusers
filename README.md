@@ -50,31 +50,11 @@ image.save("cat.png")
 ## Search Civitai and Huggingfacee<a name = "Search_Civitai_and_Huggingfacee"></a>
 
 ```python
-from pipeline_easy import (
-    search_huggingface,
-    search_civitai,
-) 
-
-# Search Lora
-Lora = search_civitai(
-    "Keyword_to_search_Lora",
-    model_type="LORA",
-    base_model = "SD 1.5",
-    download=True,
-    )
 # Load Lora into the pipeline.
-pipeline.load_lora_weights(Lora)
+pipe.auto_load_lora_weights("Detail Tweaker")
 
-
-# Search TextualInversion
-TextualInversion = search_civitai(
-    "EasyNegative",
-    model_type="TextualInversion",
-    base_model = "SD 1.5",
-    download=True
-)
 # Load TextualInversion into the pipeline.
-pipeline.load_textual_inversion(TextualInversion, token="EasyNegative")
+pipe.auto_load_textual_inversion("EasyNegative", token="EasyNegative")
 ```
 
 ### Search Civitai<a name = "Search_Civitai"></a>
