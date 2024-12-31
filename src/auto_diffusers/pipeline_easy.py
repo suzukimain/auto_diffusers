@@ -914,7 +914,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 file_name=file_name,
                 local=output_info["type"]["local"],
             ),
-            extra_status=ExtraStatus(trained_words=trainedWords),
+            extra_status=ExtraStatus(trained_words=trainedWords or None),
         )
 
 
