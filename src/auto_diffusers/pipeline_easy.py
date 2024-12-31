@@ -219,8 +219,7 @@ DIFFUSERS_CONFIG_DIR = [
 ]
 
 TOKENIZER_SHAPE_MAP = {
-    768: ["SD 2.0", "SD 2.0 768", "SD 2.1", "SD 2.1 768", "SD 2.1 Unclip"],
-    1024: [
+    768: [
         "SD 1.4",
         "SD 1.5",
         "SD 1.5 LCM",
@@ -234,6 +233,7 @@ TOKENIZER_SHAPE_MAP = {
         "Playground v2",
         "Pony",
     ],
+    1024: ["SD 2.0", "SD 2.0 768", "SD 2.1", "SD 2.1 768", "SD 2.1 Unclip"],
 }
 
 
