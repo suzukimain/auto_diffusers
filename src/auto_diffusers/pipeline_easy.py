@@ -1028,7 +1028,11 @@ class AutoConfig:
                     "skip_error": False,
                     "model_type": "TextualInversion",
                 }
+                # Get tags for the base model of textual inversion compatible with tokenizer.
+                # If the tokenizer is 768-dimensional, set tags for SD 1.x and SDXL.
+                # If the tokenizer is 1024-dimensional, set tags for SD 2.x.
                 if expected_shape in TOKENIZER_SHAPE_MAP:
+                    # Retrieve the appropriate tags from the TOKENIZER_SHAPE_MAP based on the expected shape
                     tags = TOKENIZER_SHAPE_MAP[expected_shape]
                     if base_model is not None:
                         if isinstance(base_model, list):
