@@ -17,6 +17,7 @@ import os
 import re
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
+from types import MethodType
 from typing import List, Union, Optional
 
 import requests
@@ -896,6 +897,13 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             ),
         )
 
+
+def add_methods(pipeline):
+    for attr_name in dir(AutoConfig):
+        attr_value = getattr(AutoConfig, attr_name)
+        if callable(attr_value) and not attr_name.startswith("__"):
+            setattr(pipeline, attr_name, MethodType(attr_value, pipeline)) 
+    return pipeline
 
 
 class AutoConfig:
