@@ -998,6 +998,10 @@ class AutoConfig:
         tokenizer = tokenizer or getattr(self, "tokenizer", None)
         text_encoder = text_encoder or getattr(self, "text_encoder", None)
 
+        # Check if tokenizer and text encoder are provided
+        if tokenizer is None or text_encoder is None:
+            raise ValueError("Tokenizer and text encoder must be provided.")
+
         # 2. Normalize inputs
         pretrained_model_name_or_paths = (
             [pretrained_model_name_or_path]
