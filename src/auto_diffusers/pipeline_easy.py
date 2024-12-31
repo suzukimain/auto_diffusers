@@ -513,7 +513,7 @@ def file_downloader(
     if os.path.exists(save_path):
         if not force_download:
             # If the file exists and force_download is False, skip the download
-            logger.warning(f"File already exists: {save_path}, skipping download.")
+            logger.info(f"File already exists: {save_path}, skipping download.")
             return None
         elif resume:
             # If resuming, set mode to append binary and get current file size
@@ -975,42 +975,16 @@ class AutoConfig:
                 guarantee the timeliness or safety of the source, and you should refer to the mirror site for more
                 information.
 
-        Example:
-
-        To load a Textual Inversion embedding vector in 🤗 Diffusers format:
+        Examples:
 
         ```py
-        from diffusers import StableDiffusionPipeline
-        import torch
+        >>> from auto_diffusers import EasyPipelineForText2Image
 
-        model_id = "runwayml/stable-diffusion-v1-5"
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
+        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        
+        >>> pipeline.auto_load_textual_inversion("EasyNegative", token="EasyNegative")
 
-        pipe.load_textual_inversion("sd-concepts-library/cat-toy")
-
-        prompt = "A <cat-toy> backpack"
-
-        image = pipe(prompt, num_inference_steps=50).images[0]
-        image.save("cat-backpack.png")
-        ```
-
-        To load a Textual Inversion embedding vector in Automatic1111 format, make sure to download the vector first
-        (for example from [civitAI](https://civitai.com/models/3036?modelVersionId=9857)) and then load the vector
-        locally:
-
-        ```py
-        from diffusers import StableDiffusionPipeline
-        import torch
-
-        model_id = "runwayml/stable-diffusion-v1-5"
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
-
-        pipe.load_textual_inversion("./charturnerv2.pt", token="charturnerv2")
-
-        prompt = "charturnerv2, multiple views of the same character in the same outfit, a character turnaround of a woman wearing a black jacket and red shirt, best quality, intricate details."
-
-        image = pipe(prompt, num_inference_steps=50).images[0]
-        image.save("character.png")
+        >>> image = pipeline(prompt).images[0]
         ```
 
         """
@@ -1031,10 +1005,10 @@ class AutoConfig:
             tokens = tokens * len(pretrained_model_name_or_paths)
 
         for check_token in tokens:
+            # Copied from diffusers.loaders.textual_inversion
             if check_token in tokenizer.get_vocab():
                 raise ValueError(
                     f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
-                    f"Tokenizer Vocabulary: {tokenizer.get_vocab()}"
                 )
 
         expected_shape = text_encoder.get_input_embeddings().weight.shape[-1]  # Expected shape of tokenizer
@@ -1192,9 +1166,9 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image, AutoConfig):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from auto_diffusers import EasyPipelineForText2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1300,9 +1274,9 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image, AutoConfig):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from auto_diffusers import EasyPipelineForText2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1449,9 +1423,9 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from auto_diffusers import EasyPipelineForImage2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForImage2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1559,9 +1533,9 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from auto_diffusers import EasyPipelineForImage2Image
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForImage2Image.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1707,9 +1681,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from auto_diffusers import EasyPipelineForInpainting
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
@@ -1815,9 +1789,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         Examples:
 
         ```py
-        >>> from diffusers import AutoPipelineForText2Image
+        >>> from auto_diffusers import EasyPipelineForInpainting
 
-        >>> pipeline = AutoPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
+        >>> pipeline = EasyPipelineForInpainting.from_huggingface("stable-diffusion-v1-5")
         >>> image = pipeline(prompt).images[0]
         ```
         """
