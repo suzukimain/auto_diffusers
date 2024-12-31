@@ -1274,13 +1274,14 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image, AutoConfig):
         # Check the format of the model checkpoint
         if hf_checkpoint_status.loading_method == "from_single_file":
             # Load the pipeline from a single file checkpoint
-            return load_pipeline_from_single_file(
+            pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
                 pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
                 **kwargs,
             )
         else:
-            return cls.from_pretrained(checkpoint_path, **kwargs)
+            pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+        return add_methods(pipeline)
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
@@ -1639,11 +1640,12 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
-        return load_pipeline_from_single_file(
+        pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
             pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
             **kwargs,
         )
+        return add_methods(pipeline)
 
 
 class EasyPipelineForInpainting(AutoPipelineForInpainting):
@@ -1789,13 +1791,14 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         # Check the format of the model checkpoint
         if hf_checkpoint_status.loading_method == "from_single_file":
             # Load the pipeline from a single file checkpoint
-            return load_pipeline_from_single_file(
+            pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
                 pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
                 **kwargs,
             )
         else:
-            return cls.from_pretrained(checkpoint_path, **kwargs)
+            pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+        return add_methods(pipeline)
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
@@ -1895,8 +1898,9 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         checkpoint_path = checkpoint_status.model_path
 
         # Load the pipeline from a single file checkpoint
-        return load_pipeline_from_single_file(
+        pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
             pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
             **kwargs,
         )
+        return add_methods(pipeline)
