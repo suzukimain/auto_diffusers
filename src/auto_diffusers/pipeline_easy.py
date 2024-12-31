@@ -743,7 +743,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         model_type (`str`, *optional*, defaults to `Checkpoint`):
             The type of model to search for.
         sort (`str`, *optional*):
-        	The order in which you wish to sort the results(for example, `Highest Rated`, `Most Downloaded`, `Newest`).
+            The order in which you wish to sort the results(for example, `Highest Rated`, `Most Downloaded`, `Newest`).
         base_model (`str`, *optional*):
             The base model to filter by.
         download (`bool`, *optional*, defaults to `False`):
