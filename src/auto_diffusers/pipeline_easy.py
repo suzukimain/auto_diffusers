@@ -18,7 +18,7 @@ import re
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
 from types import MethodType
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 import requests
 from huggingface_hub import hf_api, hf_hub_download
@@ -903,7 +903,7 @@ def add_methods(pipeline):
     for attr_name in dir(AutoConfig):
         attr_value = getattr(AutoConfig, attr_name)
         if callable(attr_value) and not attr_name.startswith("__"):
-            setattr(pipeline, attr_name, MethodType(attr_value, pipeline)) 
+            setattr(pipeline, attr_name, MethodType(attr_value, pipeline))
     return pipeline
 
 
@@ -914,8 +914,8 @@ class AutoConfig:
         pretrained_model_name_or_path: Union[str, List[str]],
         token: Optional[Union[str, List[str]]] = None,
         base_model: Optional[Union[str, List[str]]] = None,
-        tokenizer = None,
-        text_encoder = None,
+        tokenizer=None,
+        text_encoder=None,
         **kwargs,
     ):
         r"""
@@ -1029,17 +1029,15 @@ class AutoConfig:
         tokens = [token] if not isinstance(token, list) else token
         if tokens[0] is None:
             tokens = tokens * len(pretrained_model_name_or_paths)
-   
+
         for check_token in tokens:
             if check_token in tokenizer.get_vocab():
                 raise ValueError(
                     f"Token {token} already in tokenizer vocabulary. Please choose a different token name or remove {token} and embedding from the tokenizer and text encoder."
                     f"Tokenizer Vocabulary: {tokenizer.get_vocab()}"
-                    )
-        
-        
-        expected_shape = text_encoder.get_input_embeddings().weight.shape[-1] # Expected shape of tokenizer
-        
+                )
+
+        expected_shape = text_encoder.get_input_embeddings().weight.shape[-1]  # Expected shape of tokenizer
 
         for search_word in pretrained_model_name_or_paths:
             if isinstance(search_word, str):
@@ -1062,10 +1060,14 @@ class AutoConfig:
                 kwargs.update(_status)
                 # Search for the model on Civitai and get the model status
                 textual_inversion_path = search_civitai(search_word, **kwargs)
-                logger.warning(f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}")
+                logger.warning(
+                    f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}"
+                )
 
-                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = textual_inversion_path.model_path
-    
+                pretrained_model_name_or_paths[pretrained_model_name_or_paths.index(search_word)] = (
+                    textual_inversion_path.model_path
+                )
+
         self.load_textual_inversion(
             pretrained_model_name_or_paths, token=tokens, tokenizer=tokenizer, text_encoder=text_encoder, **kwargs
         )
@@ -1839,7 +1841,3 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
             pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
             **kwargs,
         )
-
-
-
-
