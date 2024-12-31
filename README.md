@@ -47,7 +47,7 @@ image.save("cat.png")
 
 ```
 
-## Search Civitai and Huggingfacee<a name = "Search_Civitai_and_Huggingfacee"></a>
+## Search Civitai and Huggingfacee<a name = "Search_Civitai_and_Huggingface"></a>
 
 ```python
 # Load Lora into the pipeline.
