@@ -125,7 +125,7 @@ jobs:
           source venv/bin/activate
           pip install auto_diffusers && pip uninstall auto_diffusers -y
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -i https://testpypi.python.org/pypi auto_diffusers
+          pip install -i https://test.pypi.org/simple/ auto-diffusers
           python -c "from auto_diffusers import *"
 
       - name: Publish release distributions to PyPI
