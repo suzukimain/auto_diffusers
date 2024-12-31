@@ -14,14 +14,14 @@
 # limitations under the License.
 
 import os
-import torch
 import re
+import types
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
-import types
-from typing import List, Optional, Union, Dict
+from typing import Dict, List, Optional, Union
 
 import requests
+import torch
 from huggingface_hub import hf_api, hf_hub_download
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
@@ -291,11 +291,12 @@ class ModelStatus:
 class ExtraStatus:
     r"""
     Data class for storing extra status information.
-    
+
     Attributes:
-        trained_words (`str`):  
+        trained_words (`str`):
             The words used to trigger the model
     """
+
     trained_words: Union[List[str], None] = None
 
 
@@ -920,16 +921,17 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 def add_methods(pipeline):
     r"""
     Add methods from `AutoConfig` to the pipeline.
-    
+
     Parameters:
         pipeline (`Pipeline`):
-            The pipeline to which the methods will be added.    
+            The pipeline to which the methods will be added.
     """
     for attr_name in dir(AutoConfig):
         attr_value = getattr(AutoConfig, attr_name)
         if callable(attr_value) and not attr_name.startswith("__"):
             setattr(pipeline, attr_name, types.MethodType(attr_value, pipeline))
     return pipeline
+
 
 class AutoConfig:
     def auto_load_textual_inversion(
@@ -1004,7 +1006,7 @@ class AutoConfig:
         >>> from auto_diffusers import EasyPipelineForText2Image
 
         >>> pipeline = EasyPipelineForText2Image.from_huggingface("stable-diffusion-v1-5")
-        
+
         >>> pipeline.auto_load_textual_inversion("EasyNegative", token="EasyNegative")
 
         >>> image = pipeline(prompt).images[0]
@@ -1077,9 +1079,8 @@ class AutoConfig:
             pretrained_model_name_or_paths, token=tokens, tokenizer=tokenizer, text_encoder=text_encoder, **kwargs
         )
 
-
     def auto_load_lora_weights(
-            self, pretrained_model_name_or_path_or_dict: Union[str, Dict[str, torch.Tensor]], adapter_name=None, **kwargs
+        self, pretrained_model_name_or_path_or_dict: Union[str, Dict[str, torch.Tensor]], adapter_name=None, **kwargs
     ):
         r"""
         Load LoRA weights specified in `pretrained_model_name_or_path_or_dict` into `self.unet` and
@@ -1122,7 +1123,7 @@ class AutoConfig:
             logger.warning(f"lora_path: {lora_path.model_status.site_url}")
             logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
             pretrained_model_name_or_path_or_dict = lora_path.model_path
-        
+
         self.load_lora_weights(pretrained_model_name_or_path_or_dict, adapter_name=adapter_name, **kwargs)
 
 
