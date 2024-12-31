@@ -288,6 +288,18 @@ class ModelStatus:
 
 
 @dataclass
+class ExtraStatus:
+    r"""
+    Data class for storing extra status information.
+    
+    Attributes:
+        trained_words (`str`):  
+            The words used to trigger the model
+    """
+    trained_words: Union[List[str], None] = None
+
+
+@dataclass
 class SearchResult:
     r"""
     Data class for storing model data.
@@ -310,6 +322,7 @@ class SearchResult:
     checkpoint_format: Union[str, None] = None
     repo_status: RepoStatus = RepoStatus()
     model_status: ModelStatus = ModelStatus()
+    extra_status: ExtraStatus = ExtraStatus()
 
 
 @validate_hf_hub_args
@@ -712,6 +725,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 file_name=file_name,
                 local=download,
             ),
+            extra_status=ExtraStatus(trained_words=None),
         )
 
     else:
@@ -764,6 +778,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     repo_name = ""
     repo_id = ""
     version_id = ""
+    trainedWords = ""
     models_list = []
     selected_repo = {}
     selected_model = {}
@@ -816,6 +831,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         )
         for selected_version in sorted_versions:
             version_id = selected_version["id"]
+            trainedWords = selected_version["trainedWords"]
             models_list = []
             # When searching for textual inversion, results other than the values entered for the base model may come up, so check again.
             if base_model is None or selected_version["baseModel"] in base_model:
@@ -897,6 +913,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 file_name=file_name,
                 local=output_info["type"]["local"],
             ),
+            extra_status=ExtraStatus(trained_words=trainedWords),
         )
 
 
