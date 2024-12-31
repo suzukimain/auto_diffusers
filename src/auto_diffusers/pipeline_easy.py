@@ -219,9 +219,11 @@ DIFFUSERS_CONFIG_DIR = [
 ]
 
 TOKENIZER_SHAPE_MAP = {
-    512: ["SD 1.4", "SD 1.5", "SD 1.5 LCM"],
     768: ["SD 2.0", "SD 2.0 768", "SD 2.1", "SD 2.1 768", "SD 2.1 Unclip"],
     1024: [
+        "SD 1.4",
+        "SD 1.5",
+        "SD 1.5 LCM",
         "SDXL 0.9",
         "SDXL 1.0",
         "SDXL 1.0 LCM",
@@ -233,7 +235,6 @@ TOKENIZER_SHAPE_MAP = {
         "Pony",
     ],
 }
-
 
 
 EXTENSION = [".safetensors", ".ckpt", ".bin"]
