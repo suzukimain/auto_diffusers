@@ -1119,7 +1119,8 @@ class AutoConfig:
             kwargs.update(_status)
             # Search for the model on Civitai and get the model status
             lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
-            logger.warning(f"lora_path: {pretrained_model_name_or_path_or_dict} -> {lora_path.model_status.site_url}")
+            logger.warning(f"lora_path: {lora_path.model_status.site_url}")
+            logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
             pretrained_model_name_or_path_or_dict = lora_path.model_path
         
         self.load_lora_weights(pretrained_model_name_or_path_or_dict, adapter_name=adapter_name, **kwargs)
