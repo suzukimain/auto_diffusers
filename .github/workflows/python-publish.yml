@@ -23,7 +23,6 @@ jobs:
       uses: actions/checkout@v4
       with:
           ref: master
-          fetch-depth: 0
 
     - name: Extract version from tag
       id: extract_version
@@ -69,21 +68,32 @@ jobs:
     name: Build the release
     runs-on: ubuntu-22.04
     needs: update-version
+    
+    environment:
+      name: pypi_release
+      url: https://pypi.org/p/auto_diffusers
+
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
         with:
           ref: master
-          fetch-depth: 0
       
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -U diffusers setuptools wheel twine build
+          pip install -U setuptools twine build
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -U diffusers
 
       - name: Build release distributions
         run: |
@@ -95,14 +105,14 @@ jobs:
           verbose: true
           attestations: false
           repository-url: https://test.pypi.org/legacy/
-          
+
       - name: Test installing auto_diffusers and importing
         run: |
-          python -m venv venv
-          source venv/bin/activate
           pip install auto_diffusers && pip uninstall auto_diffusers -y
-          pip install -U torch --index-url https://download.pytorch.org/whl/cpu
           pip install -i https://test.pypi.org/simple/ auto-diffusers
+          python -c "from auto_diffusers import __version__; print(__version__)"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
           python -c "from auto_diffusers import *"
 
       - name: Publish release distributions to PyPI
