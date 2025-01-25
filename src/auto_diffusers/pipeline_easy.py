@@ -601,6 +601,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
 
     if search_word_status["type"]["hf_repo"]:
         if download:
+            hf_repo_info = hf_api.model_info(repo_id=repo_id, securityStatus=True)
             model_path = DiffusionPipeline.download(
                 search_word,
                 revision=revision,
