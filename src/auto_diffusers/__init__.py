@@ -1,4 +1,4 @@
-__version__ = "v2.0.19"
+__version__ = "2.0.8"
 
 from .pipeline_easy import (
     search_huggingface,
