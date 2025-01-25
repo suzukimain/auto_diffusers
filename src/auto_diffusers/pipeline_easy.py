@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2024 suzukimain
+# Copyright 2025 suzukimain
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import os
 import re
 import types
 from collections import OrderedDict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
 
 import requests
@@ -321,9 +321,9 @@ class SearchResult:
     model_path: str = ""
     loading_method: Union[str, None] = None
     checkpoint_format: Union[str, None] = None
-    repo_status: RepoStatus = RepoStatus()
-    model_status: ModelStatus = ModelStatus()
-    extra_status: ExtraStatus = ExtraStatus()
+    repo_status: RepoStatus = field(default_factory=RepoStatus)
+    model_status: ModelStatus = field(default_factory=ModelStatus)
+    extra_status: ExtraStatus = field(default_factory=ExtraStatus)
 
 
 @validate_hf_hub_args
