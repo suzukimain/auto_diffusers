@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -U auto_diffusers
+          pip install -U auto_diffusers transformers
 
       - name: Testing of import and pipeline operation
         run: |
