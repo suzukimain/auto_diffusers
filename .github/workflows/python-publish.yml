@@ -65,7 +65,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -U setuptools twine build
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -U diffusers
+          pip install -U diffusers transformers
 
       - name: Build release distributions
         run: |
