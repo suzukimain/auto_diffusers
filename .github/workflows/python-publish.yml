@@ -18,23 +18,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-          ref: master
+        ref: master
 
     - name: Extract version from tag
       id: set_version
       run: |
-        echo "version=${GITHUB_REF##refs/tags/v}" >> $UPDATE_VERSION
-      
-    - name: Version updates and commit messages
-      id : update_version
-      run: |
-       
-
-    - name: Commit
+        echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_ENV
+        echo "base_version=$(python -c 'from utils.release import get_version; print(get_version())')" >> $GITHUB_ENV
+          
+    - name: Commit version update
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git pull origin master
+        git pull origin master
+        python utils/release.py  
+        git add .
+        git commit -m "Update version from ${base_version} to ${version}"
+        git push origin master
         
   release-build:
     name: Build the release

@@ -47,5 +47,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--update_version", action="store_true", help="Update version number.")
     args = parser.parse_args()
-    print(f"{get_version()} -> {args.update_version}")
     global_version_update(version=args.update_version)
