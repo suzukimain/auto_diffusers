@@ -21,45 +21,21 @@ jobs:
           ref: master
 
     - name: Extract version from tag
-      id: extract_version
-      run: echo "version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_OUTPUT
-
-    - name: Get auto_diffusers version
-      id: get_auto_diffusers_version
+      id: set_version
       run: |
-        pip install auto_diffusers
-        auto_diffusers_version=$(pip show auto_diffusers | grep Version | awk '{print $2}')  
-        echo "auto_diffusers_version=$auto_diffusers_version" >> $GITHUB_OUTPUT
-
-    - name: Determine final version
-      id: determine_version
+        echo "version=${GITHUB_REF##refs/tags/v}" >> $UPDATE_VERSION
+      
+    - name: Version updates and commit messages
+      id : update_version
       run: |
-        version=${{ steps.extract_version.outputs.version }}
-        auto_diffusers_version=${{ steps.get_auto_diffusers_version.outputs.auto_diffusers_version }}
-        if [[ "$auto_diffusers_version" == *"$version"* ]]; then
-          dev_version=0
-          while [[ "$auto_diffusers_version" == *"$version.dev$dev_version"* ]]; do
-            dev_version=$((dev_version + 1))
-          done
-          version="$version.dev$dev_version"
-        fi
-        echo "final_version=$version" >> $GITHUB_OUTPUT
-
-    - name: Set version as environment variable
-      run: echo "VERSION=${{ steps.determine_version.outputs.final_version }}" >> $GITHUB_ENV
-
-    - name: Update VERSION file
-      run: echo "${{ steps.determine_version.outputs.final_version }}" > Version.txt
+       
 
     - name: Commit
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull origin master
-        git add Version.txt
-        git commit -m "Update Version.txt file to ${{ steps.determine_version.outputs.final_version }}"
-          git push origin master
-
+        
   release-build:
     name: Build the release
     runs-on: ubuntu-22.04
