@@ -20,20 +20,24 @@ jobs:
       with:
         ref: master
 
-    - name: Extract version from tag
+    - name: Get the version of the release and the current version
       id: set_version
       run: |
         echo "release_version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_ENV
         echo "base_version=$(python -c 'from utils.release import get_version; print(get_version())')" >> $GITHUB_ENV
-          
-    - name: Commit version update
+
+    - name: Commit
+      env:
+        release_version: ${{ steps.set_version.outputs.release_version }}
+        base_version: ${{ steps.set_version.outputs.base_version}}
+
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git pull origin master
-        python utils/release.py --update_version ${env.release_version}
+        python utils/release.py --update_version ${{ env.release_version }}
         git add .
-        git commit -m "Update version from ${env.base_version} to ${env.release_version}"
+        git commit -m "Update version from ${{ env.base_version }} to ${{ env.release_version }}"
         git push origin master
         
   release-build:
