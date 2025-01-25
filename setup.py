@@ -22,7 +22,7 @@ version_range_max = max(sys.version_info[1], 10) + 1
 
 setup(
     name="auto_diffusers",
-    version="v2.0.19",
+    version="2.0.20.dev0",
     description="Customized diffusers with model search and other functions.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
