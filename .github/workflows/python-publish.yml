@@ -1,8 +1,4 @@
 name: Version Update and Upload Python Package
-# Upload to pypi when tagged release.
-# Requirements:
-# ・Add this file to "trusted publishers" in pypi and test pypi.
-# ・Version.txt exists in root
 
 # Disabled attestations to correct errors on upload.
 # https://github.com/pypa/gh-action-pypi-publish/issues/283
