@@ -12,7 +12,7 @@ REPLACE_PATTERNS = {
     "setup": (re.compile(r'^(\s*)version\s*=\s*"[^"]+",', re.MULTILINE), r'\1version="VERSION",'),
 }
 REPLACE_FILES = {
-    "init": "src/diffusers/__init__.py",
+    "init": "src/auto_diffusers/__init__.py",
     "setup": "setup.py",
 }
 README_FILE = "README.md"
