@@ -22,7 +22,6 @@ jobs:
 
       - name: Test installing auto_diffusers and importing
         run: |
-          python -c "from auto_diffusers import __version__; print(__version__)"
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('stable-diffusion-v1-5/stable-diffusion-v1-5')"
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
           python -c "from auto_diffusers import *"
