@@ -707,7 +707,8 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 )
 
     # `pathlib.PosixPath` may be returned
-    model_path = str(model_path)
+    if model_path:
+        model_path = str(model_path)
 
     if file_name:
         download_url = f"https://huggingface.co/{repo_id}/blob/main/{file_name}"
