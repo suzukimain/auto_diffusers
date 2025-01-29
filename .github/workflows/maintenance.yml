@@ -20,8 +20,14 @@ jobs:
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
           pip install -U auto_diffusers
 
-      - name: Testing of import and pipeline operation
+      - name: Testing Import
+        run: |
+          python -c "from auto_diffusers import *"
+
+      - name: Check from_huggingface
         run: |
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('stable-diffusion-v1-5/stable-diffusion-v1-5')"
+
+      - name: Check from_civitai
+        run: |
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
-          python -c "from auto_diffusers import *"
