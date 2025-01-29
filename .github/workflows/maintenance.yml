@@ -3,11 +3,11 @@ name: Operation Check
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '0 10 * * *'
+    - cron:  '0 22 * * *'
 
 jobs:      
   release-build:
-    name: Build the release
+    name: Check pipeline operation
     runs-on: ubuntu-22.04
     steps:      
       - name: Setup Python
@@ -20,7 +20,7 @@ jobs:
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
           pip install -U auto_diffusers transformers
 
-      - name: Test installing auto_diffusers and importing
+      - name: Testing of import and pipeline operation
         run: |
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('stable-diffusion-v1-5/stable-diffusion-v1-5')"
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
