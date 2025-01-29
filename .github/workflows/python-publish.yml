@@ -23,8 +23,8 @@ jobs:
     - name: Get the version of the release and the current version
       id: set_version
       run: |
-        echo "::set-output name=release_version::${GITHUB_REF##refs/tags/v}"
-        echo "::set-output name=base_version::$(python -c 'from utils.release import get_version; print(get_version())')"
+        echo "release_version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_ENV
+        echo "base_version=$(python -c 'from utils.release import get_version; print(get_version())')" >> $GITHUB_ENV
 
     - name: Commit the version update
       run: |
@@ -58,7 +58,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.8"
 
       - name: Install dependencies
         run: |
