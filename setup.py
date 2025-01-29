@@ -34,6 +34,7 @@ setup(
     package_dir={"": "src"},
     packages=find_packages("src"),
     package_data={"": ["py.typed"]},
+    python_requires=">=3.8.0",
     include_package_data=True,
     install_requires=list(_deps),
     classifiers=[
