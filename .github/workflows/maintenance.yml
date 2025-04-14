@@ -26,7 +26,7 @@ jobs:
 
       - name: Check from_huggingface
         run: |
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('stable-diffusion-v1-5/stable-diffusion-v1-5')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Anything')"
 
       - name: Check from_civitai
         run: |
