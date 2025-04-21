@@ -568,6 +568,8 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             Whether to include parameters in the returned data.
         pipeline_tag (`str`, *optional*):
             Tag to filter models by pipeline.
+        limit (`int`, *optional*, defaults to `100`):
+            The number of candidates to retrieve.
         token (`str`, *optional*):
             API token for Hugging Face authentication.
         gated (`bool`, *optional*, defaults to `False` ):
@@ -585,6 +587,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     force_download = kwargs.pop("force_download", False)
     include_params = kwargs.pop("include_params", False)
     pipeline_tag = kwargs.pop("pipeline_tag", None)
+    limit = kwargs.pop("limit", 30)
     token = kwargs.pop("token", None)
     gated = kwargs.pop("gated", False)
     skip_error = kwargs.pop("skip_error", False)
@@ -634,7 +637,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         hf_models = hf_api.list_models(
             search=search_word,
             direction=-1,
-            limit=100,
+            limit=limit,
             fetch_config=True,
             pipeline_tag=pipeline_tag,
             full=True,
@@ -759,6 +762,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             API token for Civitai authentication.
         include_params (`bool`, *optional*, defaults to `False`):
             Whether to include parameters in the returned data.
+        limit (`int`, *optional*, defaults to `100`):
+            The number of candidates to retrieve.
         cache_dir (`str`, `Path`, *optional*):
             Path to the folder where cached files are stored.
         resume (`bool`, *optional*, defaults to `False`):
@@ -778,6 +783,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     force_download = kwargs.pop("force_download", False)
     token = kwargs.pop("token", None)
     include_params = kwargs.pop("include_params", False)
+    limit = kwargs.pop("limit", 30)
     resume = kwargs.pop("resume", False)
     cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
@@ -798,7 +804,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     params = {
         "query": search_word,
         "types": model_type,
-        "limit": 20,
+        "limit": limit,
     }
     if base_model is not None:
         if not isinstance(base_model, list):
