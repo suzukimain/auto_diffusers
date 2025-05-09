@@ -5,9 +5,7 @@ import sys
 from setuptools import find_packages, setup
 
 _deps = [
-    "torch",
     "diffusers",
-    "transformers",
     "huggingface-hub>=0.26.2",
 ]
 
@@ -23,7 +21,7 @@ version_range_max = max(sys.version_info[1], 10) + 1
 setup(
     name="auto_diffusers",
     version="2.0.21",
-    description="Customized diffusers with model search and other functions.",
+    description="diffusers with search engine",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     keywords="huggingface civitai diffusers model search deep learning diffusion pytorch stable diffusion",
