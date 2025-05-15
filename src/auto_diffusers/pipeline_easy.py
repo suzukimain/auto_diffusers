@@ -590,6 +590,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     pipeline_tag = kwargs.pop("pipeline_tag", None)
     token = kwargs.pop("token", None)
     gated = kwargs.pop("gated", False)
+    cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
 
     file_list = []
@@ -610,6 +611,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 revision=revision,
                 token=token,
                 force_download=force_download,
+                cache_dir=cache_dir,
                 **kwargs,
             )
         else:
@@ -620,8 +622,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             model_path = hf_hub_download(
                 repo_id=repo_id,
                 filename=weights_name,
-                force_download=force_download,
                 token=token,
+                force_download=force_download,
+                cache_dir=cache_dir,
             )
         else:
             model_path = search_word
@@ -694,6 +697,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 model_path = DiffusionPipeline.download(
                     repo_id,
                     token=token,
+                    cache_dir=cache_dir,
                     **kwargs,
                 )
             else:
@@ -717,6 +721,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                     revision=revision,
                     token=token,
                     force_download=force_download,
+                    cache_dir=cache_dir,
                 )
 
     # `pathlib.PosixPath` may be returned
@@ -749,7 +754,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         )
 
     else:
-        return model_path
+        return model_path or download_url
 
 
 def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
