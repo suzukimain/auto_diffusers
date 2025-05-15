@@ -548,7 +548,6 @@ def file_downloader(
             displayed_filename=displayed_filename,
             headers=headers,
             proxies=proxies,
-            **kwargs,
         )
 
 
