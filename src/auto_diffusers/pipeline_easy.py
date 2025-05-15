@@ -754,7 +754,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         )
 
     else:
-        return model_path
+        return model_path or download_url
 
 
 def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
