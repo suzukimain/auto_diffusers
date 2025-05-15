@@ -6,6 +6,7 @@ from setuptools import find_packages, setup
 
 _deps = [
     "diffusers>=0.32.0",
+    "transformers>=4.41.2",
 ]
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}
