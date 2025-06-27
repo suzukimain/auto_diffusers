@@ -36,9 +36,4 @@ jobs:
 
       - name: Check from_civitai and LoRa/TextualInversion loading
         run: |
-          python -c "
-            from auto_diffusers import EasyPipelineForText2Image
-            pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')
-            pipe.auto_load_lora_weights('Detail Tweaker')
-            pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')
-            "
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper'); pipe.auto_load_lora_weights('Detail Tweaker'); pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')"
