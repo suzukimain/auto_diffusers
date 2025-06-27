@@ -84,6 +84,7 @@ jobs:
           pip install -i https://test.pypi.org/simple/ auto-diffusers
           python -c "from auto_diffusers import *"
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
+          rm -rf ~/.cache/huggingface/hub/*
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
           python -c "pipe.auto_load_lora_weights('Detail Tweaker')"
           python -c "pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')"
