@@ -29,8 +29,16 @@ jobs:
 
       - name: Check from_huggingface
         run: |
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Anything')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; hf_pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
 
       - name: Check from_civitai
         run: |
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; civitai_pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+      
+      - name: Check LoRa’s load.
+        run: |
+          python -c "civitai_pipe.auto_load_lora_weights('Detail Tweaker')"
+      
+      - name: Check TextualInversion’s load.
+        run: |
+          python -c "civitai_pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')"

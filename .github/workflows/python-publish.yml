@@ -82,9 +82,11 @@ jobs:
         run: |
           pip install auto_diffusers && pip uninstall auto_diffusers -y
           pip install -i https://test.pypi.org/simple/ auto-diffusers
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('stable-diffusion-v1-5/stable-diffusion-v1-5')"
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
           python -c "from auto_diffusers import *"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; hf_pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; civitai_pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+          python -c "civitai_pipe.auto_load_lora_weights('Detail Tweaker')"
+          python -c "civitai_pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')"
 
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
