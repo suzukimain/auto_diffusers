@@ -34,9 +34,12 @@ jobs:
       - name: Clean Hugging Face cache
         run: rm -rf ~/.cache/huggingface/hub/*
 
-      - name: Check from_civitai
+      - name: Check from_civitai and LoRa/TextualInversion loading
         run: |
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image"
+          python -c "pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+          python -c "pipe.auto_load_lora_weights('Detail Tweaker')"
+          python -c "pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')"
       
       - name: Check LoRa’s load.
         run: |
