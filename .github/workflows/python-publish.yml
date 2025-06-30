@@ -86,8 +86,6 @@ jobs:
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
           rm -rf ~/.cache/huggingface/hub/*
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
-          python -c "pipe.auto_load_lora_weights('Detail Tweaker')"
-          python -c "pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')"
 
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
