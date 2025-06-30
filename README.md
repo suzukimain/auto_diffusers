@@ -20,6 +20,9 @@
 + [License](#License)
 + [Acknowledgement](#Acknowledgement)
 
+## 📢Announce
+`pipeline.auto_load_lora_weights()` and `pipeline.auto_load_textual_inversion()` may not work properly at the moment due to a bug in the Civitai API.
+
 ## About The Project<a name = "About_The_Project"></a>
 Enhance the functionality of diffusers.
 * Search models from huggingface and Civitai.
