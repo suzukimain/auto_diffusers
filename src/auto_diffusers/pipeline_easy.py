@@ -72,10 +72,6 @@ from diffusers.pipelines.auto_pipeline import (
 
 logger = logging.get_logger(__name__)
 
-
-
-
-
 CONFIG_FILE_LIST = [
     "pytorch_model.bin",
     "pytorch_model.fp16.bin",
