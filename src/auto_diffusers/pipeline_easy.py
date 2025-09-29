@@ -450,7 +450,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     search_word_status = get_keyword_types(search_word)
 
     if search_word_status["type"]["hf_repo"]:
-        hf_repo_info = hf_api.model_info(repo_id=search_word, securityStatus=True)
+        hf_repo_info = asdict(
+            hf_api.model_info(repo_id=search_word, securityStatus=True)
+        )
         if download:
             model_path = DiffusionPipeline.download(
                 search_word,
@@ -501,9 +503,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         for repo_info in model_dicts:
             repo_id = repo_info["id"]
             file_list = []
-            hf_repo_info = hf_api.model_info(repo_id=repo_id, securityStatus=True)
+            hf_repo_info = asdict(
+                hf_api.model_info(repo_id=repo_id, securityStatus=True)
+            )
             # Lists files with security issues.
-            hf_security_info = hf_repo_info.security_repo_status
+            hf_security_info = hf_repo_info["security_repo_status"]
             exclusion = [issue["path"] for issue in hf_security_info["filesWithIssues"]]
 
             # Checks for multi-folder diffusers model or valid files (models with security issues are excluded).
@@ -587,7 +591,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             loading_method=output_info["loading_method"],
             checkpoint_format=output_info["checkpoint_format"],
             repo_status=RepoStatus(
-                repo_id=repo_id, repo_hash=hf_repo_info.sha, version=revision
+                repo_id=repo_id, repo_hash=hf_repo_info["sha"], version=revision
             ),
             model_status=ModelStatus(
                 search_word=search_word,
