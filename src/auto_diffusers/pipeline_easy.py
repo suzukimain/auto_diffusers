@@ -688,7 +688,10 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
-        raise requests.HTTPError(f"Could not get elements from the URL: {err}")
+        if skip_error:
+            return None
+        else:
+            raise requests.HTTPError(f"Could not get elements from the URL: {err}")
     else:
         try:
             data = response.json()
