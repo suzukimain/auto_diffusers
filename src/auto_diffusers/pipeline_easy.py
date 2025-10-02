@@ -702,9 +702,12 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 raise ValueError("Invalid JSON response")
 
     # Sort repositories by download count in descending order
-    sorted_repos = sorted(
-        data["items"], key=lambda x: x["stats"]["downloadCount"], reverse=True
-    )
+    # sorted_repos = sorted(
+    #    data["items"], key=lambda x: x["stats"]["downloadCount"], reverse=True
+    # )
+
+    # Since the Civitai API is broken, I will temporarily sort by name.
+    sorted_repos = sorted(data["items"], key=lambda x: x["name"], reverse=True)
 
     for selected_repo in sorted_repos:
         repo_name = selected_repo["name"]
