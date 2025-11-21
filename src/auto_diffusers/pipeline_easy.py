@@ -410,10 +410,17 @@ def file_downloader(
             mode = "ab"
             file_size = os.path.getsize(save_path)
 
+    # Check if the URL is accessible before downloading
+    try:
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException:
+        pass  # Continue with download attempt
+
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
         # Call the http_get function to perform the file download
-        return http_get(
+        result = http_get(
             url=url,
             temp_file=model_file,
             resume_size=file_size,
@@ -421,6 +428,8 @@ def file_downloader(
             headers=headers,
             proxies=proxies,
         )
+        logger.info(f"Successfully downloaded: {url} -> {save_path}")
+        return result
 
 
 def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
@@ -812,20 +821,45 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     # Handle file download and setting model information
     if download:
-        # The path where the model is to be saved.
-        model_path = os.path.join(
-            str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+        # Try downloading from the models list, retrying on 401 errors
+        download_success = False
+        # Create a sorted list of all available models to try
+        sorted_models = sorted(
+            models_list, key=lambda x: x["filename"], reverse=True
         )
-        # Download Model File
-        file_downloader(
-            url=download_url,
-            save_path=model_path,
-            resume=resume,
-            force_download=force_download,
-            displayed_filename=file_name,
-            headers=headers,
-            **kwargs,
-        )
+        
+        for model_candidate in sorted_models:
+            try:
+                file_name = model_candidate["filename"]
+                download_url = model_candidate["download_url"]
+                
+                # The path where the model is to be saved.
+                model_path = os.path.join(
+                    str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+                )
+                
+                # Download Model File
+                file_downloader(
+                    url=download_url,
+                    save_path=model_path,
+                    resume=resume,
+                    force_download=force_download,
+                    displayed_filename=file_name,
+                    headers=headers,
+                    **kwargs,
+                )
+                download_success = True
+                logger.info(f"Successfully downloaded model from: {download_url}")
+                break
+            except requests.HTTPError as e:
+                if "401" in str(e):
+                    logger.info(f"401 error for {download_url}, trying next candidate...")
+                    continue
+                else:
+                    raise
+        
+        if not download_success:
+            raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned 401 errors.")
 
     else:
         model_path = download_url
