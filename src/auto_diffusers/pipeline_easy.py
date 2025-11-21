@@ -401,21 +401,35 @@ def file_downloader(
 
     # Check if the file already exists at the save path
     if os.path.exists(save_path):
+        existing_size = os.path.getsize(save_path)
+        # If file exists and not forcing download
         if not force_download:
-            # If the file exists and force_download is False, skip the download
-            logger.info(f"File already exists: {save_path}, skipping download.")
-            return None
-        elif resume:
-            # If resuming, set mode to append binary and get current file size
+            # If the file is non-empty, assume it's already downloaded
+            if existing_size > 0:
+                logger.info(f"File already exists and is non-empty: {save_path}, skipping download.")
+                return None
+            # If the file is zero bytes, remove it and proceed to download
+            logger.info(f"Found zero-byte file, removing and retrying download: {save_path}")
+            try:
+                os.remove(save_path)
+            except OSError:
+                # If removal fails, try to proceed by truncating the file
+                with open(save_path, "wb"):
+                    pass
+        # If resuming is requested and file exists, append
+        if resume and os.path.exists(save_path):
             mode = "ab"
             file_size = os.path.getsize(save_path)
 
-    # Check if the URL is accessible before downloading
+    # Check if the URL is accessible before downloading. If HEAD returns 401,
+    # raise an HTTPError so callers can try the next candidate. Other HEAD
+    # failures are logged and the download is still attempted.
     try:
         response = requests.head(url, headers=headers, allow_redirects=True, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.RequestException:
-        pass  # Continue with download attempt
+        if response.status_code == 401:
+            raise requests.HTTPError(f"401 Unauthorized: {url}")
+    except requests.exceptions.RequestException as e:
+        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
 
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
