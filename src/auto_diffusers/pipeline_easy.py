@@ -494,6 +494,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     """
     # Extract additional parameters from kwargs
     revision = kwargs.pop("revision", None)
+    model_type = kwargs.pop("model_type", "checkpoint")
     checkpoint_format = kwargs.pop("checkpoint_format", "single_file")
     download = kwargs.pop("download", False)
     force_download = kwargs.pop("force_download", False)
@@ -593,6 +594,15 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         and os.path.basename(os.path.dirname(file_path))
                         not in DIFFUSERS_CONFIG_DIR
                     ):
+                        # If caller explicitly requested checkpoint-only results, skip
+                        # files that look like LoRA or textual-inversion by filename.
+                        if (
+                            isinstance(model_type, str)
+                            and model_type.lower() == "checkpoint"
+                        ):
+                            fname = os.path.basename(file_path).lower()
+                            if "lora" in fname or "textual" in fname or "inversion" in fname:
+                                continue
                         file_list.append(file_path)
 
             # Exit from the loop if a multi-folder diffusers model or valid file is found
