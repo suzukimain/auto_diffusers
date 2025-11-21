@@ -267,9 +267,9 @@ def load_pipeline_from_single_file(
     if pipeline_class is None:
         raise ValueError(
             f"{model_type} is not supported in this pipeline."
-            "For `Text2Image`, please use `AutoPipelineForText2Image.from_pretrained`, "
-            "for `Image2Image` , please use `AutoPipelineForImage2Image.from_pretrained`, "
-            "and `inpaint` is only supported in `AutoPipelineForInpainting.from_pretrained`"
+            "For `Text2Image`, please use `EasyPipelineForText2Image.from_pretrained`, "
+            "for `Image2Image` , please use `EasyPipelineForImage2Image.from_pretrained`, "
+            "and `inpaint` is only supported in `EasyPipelineForInpainting.from_pretrained`"
         )
 
     else:
@@ -812,21 +812,58 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     # Handle file download and setting model information
     if download:
-        # The path where the model is to be saved.
-        model_path = os.path.join(
-            str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
-        )
-        # Download Model File
-        file_downloader(
-            url=download_url,
-            save_path=model_path,
-            resume=resume,
-            force_download=force_download,
-            displayed_filename=file_name,
-            headers=headers,
-            **kwargs,
-        )
+        # Try to download selected model file; on 401 try next candidate in the same version
+        sorted_models = sorted(models_list, key=lambda x: x["filename"], reverse=True)
+        downloaded = False
+        last_error = None
+        for model_data in sorted_models:
+            file_name = model_data["filename"]
+            download_url = model_data["download_url"]
+            model_path = os.path.join(
+                str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+            )
+            try:
+                file_downloader(
+                    url=download_url,
+                    save_path=model_path,
+                    resume=resume,
+                    force_download=force_download,
+                    displayed_filename=file_name,
+                    headers=headers,
+                    **kwargs,
+                )
+                downloaded = True
+                break
+            except requests.exceptions.HTTPError as e:
+                last_error = e
+                # If Unauthorized, try next candidate; otherwise re-raise
+                status_code = None
+                try:
+                    status_code = e.response.status_code  # type: ignore
+                except Exception:
+                    status_code = None
+                logger.info(f"Failed to download {download_url}: HTTP {status_code}")
+                if status_code == 401:
+                    logger.info("401 Unauthorized - trying next candidate in this version")
+                    continue
+                else:
+                    raise
+            except Exception as e:
+                last_error = e
+                logger.info(f"Failed to download {download_url}: {e}")
+                # For non-HTTP errors, stop retrying and re-raise unless skip_error is set
+                if skip_error:
+                    continue
+                raise
 
+        if not downloaded:
+            if skip_error:
+                return None
+            else:
+                if isinstance(last_error, Exception):
+                    raise last_error
+                else:
+                    raise RuntimeError("Failed to download model files from Civitai")
     else:
         model_path = download_url
 
