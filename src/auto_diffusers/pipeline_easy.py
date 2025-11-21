@@ -54,8 +54,6 @@ CONFIG_FILE_LIST = [
     "diffusion_pytorch_model.fp16.bin",
     "diffusion_pytorch_model.safetensors",
     "diffusion_pytorch_model.fp16.safetensors",
-    "diffusion_pytorch_model.ckpt",
-    "diffusion_pytorch_model.fp16.ckpt",
     "diffusion_pytorch_model.non_ema.bin",
     "diffusion_pytorch_model.non_ema.safetensors",
 ]
