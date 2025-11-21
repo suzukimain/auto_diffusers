@@ -175,3 +175,6 @@ tags
 
 # wandb
 wandb
+
+# VSCode settings
+.vscode/
