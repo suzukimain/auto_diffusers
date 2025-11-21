@@ -85,7 +85,7 @@ TOKENIZER_SHAPE_MAP = {
 }
 
 
-EXTENSION = [".safetensors", ".ckpt", ".bin"]
+EXTENSION = [".safetensors", ".bin"] # Removed deprecated ".ckpt" extension
 
 CACHE_HOME = os.path.expanduser("~/.cache")
 
