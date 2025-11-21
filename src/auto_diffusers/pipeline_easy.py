@@ -28,7 +28,6 @@ from diffusers.loaders.single_file_utils import (
     infer_diffusers_model_type,
     load_single_file_checkpoint,
 )
-from transformers import CLIPTextModel
 
 from diffusers import (
     StableDiffusionPipeline,
@@ -49,7 +48,6 @@ from diffusers.utils import logging
 from huggingface_hub import hf_api, hf_hub_download
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
-from huggingface_hub import repo_type_and_id_from_hf_id
 
 
 logger = logging.get_logger(__name__)
@@ -401,19 +399,40 @@ def file_downloader(
 
     # Check if the file already exists at the save path
     if os.path.exists(save_path):
+        existing_size = os.path.getsize(save_path)
+        # If file exists and not forcing download
         if not force_download:
-            # If the file exists and force_download is False, skip the download
-            logger.info(f"File already exists: {save_path}, skipping download.")
-            return None
-        elif resume:
-            # If resuming, set mode to append binary and get current file size
+            # If the file is non-empty, assume it's already downloaded
+            if existing_size > 0:
+                logger.info(f"File already exists and is non-empty: {save_path}, skipping download.")
+                return None
+            # If the file is zero bytes, remove it and proceed to download
+            logger.info(f"Found zero-byte file, removing and retrying download: {save_path}")
+            try:
+                os.remove(save_path)
+            except OSError:
+                # If removal fails, try to proceed by truncating the file
+                with open(save_path, "wb"):
+                    pass
+        # If resuming is requested and file exists, append
+        if resume and os.path.exists(save_path):
             mode = "ab"
             file_size = os.path.getsize(save_path)
+
+    # Check if the URL is accessible before downloading. If HEAD returns 401,
+    # raise an HTTPError so callers can try the next candidate. Other HEAD
+    # failures are logged and the download is still attempted.
+    try:
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=10)
+        if response.status_code == 401:
+            raise requests.HTTPError(f"401 Unauthorized: {url}")
+    except requests.exceptions.RequestException as e:
+        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
 
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
         # Call the http_get function to perform the file download
-        return http_get(
+        result = http_get(
             url=url,
             temp_file=model_file,
             resume_size=file_size,
@@ -421,6 +440,8 @@ def file_downloader(
             headers=headers,
             proxies=proxies,
         )
+        logger.info(f"Successfully downloaded: {url} -> {save_path}")
+        return result
 
 
 def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, None]:
@@ -702,7 +723,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     params = {
         "query": search_word,
         "types": model_type,
-        "limit": 20,
+        "limit": 100,
     }
     if base_model is not None:
         if not isinstance(base_model, list):
@@ -812,20 +833,45 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     # Handle file download and setting model information
     if download:
-        # The path where the model is to be saved.
-        model_path = os.path.join(
-            str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+        # Try downloading from the models list, retrying on 401 errors
+        download_success = False
+        # Create a sorted list of all available models to try
+        sorted_models = sorted(
+            models_list, key=lambda x: x["filename"], reverse=True
         )
-        # Download Model File
-        file_downloader(
-            url=download_url,
-            save_path=model_path,
-            resume=resume,
-            force_download=force_download,
-            displayed_filename=file_name,
-            headers=headers,
-            **kwargs,
-        )
+        
+        for model_candidate in sorted_models:
+            try:
+                file_name = model_candidate["filename"]
+                download_url = model_candidate["download_url"]
+                
+                # The path where the model is to be saved.
+                model_path = os.path.join(
+                    str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+                )
+                
+                # Download Model File
+                file_downloader(
+                    url=download_url,
+                    save_path=model_path,
+                    resume=resume,
+                    force_download=force_download,
+                    displayed_filename=file_name,
+                    headers=headers,
+                    **kwargs,
+                )
+                download_success = True
+                logger.info(f"Successfully downloaded model from: {download_url}")
+                break
+            except requests.HTTPError as e:
+                if "401" in str(e):
+                    logger.info(f"401 error for {download_url}, trying next candidate...")
+                    continue
+                else:
+                    raise
+        
+        if not download_success:
+            raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned 401 errors.")
 
     else:
         model_path = download_url
