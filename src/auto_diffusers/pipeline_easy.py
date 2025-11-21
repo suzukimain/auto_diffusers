@@ -905,6 +905,7 @@ class AutoConfig:
         pretrained_model_name_or_path: Union[str, List[str]],
         token: Optional[Union[str, List[str]]] = None,
         base_model: Optional[Union[str, List[str]]] = None,
+        hub: str = "civitai",
         tokenizer=None,
         text_encoder=None,
         **kwargs,
@@ -929,6 +930,10 @@ class AutoConfig:
             token (`str` or `List[str]`, *optional*):
                 Override the token to use for the textual inversion weights. If `pretrained_model_name_or_path` is a
                 list, then `token` must also be a list of equal length.
+            base_model (`str` or `List[str]`, *optional*):
+                Base model tags to filter by (e.g., "SD 1.5", "SDXL 1.0").
+            hub (`str`, *optional*, defaults to `"civitai"`):
+                The hub to search for models. Can be either "civitai" or "huggingface".
             text_encoder ([`~transformers.CLIPTextModel`], *optional*):
                 Frozen text-encoder ([clip-vit-large-patch14](https://huggingface.co/openai/clip-vit-large-patch14)).
                 If not specified, function will take self.tokenizer.
@@ -1033,8 +1038,12 @@ class AutoConfig:
                     _status["base_model"] = tags
 
                 kwargs.update(_status)
-                # Search for the model on Civitai and get the model status
-                textual_inversion_path = search_civitai(search_word, **kwargs)
+                # Search for the model based on the selected hub
+                if hub.lower() == "huggingface":
+                    textual_inversion_path = search_huggingface(search_word, **kwargs)
+                else:  # default to civitai
+                    textual_inversion_path = search_civitai(search_word, **kwargs)
+                
                 logger.warning(
                     f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}"  # type: ignore
                 )
@@ -1055,6 +1064,7 @@ class AutoConfig:
         self,
         pretrained_model_name_or_path_or_dict: Union[str, Dict[str, torch.Tensor]],
         adapter_name=None,
+        hub: str = "civitai",
         **kwargs,
     ):
         r"""
@@ -1078,6 +1088,8 @@ class AutoConfig:
             adapter_name (`str`, *optional*):
                 Adapter name to be used for referencing the loaded adapter model. If not specified, it will use
                 `default_{i}` where i is the total number of adapters being loaded.
+            hub (`str`, *optional*, defaults to `"civitai"`):
+                The hub to search for models. Can be either "civitai" or "huggingface".
             low_cpu_mem_usage (`bool`, *optional*):
                 Speed up model loading by only loading the pretrained LoRA weights and not initializing the random
                 weights.
@@ -1093,9 +1105,13 @@ class AutoConfig:
                 "model_type": "LORA",
             }
             kwargs.update(_status)
-            # Search for the model on Civitai and get the model status
-            lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
-            # search_civitai may return a SearchResult, a string (download url or path) or None.
+            # Search for the model based on the selected hub
+            if hub.lower() == "huggingface":
+                lora_path = search_huggingface(pretrained_model_name_or_path_or_dict, **kwargs)
+            else:  # default to civitai
+                lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
+            
+            # search_civitai/search_huggingface may return a SearchResult, a string (download url or path) or None.
             if isinstance(lora_path, SearchResult):
                 logger.warning(f"lora_path: {lora_path.model_status.site_url}")
                 logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
@@ -1245,6 +1261,7 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
             "include_params": True,
             "skip_error": False,
             "pipeline_tag": "text-to-image",
+            "model_type": "checkpoint",  # Explicitly filter for checkpoint models only
         }
         kwargs.update(_status)
 
@@ -1507,6 +1524,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
             "include_params": True,
             "skip_error": False,
             "pipeline_tag": "image-to-image",
+            "model_type": "checkpoint",  # Explicitly filter for checkpoint models only
         }
         kwargs.update(_parmas)
 
@@ -1770,6 +1788,7 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
             "include_params": True,
             "skip_error": False,
             "pipeline_tag": "image-to-image",
+            "model_type": "checkpoint",  # Explicitly filter for checkpoint models only
         }
         kwargs.update(_status)
 
