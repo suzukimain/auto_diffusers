@@ -711,7 +711,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     params = {
         "query": search_word,
         "types": model_type,
-        "limit": 20,
+        "limit": 50,
     }
     if base_model is not None:
         if not isinstance(base_model, list):
