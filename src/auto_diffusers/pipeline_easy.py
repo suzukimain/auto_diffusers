@@ -47,13 +47,8 @@ from huggingface_hub.utils import validate_hf_hub_args
 logger = logging.get_logger(__name__)
 
 CONFIG_FILE_LIST = [
-    "pytorch_model.bin",
-    "pytorch_model.fp16.bin",
-    "diffusion_pytorch_model.bin",
-    "diffusion_pytorch_model.fp16.bin",
     "diffusion_pytorch_model.safetensors",
     "diffusion_pytorch_model.fp16.safetensors",
-    "diffusion_pytorch_model.non_ema.bin",
     "diffusion_pytorch_model.non_ema.safetensors",
 ]
 
@@ -84,7 +79,7 @@ TOKENIZER_SHAPE_MAP = {
 }
 
 
-EXTENSION = [".safetensors", ".bin"] # Removed deprecated ".ckpt" extension
+EXTENSION = [".safetensors"] # Supports only the safe format, safetensors
 
 CACHE_HOME = os.path.expanduser("~/.cache")
 
