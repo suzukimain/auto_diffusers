@@ -1,5 +1,4 @@
-# auto_diffusers
-
+![auto_diffusers icon](images/auto_diffusers_icon.png)
 
 <p>
     <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=social"></a>
