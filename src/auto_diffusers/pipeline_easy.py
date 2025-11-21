@@ -970,12 +970,12 @@ class AutoConfig:
                 # Search for the model on Civitai and get the model status
                 textual_inversion_path = search_civitai(search_word, **kwargs)
                 logger.warning(
-                    f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}"
+                    f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}"  # type: ignore
                 )
 
                 pretrained_model_name_or_paths[
                     pretrained_model_name_or_paths.index(search_word)
-                ] = textual_inversion_path.model_path
+                ] = textual_inversion_path.model_path  # type: ignore
 
         self.load_textual_inversion(
             pretrained_model_name_or_paths,
@@ -1029,9 +1029,19 @@ class AutoConfig:
             kwargs.update(_status)
             # Search for the model on Civitai and get the model status
             lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
-            logger.warning(f"lora_path: {lora_path.model_status.site_url}")
-            logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
-            pretrained_model_name_or_path_or_dict = lora_path.model_path
+            # search_civitai may return a SearchResult, a string (download url or path) or None.
+            if isinstance(lora_path, SearchResult):
+                logger.warning(f"lora_path: {lora_path.model_status.site_url}")
+                logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
+                pretrained_model_name_or_path_or_dict = lora_path.model_path
+            elif lora_path is None:
+                raise ValueError(
+                    f"No LORA model found for {pretrained_model_name_or_path_or_dict}"
+                )
+            else:
+                # fallback when search_civitai returns a plain path/URL string
+                logger.warning(f"lora_path: {lora_path}")
+                pretrained_model_name_or_path_or_dict = lora_path
 
         self.load_lora_weights(
             pretrained_model_name_or_path_or_dict, adapter_name=adapter_name, **kwargs
@@ -1177,12 +1187,12 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
             pretrained_model_link_or_path, **kwargs
         )
         logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
-        checkpoint_path = hf_checkpoint_status.model_path
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
 
         # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1287,8 +1297,8 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
-        checkpoint_path = checkpoint_status.model_path
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")  # type: ignore
+        checkpoint_path = checkpoint_status.model_path  # type: ignore
 
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
@@ -1439,12 +1449,12 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
             pretrained_model_link_or_path, **kwargs
         )
         logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
-        checkpoint_path = hf_checkpoint_status.model_path
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
 
         # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1550,8 +1560,8 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
-        checkpoint_path = checkpoint_status.model_path
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")  # type: ignore
+        checkpoint_path = checkpoint_status.model_path  # type: ignore
 
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
@@ -1702,12 +1712,12 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
             pretrained_model_link_or_path, **kwargs
         )
         logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
-        checkpoint_path = hf_checkpoint_status.model_path
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
 
         # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
@@ -1812,8 +1822,8 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
-        checkpoint_path = checkpoint_status.model_path
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")  # type: ignore
+        checkpoint_path = checkpoint_status.model_path  # type: ignore
 
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
