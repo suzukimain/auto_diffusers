@@ -18,6 +18,8 @@ import re
 import types
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
+from collections import OrderedDict
+
 
 import requests
 import torch
@@ -45,12 +47,168 @@ from diffusers.pipelines.auto_pipeline import (
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.utils import logging
 
+from diffusers import (
+    AnimateDiffPipeline,
+    AnimateDiffSDXLPipeline,
+    StableDiffusionControlNetPipeline,
+    StableDiffusionControlNetImg2ImgPipeline,
+    StableDiffusionControlNetInpaintPipeline,
+    StableDiffusionXLImg2ImgPipeline,
+    StableDiffusionXLPipeline,
+    StableDiffusionXLInpaintPipeline,
+    StableDiffusionUpscalePipeline,
+    StableDiffusion3Pipeline,
+    StableDiffusion3Img2ImgPipeline,
+    FluxPipeline,
+    FluxImg2ImgPipeline,
+    StableDiffusionXLControlNetPipeline,
+    StableDiffusionXLControlNetImg2ImgPipeline,
+)
+
 from huggingface_hub import hf_api, hf_hub_download
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
 
 
 logger = logging.get_logger(__name__)
+
+
+SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
+    [
+        ("animatediff_rgb", AnimateDiffPipeline),
+        ("animatediff_scribble", AnimateDiffPipeline),
+        ("animatediff_sdxl_beta", AnimateDiffSDXLPipeline),
+        ("animatediff_v1", AnimateDiffPipeline),
+        ("animatediff_v2", AnimateDiffPipeline),
+        ("animatediff_v3", AnimateDiffPipeline),
+        ("autoencoder-dc-f128c512", None),
+        ("autoencoder-dc-f32c32", None),
+        ("autoencoder-dc-f32c32-sana", None),
+        ("autoencoder-dc-f64c128", None),
+        ("controlnet", StableDiffusionControlNetPipeline),
+        ("controlnet_xl", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_large", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_mid", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_small", StableDiffusionXLControlNetPipeline),
+        ("flux-depth", FluxPipeline),
+        ("flux-dev", FluxPipeline),
+        ("flux-fill", FluxPipeline),
+        ("flux-schnell", FluxPipeline),
+        ("hunyuan-video", None),
+        ("inpainting", None),
+        ("inpainting_v2", None),
+        ("ltx-video", None),
+        ("ltx-video-0.9.1", None),
+        ("mochi-1-preview", None),
+        ("playground-v2-5", StableDiffusionXLPipeline),
+        ("sd3", StableDiffusion3Pipeline),
+        ("sd35_large", StableDiffusion3Pipeline),
+        ("sd35_medium", StableDiffusion3Pipeline),
+        ("stable_cascade_stage_b", None),
+        ("stable_cascade_stage_b_lite", None),
+        ("stable_cascade_stage_c", None),
+        ("stable_cascade_stage_c_lite", None),
+        ("upscale", StableDiffusionUpscalePipeline),
+        ("v1", StableDiffusionPipeline),
+        ("v2", StableDiffusionPipeline),
+        ("xl_base", StableDiffusionXLPipeline),
+        ("xl_inpaint", None),
+        ("xl_refiner", StableDiffusionXLPipeline),
+    ],
+)
+
+# For single-file checkpoints we expose separate mappings for each task so callers
+# can pick the most appropriate pipeline class set. The full, explicit mappings
+# for image2image and inpaint are defined below; keep distinct names so they can
+# be customized independently.
+
+SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
+    [
+        ("animatediff_rgb", AnimateDiffPipeline),
+        ("animatediff_scribble", AnimateDiffPipeline),
+        ("animatediff_sdxl_beta", AnimateDiffSDXLPipeline),
+        ("animatediff_v1", AnimateDiffPipeline),
+        ("animatediff_v2", AnimateDiffPipeline),
+        ("animatediff_v3", AnimateDiffPipeline),
+        ("autoencoder-dc-f128c512", None),
+        ("autoencoder-dc-f32c32", None),
+        ("autoencoder-dc-f32c32-sana", None),
+        ("autoencoder-dc-f64c128", None),
+        ("controlnet", StableDiffusionControlNetImg2ImgPipeline),
+        ("controlnet_xl", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_large", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_mid", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_small", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("flux-depth", FluxImg2ImgPipeline),
+        ("flux-dev", FluxImg2ImgPipeline),
+        ("flux-fill", FluxImg2ImgPipeline),
+        ("flux-schnell", FluxImg2ImgPipeline),
+        ("hunyuan-video", None),
+        ("inpainting", None),
+        ("inpainting_v2", None),
+        ("ltx-video", None),
+        ("ltx-video-0.9.1", None),
+        ("mochi-1-preview", None),
+        ("playground-v2-5", StableDiffusionXLImg2ImgPipeline),
+        ("sd3", StableDiffusion3Img2ImgPipeline),
+        ("sd35_large", StableDiffusion3Img2ImgPipeline),
+        ("sd35_medium", StableDiffusion3Img2ImgPipeline),
+        ("stable_cascade_stage_b", None),
+        ("stable_cascade_stage_b_lite", None),
+        ("stable_cascade_stage_c", None),
+        ("stable_cascade_stage_c_lite", None),
+        ("upscale", StableDiffusionUpscalePipeline),
+        ("v1", StableDiffusionImg2ImgPipeline),
+        ("v2", StableDiffusionImg2ImgPipeline),
+        ("xl_base", StableDiffusionXLImg2ImgPipeline),
+        ("xl_inpaint", None),
+        ("xl_refiner", StableDiffusionXLImg2ImgPipeline),
+    ]
+)
+
+SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
+    [
+        ("animatediff_rgb", None),
+        ("animatediff_scribble", None),
+        ("animatediff_sdxl_beta", None),
+        ("animatediff_v1", None),
+        ("animatediff_v2", None),
+        ("animatediff_v3", None),
+        ("autoencoder-dc-f128c512", None),
+        ("autoencoder-dc-f32c32", None),
+        ("autoencoder-dc-f32c32-sana", None),
+        ("autoencoder-dc-f64c128", None),
+        ("controlnet", StableDiffusionControlNetInpaintPipeline),
+        ("controlnet_xl", None),
+        ("controlnet_xl_large", None),
+        ("controlnet_xl_mid", None),
+        ("controlnet_xl_small", None),
+        ("flux-depth", None),
+        ("flux-dev", None),
+        ("flux-fill", None),
+        ("flux-schnell", None),
+        ("hunyuan-video", None),
+        ("inpainting", StableDiffusionInpaintPipeline),
+        ("inpainting_v2", StableDiffusionInpaintPipeline),
+        ("ltx-video", None),
+        ("ltx-video-0.9.1", None),
+        ("mochi-1-preview", None),
+        ("playground-v2-5", None),
+        ("sd3", None),
+        ("sd35_large", None),
+        ("sd35_medium", None),
+        ("stable_cascade_stage_b", None),
+        ("stable_cascade_stage_b_lite", None),
+        ("stable_cascade_stage_c", None),
+        ("stable_cascade_stage_c_lite", None),
+        ("upscale", StableDiffusionUpscalePipeline),
+        ("v1", None),
+        ("v2", None),
+        ("xl_base", None),
+        ("xl_inpaint", StableDiffusionXLInpaintPipeline),
+        ("xl_refiner", None),
+    ]
+)
 
 CONFIG_FILE_LIST = [
     "pytorch_model.bin",
@@ -1277,7 +1435,7 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
+                pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
                 **kwargs,
             )
         else:
@@ -1384,7 +1542,7 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
-            pipeline_mapping=AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
+            pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
             **kwargs,
         )
         return add_methods(pipeline)
@@ -1539,7 +1697,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
+                pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
                 **kwargs,
             )
         else:
@@ -1647,7 +1805,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
-            pipeline_mapping=AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
+            pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
             **kwargs,
         )
         return add_methods(pipeline)
@@ -1802,7 +1960,7 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=AUTO_INPAINT_PIPELINES_MAPPING,
+                pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
                 **kwargs,
             )
         else:
@@ -1909,7 +2067,7 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
-            pipeline_mapping=AUTO_INPAINT_PIPELINES_MAPPING,
+            pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
             **kwargs,
         )
         return add_methods(pipeline)
