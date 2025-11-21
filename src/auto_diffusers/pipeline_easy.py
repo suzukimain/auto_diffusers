@@ -245,6 +245,69 @@ def load_pipeline_from_single_file(
         return pipeline_class.from_single_file(pretrained_model_or_path, **kwargs)
 
 
+def detect_safetensors_type(repo_id: str, filename: str, token: Optional[str] = None) -> Optional[str]:
+    r"""
+    Detect the type of safetensors file (checkpoint, lora, textual_inversion) by analyzing
+    tensor shapes and metadata using HuggingFace API.
+
+    Parameters:
+        repo_id (`str`):
+            The repository ID on Hugging Face.
+        filename (`str`):
+            The safetensors filename in the repository.
+        token (`str`, *optional*):
+            HuggingFace API token for authentication.
+
+    Returns:
+        `str` or `None`: One of "checkpoint", "lora", "textual_inversion", or None if detection failed.
+    """
+    try:
+        # Get safetensors metadata without downloading the full file
+        metadata = hf_api.get_safetensors_metadata(repo_id=repo_id, filename=filename, token=token)
+        
+        if metadata is None or not hasattr(metadata, 'parameter_count'):
+            return None
+        
+        # Get tensor information
+        tensors = metadata.tensors if hasattr(metadata, 'tensors') else {}
+        param_count = metadata.parameter_count.get('total', 0) if hasattr(metadata.parameter_count, 'get') else 0
+        
+        # Textual Inversion detection: very small models with embedding-like tensors
+        if param_count < 100_000:  # Less than 100K parameters
+            # Look for typical TI tensor names
+            ti_patterns = ['emb', 'embed', 'string_to_param', 'string_to_token']
+            for tensor_name in tensors.keys():
+                if any(pattern in tensor_name.lower() for pattern in ti_patterns):
+                    return "textual_inversion"
+        
+        # LoRA detection: look for lora-specific tensor patterns
+        lora_patterns = ['lora_up', 'lora_down', 'lora.up', 'lora.down', 'alpha']
+        lora_count = sum(1 for name in tensors.keys() if any(p in name.lower() for p in lora_patterns))
+        
+        if lora_count > 0 and param_count < 1_000_000_000:  # LoRA typically < 1B params
+            return "lora"
+        
+        # Checkpoint detection: large models with UNet/VAE/Text encoder tensors
+        checkpoint_patterns = ['model.diffusion_model', 'first_stage_model', 'cond_stage_model', 
+                              'unet', 'vae', 'text_encoder', 'encoder.', 'decoder.']
+        checkpoint_count = sum(1 for name in tensors.keys() if any(p in name.lower() for p in checkpoint_patterns))
+        
+        if checkpoint_count > 10 or param_count > 500_000_000:  # Large model (>500M params)
+            return "checkpoint"
+        
+        # Default fallback based on parameter count
+        if param_count > 100_000_000:
+            return "checkpoint"
+        elif param_count > 1_000_000:
+            return "lora"
+        else:
+            return "textual_inversion"
+            
+    except Exception as e:
+        logger.debug(f"Failed to detect safetensors type for {repo_id}/{filename}: {e}")
+        return None
+
+
 def get_keyword_types(keyword):
     r"""
     Determine the type and loading method for a given keyword.
@@ -417,6 +480,8 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             A boolean to filter models on the Hub that are gated or not.
         skip_error (`bool`, *optional*, defaults to `False`):
             Whether to skip errors and return None.
+        model_type (`str`, *optional*):
+            Filter by model type detected from safetensors metadata: "checkpoint", "lora", or "textual_inversion".
 
     Returns:
         `Union[str,  SearchResult, None]`: The model path or  SearchResult or None.
@@ -432,6 +497,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     gated = kwargs.pop("gated", False)
     cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
+    model_type = kwargs.pop("model_type", None)  # Filter by safetensors type: checkpoint/lora/textual_inversion
 
     file_list = []
     hf_repo_info = {}
@@ -522,7 +588,13 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         and os.path.basename(os.path.dirname(file_path))
                         not in DIFFUSERS_CONFIG_DIR
                     ):
-                        file_list.append(file_path)
+                        # If model_type filter is specified, check safetensors type
+                        if model_type and file_path.endswith('.safetensors'):
+                            detected_type = detect_safetensors_type(repo_id, file_path, token=token)
+                            if detected_type == model_type:
+                                file_list.append(file_path)
+                        else:
+                            file_list.append(file_path)
 
             # Exit from the loop if a multi-folder diffusers model or valid file is found
             if diffusers_model_exists or file_list:
