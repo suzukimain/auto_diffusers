@@ -29,6 +29,12 @@ from diffusers.loaders.single_file_utils import (
     load_single_file_checkpoint,
 )
 from transformers import CLIPTextModel
+
+from diffuers import (
+    StableDiffusionPipeline,
+    StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+)
 from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
@@ -103,6 +109,12 @@ TOKENIZER_SHAPE_MAP = {
 EXTENSION = [".safetensors", ".ckpt", ".bin"]
 
 CACHE_HOME = os.path.expanduser("~/.cache")
+
+
+# Set up pipeline mappings
+AUTO_TEXT2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionPipeline
+AUTO_IMAGE2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionImg2ImgPipeline
+AUTO_INPAINT_PIPELINES_MAPPING["v1"] = StableDiffusionInpaintPipeline
 
 
 @dataclass
