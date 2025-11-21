@@ -62,11 +62,23 @@ CONFIG_FILE_LIST = [
 ]
 
 DIFFUSERS_CONFIG_DIR = [
+    # common pipeline component folders
     "safety_checker",
     "unet",
     "vae",
+    "vae_1_0",
+    "vae_decoder",
+    "vae_encoder",
     "text_encoder",
     "text_encoder_2",
+    "tokenizer",
+    "tokenizer_2",
+    "scheduler",
+    "transformer",
+    # legacy / other possible component folders
+    "controlnet",
+    "clip",
+    "encoder",
 ]
 
 TOKENIZER_SHAPE_MAP = {
