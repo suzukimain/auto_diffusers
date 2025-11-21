@@ -42,7 +42,8 @@ from diffusers.utils import logging
 
 from huggingface_hub import hf_api, hf_hub_download
 from huggingface_hub.file_download import http_get
-from huggingface_hub.utils import validate_hf_hub_args, repo_type_and_id_from_hf_id
+from huggingface_hub.utils import validate_hf_hub_args
+from huggingface_hub import repo_type_and_id_from_hf_id
 
 
 logger = logging.get_logger(__name__)
