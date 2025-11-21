@@ -495,6 +495,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     # Extract additional parameters from kwargs
     revision = kwargs.pop("revision", None)
     model_type = kwargs.pop("model_type", "checkpoint")
+    # normalize model_type for simple comparisons
+    try:
+        model_type = str(model_type).lower()
+    except Exception:
+        model_type = ""
     checkpoint_format = kwargs.pop("checkpoint_format", "single_file")
     download = kwargs.pop("download", False)
     force_download = kwargs.pop("force_download", False)
@@ -591,11 +596,12 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         any(file_path.endswith(ext) for ext in EXTENSION)
                         and not any(config in file_path for config in CONFIG_FILE_LIST)
                         and not any(exc in file_path for exc in exclusion)
-                        and os.path.basename(os.path.dirname(file_path))
-                        not in DIFFUSERS_CONFIG_DIR
-                        and (model_type.lower() == "checkpoint" 
-                             and not any(kw in file_path.lower() for kw in ["lora", "textual-inversion"]))
-                        
+                        and os.path.basename(os.path.dirname(file_path)) not in DIFFUSERS_CONFIG_DIR
+                        # If caller requested checkpoint-only, exclude filenames that look like LoRA/Textual-Inversion
+                        and not (
+                            model_type == "checkpoint"
+                            and any(kw in file_path.lower() for kw in ["lora", "textual", "inversion"])
+                        )
                     ):
                         file_list.append(file_path)
 
