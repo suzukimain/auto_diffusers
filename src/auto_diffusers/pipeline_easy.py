@@ -30,7 +30,7 @@ from diffusers.loaders.single_file_utils import (
 )
 from transformers import CLIPTextModel
 
-from diffuers import (
+from diffusers import (
     StableDiffusionPipeline,
     StableDiffusionImg2ImgPipeline,
     StableDiffusionInpaintPipeline,
