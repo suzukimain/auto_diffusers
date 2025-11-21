@@ -273,72 +273,7 @@ def load_pipeline_from_single_file(
         )
 
     else:
-        # Instantiate and return the pipeline with the loaded checkpoint and any additional kwargs
-        try:
-            return pipeline_class.from_single_file(pretrained_model_or_path, **kwargs)
-        except Exception as e:
-            # Attempt to recover from a missing text encoder in single-file checkpoints by
-            # loading a CLIPTextModel from a provided repo/subfolder or path and retrying.
-            # The caller can pass either:
-            #  - `text_encoder` : a string repo_id/path to load the CLIPTextModel from, or
-            #  - `text_encoder_subfolder`: name of a subfolder (e.g. 'text_encoder') to load from
-            #    using the same repo id as `pretrained_model_or_path` when that is a HF repo.
-            from diffusers.loaders.single_file_utils import SingleFileComponentError # type: ignore
-
-            # If this wasn't the single-file component error, re-raise
-            if not isinstance(e, SingleFileComponentError):
-                raise
-
-            te_spec = kwargs.get("text_encoder", None)
-            te_subfolder = kwargs.pop("text_encoder_subfolder", None)
-
-            # If caller provided a model object already, just re-raise
-            if te_spec is None and te_subfolder is None:
-                raise
-
-            try:
-                # Load CLIPTextModel according to the specification
-                if isinstance(te_spec, str):
-                    # `text_encoder` provided as repo id or local path
-                    text_encoder = CLIPTextModel.from_pretrained(te_spec)
-                else:
-                    # Try to infer repo id from pretrained_model_or_path using huggingface_hub helper
-                    repo_id = None
-                    if isinstance(pretrained_model_or_path, str):
-                        try:
-                            _repo_type, inferred = repo_type_and_id_from_hf_id(
-                                pretrained_model_or_path
-                            )
-                            repo_id = inferred
-                        except Exception:
-                            # fallback to previous extraction for URLs
-                            if any(
-                                pretrained_model_or_path.startswith(p)
-                                for p in VALID_URL_PREFIXES
-                            ):
-                                repo_id, _ = _extract_repo_id_and_weights_name(
-                                    pretrained_model_or_path
-                                )
-
-                    if repo_id is None:
-                        # Can't infer repo id to load subfolder from
-                        raise
-
-                    subfolder = te_subfolder or "text_encoder"
-                    text_encoder = CLIPTextModel.from_pretrained(
-                        repo_id, subfolder=subfolder
-                    )
-
-            except Exception:
-                # If loading the text encoder failed, re-raise the original single-file error
-                raise
-
-            # Retry pipeline loading with the loaded text_encoder object
-            new_kwargs = dict(kwargs)
-            new_kwargs.update({"text_encoder": text_encoder})
-            return pipeline_class.from_single_file(
-                pretrained_model_or_path, **new_kwargs
-            )
+        return pipeline_class.from_single_file(pretrained_model_or_path, **kwargs)
 
 
 def get_keyword_types(keyword):
