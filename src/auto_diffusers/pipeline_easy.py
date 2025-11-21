@@ -258,7 +258,7 @@ def load_pipeline_from_single_file(
             #  - `text_encoder` : a string repo_id/path to load the CLIPTextModel from, or
             #  - `text_encoder_subfolder`: name of a subfolder (e.g. 'text_encoder') to load from
             #    using the same repo id as `pretrained_model_or_path` when that is a HF repo.
-            from diffusers.loaders.single_file_utils import SingleFileComponentError
+            from diffusers.loaders.single_file_utils import SingleFileComponentError # type: ignore
 
             # If this wasn't the single-file component error, re-raise
             if not isinstance(e, SingleFileComponentError):
@@ -593,16 +593,10 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         and not any(exc in file_path for exc in exclusion)
                         and os.path.basename(os.path.dirname(file_path))
                         not in DIFFUSERS_CONFIG_DIR
+                        and (model_type.lower() == "checkpoint" 
+                             and not any(kw in file_path.lower() for kw in ["lora", "textual-inversion"]))
+                        
                     ):
-                        # If caller explicitly requested checkpoint-only results, skip
-                        # files that look like LoRA or textual-inversion by filename.
-                        if (
-                            isinstance(model_type, str)
-                            and model_type.lower() == "checkpoint"
-                        ):
-                            fname = os.path.basename(file_path).lower()
-                            if "lora" in fname or "textual" in fname or "inversion" in fname:
-                                continue
                         file_list.append(file_path)
 
             # Exit from the loop if a multi-folder diffusers model or valid file is found
