@@ -16,188 +16,43 @@
 import os
 import re
 import types
-from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
 
 import requests
 import torch
+
 from diffusers.loaders.single_file_utils import (
     VALID_URL_PREFIXES,
     _extract_repo_id_and_weights_name,
     infer_diffusers_model_type,
     load_single_file_checkpoint,
 )
-from diffusers.pipelines.animatediff import AnimateDiffPipeline, AnimateDiffSDXLPipeline
+from transformers import CLIPTextModel
+
+from diffusers import (
+    StableDiffusionPipeline,
+    StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+)
 from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
+    AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
+    AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
+    AUTO_INPAINT_PIPELINES_MAPPING,
 )
-from diffusers.pipelines.controlnet import (
-    StableDiffusionControlNetImg2ImgPipeline,
-    StableDiffusionControlNetInpaintPipeline,
-    StableDiffusionControlNetPipeline,
-    StableDiffusionXLControlNetImg2ImgPipeline,
-    StableDiffusionXLControlNetPipeline,
-)
-from diffusers.pipelines.flux import FluxImg2ImgPipeline, FluxPipeline
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
-from diffusers.pipelines.stable_diffusion import (
-    StableDiffusionImg2ImgPipeline,
-    StableDiffusionInpaintPipeline,
-    StableDiffusionPipeline,
-    StableDiffusionUpscalePipeline,
-)
-from diffusers.pipelines.stable_diffusion_3 import (
-    StableDiffusion3Img2ImgPipeline,
-    StableDiffusion3Pipeline,
-)
-from diffusers.pipelines.stable_diffusion_xl import (
-    StableDiffusionXLImg2ImgPipeline,
-    StableDiffusionXLInpaintPipeline,
-    StableDiffusionXLPipeline,
-)
 from diffusers.utils import logging
+
 from huggingface_hub import hf_api, hf_hub_download
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
+from huggingface_hub import repo_type_and_id_from_hf_id
+
 
 logger = logging.get_logger(__name__)
-
-
-SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
-    [
-        ("animatediff_rgb", AnimateDiffPipeline),
-        ("animatediff_scribble", AnimateDiffPipeline),
-        ("animatediff_sdxl_beta", AnimateDiffSDXLPipeline),
-        ("animatediff_v1", AnimateDiffPipeline),
-        ("animatediff_v2", AnimateDiffPipeline),
-        ("animatediff_v3", AnimateDiffPipeline),
-        ("autoencoder-dc-f128c512", None),
-        ("autoencoder-dc-f32c32", None),
-        ("autoencoder-dc-f32c32-sana", None),
-        ("autoencoder-dc-f64c128", None),
-        ("controlnet", StableDiffusionControlNetPipeline),
-        ("controlnet_xl", StableDiffusionXLControlNetPipeline),
-        ("controlnet_xl_large", StableDiffusionXLControlNetPipeline),
-        ("controlnet_xl_mid", StableDiffusionXLControlNetPipeline),
-        ("controlnet_xl_small", StableDiffusionXLControlNetPipeline),
-        ("flux-depth", FluxPipeline),
-        ("flux-dev", FluxPipeline),
-        ("flux-fill", FluxPipeline),
-        ("flux-schnell", FluxPipeline),
-        ("hunyuan-video", None),
-        ("inpainting", None),
-        ("inpainting_v2", None),
-        ("ltx-video", None),
-        ("ltx-video-0.9.1", None),
-        ("mochi-1-preview", None),
-        ("playground-v2-5", StableDiffusionXLPipeline),
-        ("sd3", StableDiffusion3Pipeline),
-        ("sd35_large", StableDiffusion3Pipeline),
-        ("sd35_medium", StableDiffusion3Pipeline),
-        ("stable_cascade_stage_b", None),
-        ("stable_cascade_stage_b_lite", None),
-        ("stable_cascade_stage_c", None),
-        ("stable_cascade_stage_c_lite", None),
-        ("upscale", StableDiffusionUpscalePipeline),
-        ("v1", StableDiffusionPipeline),
-        ("v2", StableDiffusionPipeline),
-        ("xl_base", StableDiffusionXLPipeline),
-        ("xl_inpaint", None),
-        ("xl_refiner", StableDiffusionXLPipeline),
-    ]
-)
-
-SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
-    [
-        ("animatediff_rgb", AnimateDiffPipeline),
-        ("animatediff_scribble", AnimateDiffPipeline),
-        ("animatediff_sdxl_beta", AnimateDiffSDXLPipeline),
-        ("animatediff_v1", AnimateDiffPipeline),
-        ("animatediff_v2", AnimateDiffPipeline),
-        ("animatediff_v3", AnimateDiffPipeline),
-        ("autoencoder-dc-f128c512", None),
-        ("autoencoder-dc-f32c32", None),
-        ("autoencoder-dc-f32c32-sana", None),
-        ("autoencoder-dc-f64c128", None),
-        ("controlnet", StableDiffusionControlNetImg2ImgPipeline),
-        ("controlnet_xl", StableDiffusionXLControlNetImg2ImgPipeline),
-        ("controlnet_xl_large", StableDiffusionXLControlNetImg2ImgPipeline),
-        ("controlnet_xl_mid", StableDiffusionXLControlNetImg2ImgPipeline),
-        ("controlnet_xl_small", StableDiffusionXLControlNetImg2ImgPipeline),
-        ("flux-depth", FluxImg2ImgPipeline),
-        ("flux-dev", FluxImg2ImgPipeline),
-        ("flux-fill", FluxImg2ImgPipeline),
-        ("flux-schnell", FluxImg2ImgPipeline),
-        ("hunyuan-video", None),
-        ("inpainting", None),
-        ("inpainting_v2", None),
-        ("ltx-video", None),
-        ("ltx-video-0.9.1", None),
-        ("mochi-1-preview", None),
-        ("playground-v2-5", StableDiffusionXLImg2ImgPipeline),
-        ("sd3", StableDiffusion3Img2ImgPipeline),
-        ("sd35_large", StableDiffusion3Img2ImgPipeline),
-        ("sd35_medium", StableDiffusion3Img2ImgPipeline),
-        ("stable_cascade_stage_b", None),
-        ("stable_cascade_stage_b_lite", None),
-        ("stable_cascade_stage_c", None),
-        ("stable_cascade_stage_c_lite", None),
-        ("upscale", StableDiffusionUpscalePipeline),
-        ("v1", StableDiffusionImg2ImgPipeline),
-        ("v2", StableDiffusionImg2ImgPipeline),
-        ("xl_base", StableDiffusionXLImg2ImgPipeline),
-        ("xl_inpaint", None),
-        ("xl_refiner", StableDiffusionXLImg2ImgPipeline),
-    ]
-)
-
-SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
-    [
-        ("animatediff_rgb", None),
-        ("animatediff_scribble", None),
-        ("animatediff_sdxl_beta", None),
-        ("animatediff_v1", None),
-        ("animatediff_v2", None),
-        ("animatediff_v3", None),
-        ("autoencoder-dc-f128c512", None),
-        ("autoencoder-dc-f32c32", None),
-        ("autoencoder-dc-f32c32-sana", None),
-        ("autoencoder-dc-f64c128", None),
-        ("controlnet", StableDiffusionControlNetInpaintPipeline),
-        ("controlnet_xl", None),
-        ("controlnet_xl_large", None),
-        ("controlnet_xl_mid", None),
-        ("controlnet_xl_small", None),
-        ("flux-depth", None),
-        ("flux-dev", None),
-        ("flux-fill", None),
-        ("flux-schnell", None),
-        ("hunyuan-video", None),
-        ("inpainting", StableDiffusionInpaintPipeline),
-        ("inpainting_v2", StableDiffusionInpaintPipeline),
-        ("ltx-video", None),
-        ("ltx-video-0.9.1", None),
-        ("mochi-1-preview", None),
-        ("playground-v2-5", None),
-        ("sd3", None),
-        ("sd35_large", None),
-        ("sd35_medium", None),
-        ("stable_cascade_stage_b", None),
-        ("stable_cascade_stage_b_lite", None),
-        ("stable_cascade_stage_c", None),
-        ("stable_cascade_stage_c_lite", None),
-        ("upscale", StableDiffusionUpscalePipeline),
-        ("v1", None),
-        ("v2", None),
-        ("xl_base", None),
-        ("xl_inpaint", StableDiffusionXLInpaintPipeline),
-        ("xl_refiner", None),
-    ]
-)
-
 
 CONFIG_FILE_LIST = [
     "pytorch_model.bin",
@@ -213,11 +68,23 @@ CONFIG_FILE_LIST = [
 ]
 
 DIFFUSERS_CONFIG_DIR = [
+    # common pipeline component folders
     "safety_checker",
     "unet",
     "vae",
+    "vae_1_0",
+    "vae_decoder",
+    "vae_encoder",
     "text_encoder",
     "text_encoder_2",
+    "tokenizer",
+    "tokenizer_2",
+    "scheduler",
+    "transformer",
+    # legacy / other possible component folders
+    "controlnet",
+    "clip",
+    "encoder",
 ]
 
 TOKENIZER_SHAPE_MAP = {
@@ -242,6 +109,12 @@ TOKENIZER_SHAPE_MAP = {
 EXTENSION = [".safetensors", ".ckpt", ".bin"]
 
 CACHE_HOME = os.path.expanduser("~/.cache")
+
+
+# Set up pipeline mappings
+AUTO_TEXT2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionPipeline
+AUTO_IMAGE2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionImg2ImgPipeline
+AUTO_INPAINT_PIPELINES_MAPPING["v1"] = StableDiffusionInpaintPipeline
 
 
 @dataclass
@@ -394,13 +267,12 @@ def load_pipeline_from_single_file(
     if pipeline_class is None:
         raise ValueError(
             f"{model_type} is not supported in this pipeline."
-            "For `Text2Image`, please use `AutoPipelineForText2Image.from_pretrained`, "
-            "for `Image2Image` , please use `AutoPipelineForImage2Image.from_pretrained`, "
-            "and `inpaint` is only supported in `AutoPipelineForInpainting.from_pretrained`"
+            "For `Text2Image`, please use `EasyPipelineForText2Image.from_pretrained`, "
+            "for `Image2Image` , please use `EasyPipelineForImage2Image.from_pretrained`, "
+            "and `inpaint` is only supported in `EasyPipelineForInpainting.from_pretrained`"
         )
 
     else:
-        # Instantiate and return the pipeline with the loaded checkpoint and any additional kwargs
         return pipeline_class.from_single_file(pretrained_model_or_path, **kwargs)
 
 
@@ -582,6 +454,12 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     """
     # Extract additional parameters from kwargs
     revision = kwargs.pop("revision", None)
+    model_type = kwargs.pop("model_type", "checkpoint")
+    # normalize model_type for simple comparisons
+    try:
+        model_type = str(model_type).lower()
+    except Exception:
+        model_type = ""
     checkpoint_format = kwargs.pop("checkpoint_format", "single_file")
     download = kwargs.pop("download", False)
     force_download = kwargs.pop("force_download", False)
@@ -603,7 +481,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     search_word_status = get_keyword_types(search_word)
 
     if search_word_status["type"]["hf_repo"]:
-        hf_repo_info = hf_api.model_info(repo_id=search_word, securityStatus=True)
+        hf_repo_info = asdict(
+            hf_api.model_info(repo_id=search_word, securityStatus=True)
+        )
         if download:
             model_path = DiffusionPipeline.download(
                 search_word,
@@ -654,9 +534,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         for repo_info in model_dicts:
             repo_id = repo_info["id"]
             file_list = []
-            hf_repo_info = hf_api.model_info(repo_id=repo_id, securityStatus=True)
+            hf_repo_info = asdict(
+                hf_api.model_info(repo_id=repo_id, securityStatus=True)
+            )
             # Lists files with security issues.
-            hf_security_info = hf_repo_info.security_repo_status
+            hf_security_info = hf_repo_info["security_repo_status"]
             exclusion = [issue["path"] for issue in hf_security_info["filesWithIssues"]]
 
             # Checks for multi-folder diffusers model or valid files (models with security issues are excluded).
@@ -674,8 +556,12 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         any(file_path.endswith(ext) for ext in EXTENSION)
                         and not any(config in file_path for config in CONFIG_FILE_LIST)
                         and not any(exc in file_path for exc in exclusion)
-                        and os.path.basename(os.path.dirname(file_path))
-                        not in DIFFUSERS_CONFIG_DIR
+                        and os.path.basename(os.path.dirname(file_path)) not in DIFFUSERS_CONFIG_DIR
+                        # If caller requested checkpoint-only, exclude filenames that look like LoRA/Textual-Inversion
+                        and not (
+                            model_type == "checkpoint"
+                            and any(kw in file_path.lower() for kw in ["lora", "textual", "inversion"])
+                        )
                     ):
                         file_list.append(file_path)
 
@@ -740,7 +626,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             loading_method=output_info["loading_method"],
             checkpoint_format=output_info["checkpoint_format"],
             repo_status=RepoStatus(
-                repo_id=repo_id, repo_hash=hf_repo_info.sha, version=revision
+                repo_id=repo_id, repo_hash=hf_repo_info["sha"], version=revision
             ),
             model_status=ModelStatus(
                 search_word=search_word,
@@ -837,7 +723,10 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
-        raise requests.HTTPError(f"Could not get elements from the URL: {err}")
+        if skip_error:
+            return None
+        else:
+            raise requests.HTTPError(f"Could not get elements from the URL: {err}")
     else:
         try:
             data = response.json()
@@ -848,9 +737,12 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 raise ValueError("Invalid JSON response")
 
     # Sort repositories by download count in descending order
-    sorted_repos = sorted(
-        data["items"], key=lambda x: x["stats"]["downloadCount"], reverse=True
-    )
+    # sorted_repos = sorted(
+    #    data["items"], key=lambda x: x["stats"]["downloadCount"], reverse=True
+    # )
+
+    # Since the Civitai API is broken, I will temporarily sort by name.
+    sorted_repos = sorted(data["items"], key=lambda x: x["name"], reverse=True)
 
     for selected_repo in sorted_repos:
         repo_name = selected_repo["name"]
@@ -1113,12 +1005,12 @@ class AutoConfig:
                 # Search for the model on Civitai and get the model status
                 textual_inversion_path = search_civitai(search_word, **kwargs)
                 logger.warning(
-                    f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}"
+                    f"textual_inversion_path: {search_word} -> {textual_inversion_path.model_status.site_url}"  # type: ignore
                 )
 
                 pretrained_model_name_or_paths[
                     pretrained_model_name_or_paths.index(search_word)
-                ] = textual_inversion_path.model_path
+                ] = textual_inversion_path.model_path  # type: ignore
 
         self.load_textual_inversion(
             pretrained_model_name_or_paths,
@@ -1172,9 +1064,19 @@ class AutoConfig:
             kwargs.update(_status)
             # Search for the model on Civitai and get the model status
             lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
-            logger.warning(f"lora_path: {lora_path.model_status.site_url}")
-            logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
-            pretrained_model_name_or_path_or_dict = lora_path.model_path
+            # search_civitai may return a SearchResult, a string (download url or path) or None.
+            if isinstance(lora_path, SearchResult):
+                logger.warning(f"lora_path: {lora_path.model_status.site_url}")
+                logger.warning(f"trained_words: {lora_path.extra_status.trained_words}")
+                pretrained_model_name_or_path_or_dict = lora_path.model_path
+            elif lora_path is None:
+                raise ValueError(
+                    f"No LORA model found for {pretrained_model_name_or_path_or_dict}"
+                )
+            else:
+                # fallback when search_civitai returns a plain path/URL string
+                logger.warning(f"lora_path: {lora_path}")
+                pretrained_model_name_or_path_or_dict = lora_path
 
         self.load_lora_weights(
             pretrained_model_name_or_path_or_dict, adapter_name=adapter_name, **kwargs
@@ -1320,16 +1222,16 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
             pretrained_model_link_or_path, **kwargs
         )
         logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
-        checkpoint_path = hf_checkpoint_status.model_path
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
 
         # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
+                pipeline_mapping=AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
                 **kwargs,
             )
         else:
@@ -1430,13 +1332,13 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
-        checkpoint_path = checkpoint_status.model_path
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")  # type: ignore
+        checkpoint_path = checkpoint_status.model_path  # type: ignore
 
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
-            pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
+            pipeline_mapping=AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
             **kwargs,
         )
         return add_methods(pipeline)
@@ -1582,16 +1484,16 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
             pretrained_model_link_or_path, **kwargs
         )
         logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
-        checkpoint_path = hf_checkpoint_status.model_path
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
 
         # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
+                pipeline_mapping=AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
                 **kwargs,
             )
         else:
@@ -1693,13 +1595,13 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
-        checkpoint_path = checkpoint_status.model_path
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")  # type: ignore
+        checkpoint_path = checkpoint_status.model_path  # type: ignore
 
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
-            pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
+            pipeline_mapping=AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
             **kwargs,
         )
         return add_methods(pipeline)
@@ -1845,16 +1747,16 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
             pretrained_model_link_or_path, **kwargs
         )
         logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
-        checkpoint_path = hf_checkpoint_status.model_path
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
 
         # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
             # Load the pipeline from a single file checkpoint
             pipeline = load_pipeline_from_single_file(
                 pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
+                pipeline_mapping=AUTO_INPAINT_PIPELINES_MAPPING,
                 **kwargs,
             )
         else:
@@ -1955,13 +1857,13 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
 
         # Search for the model on Civitai and get the model status
         checkpoint_status = search_civitai(pretrained_model_link_or_path, **kwargs)
-        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")
-        checkpoint_path = checkpoint_status.model_path
+        logger.warning(f"checkpoint_path: {checkpoint_status.model_status.site_url}")  # type: ignore
+        checkpoint_path = checkpoint_status.model_path  # type: ignore
 
         # Load the pipeline from a single file checkpoint
         pipeline = load_pipeline_from_single_file(
             pretrained_model_or_path=checkpoint_path,
-            pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
+            pipeline_mapping=AUTO_INPAINT_PIPELINES_MAPPING,
             **kwargs,
         )
         return add_methods(pipeline)

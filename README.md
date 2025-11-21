@@ -1,5 +1,4 @@
-# auto_diffusers
-
+![auto_diffusers icon](images/auto_diffusers_icon.png)
 
 <p>
     <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=social"></a>
@@ -20,13 +19,20 @@
 + [License](#License)
 + [Acknowledgement](#Acknowledgement)
 
-## 📢Announce
-`pipeline.auto_load_lora_weights()` and `pipeline.auto_load_textual_inversion()` may not work properly at the moment due to a bug in the Civitai API.
 
 ## About The Project<a name = "About_The_Project"></a>
-Enhance the functionality of diffusers.
-* Search models from huggingface and Civitai.
 
+Enhance the functionality of diffusers.  
+* Search models from Hugging Face and Civitai.  
+* Officially listed in the [Hugging Face Diffusers Community Projects](https://huggingface.co/docs/diffusers/community_projects) documentation.
+
+<details>
+<summary>Image of the listing location on Hugging Face</summary>
+
+[<img src="images\huggingface_highlight.png" width="420">](images\huggingface_highlight.png)
+
+
+</details>
 
 ##  How to use<a name = "How_to_use"></a>
 
