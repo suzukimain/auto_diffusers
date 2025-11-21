@@ -178,3 +178,10 @@ wandb
 
 # VSCode settings
 .vscode/
+
+# Local test scripts (don't push)
+test/
+
+# Virtual environment
+.venv/
+.venv_test/
