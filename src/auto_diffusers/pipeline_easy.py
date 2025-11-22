@@ -960,7 +960,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 sorted_models = sorted(
                     models_list, key=lambda x: x["filename"], reverse=True
                 )
-                selected_model = next(
+                # Prefer safe/sfw models
+                candidate_model = next(
                     (
                         model_data
                         for model_data in sorted_models
@@ -970,11 +971,28 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     ),
                     sorted_models[0],
                 )
+                
+                # Validate download URL accessibility (check first file only)
+                try:
+                    resp = requests.head(
+                        candidate_model["download_url"],
+                        headers=headers,
+                        timeout=3,
+                        allow_redirects=True
+                    )
+                    resp.raise_for_status()
+                    selected_model = candidate_model
+                    logger.info(f"Validated download URL: {candidate_model['download_url']}")
+                    break  # Exit the version loop if a valid model is found
+                except requests.exceptions.RequestException as e:
+                    logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
+                    continue
 
+            if selected_model:
                 break
         else:
             continue
-        break
+
 
     # Exception handling when search candidates are not found
     if not selected_model:
