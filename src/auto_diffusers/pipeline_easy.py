@@ -1245,6 +1245,7 @@ class AutoConfig:
         self,
         pretrained_model_name_or_path_or_dict: Union[str, Dict[str, torch.Tensor]],
         adapter_name=None,
+        base_model: Optional[Union[str, List[str]]] = None,
         **kwargs,
     ):
         r"""
@@ -1268,6 +1269,9 @@ class AutoConfig:
             adapter_name (`str`, *optional*):
                 Adapter name to be used for referencing the loaded adapter model. If not specified, it will use
                 `default_{i}` where i is the total number of adapters being loaded.
+            base_model (`str` or `List[str]`, *optional*):
+                Base model tag(s) to filter LoRA models (e.g., "SD 1.5", "SDXL 1.0"). Used when searching Civitai
+                to ensure LoRA compatibility with the current pipeline's base model.
             low_cpu_mem_usage (`bool`, *optional*):
                 Speed up model loading by only loading the pretrained LoRA weights and not initializing the random
                 weights.
@@ -1282,6 +1286,8 @@ class AutoConfig:
                 "skip_error": False,
                 "model_type": "LORA",
             }
+            if base_model is not None:
+                _status["base_model"] = base_model if isinstance(base_model, list) else [base_model]
             kwargs.update(_status)
             # Search for the model on Civitai and get the model status
             lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)
