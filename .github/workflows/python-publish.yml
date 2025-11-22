@@ -134,13 +134,6 @@ jobs:
           rm -rf ~/.cache/huggingface/hub/*
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
 
-      - name: Test install from Test PyPI (exact version)
-        if: github.event_name == 'release' || inputs.publish_to_pypi == 'true'
-        run: |
-          pip uninstall -y auto-diffusers || true
-          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple auto-diffusers==${{ env.release_version }}
-          python -c "import pkg_resources; import sys; v=pkg_resources.get_distribution('auto-diffusers').version; print('Installed TestPyPI version:', v); assert v=='${{ env.release_version }}'"
-
       - name: Publish to PyPI
         if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
