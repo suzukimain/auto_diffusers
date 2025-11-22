@@ -1,4 +1,4 @@
-![auto_diffusers icon](images/auto_diffusers_icon.png)
+![auto_diffusers icon](https://github.com/suzukimain/auto_diffusers/blob/master/images/auto_diffusers_icon.png)
 
 <p>
     <a href="https://github.com/suzukimain/auto_diffusers/blob/main/LICENSE"><img alt="GitHub release" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=social"></a>
@@ -29,7 +29,7 @@ Enhance the functionality of diffusers.
 <details>
 <summary>Image of the listing location on Hugging Face</summary>
 
-[<img src="images\huggingface_highlight.png" width="420">](images\huggingface_highlight.png)
+[<img src="images\huggingface_highlight.png" width="420">](https://github.com/suzukimain/auto_diffusers/blob/master/images/huggingface_highlight.png)
 
 
 </details>
