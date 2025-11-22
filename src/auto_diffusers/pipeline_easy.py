@@ -581,7 +581,7 @@ def file_downloader(
     # raise an HTTPError so callers can try the next candidate. Other HEAD
     # failures are logged and the download is still attempted.
     try:
-        response = requests.head(url, headers=headers, allow_redirects=True, timeout=10)
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=2)
         if response.status_code == 401:
             raise requests.HTTPError(f"401 Unauthorized: {url}")
     except requests.exceptions.RequestException as e:
@@ -960,7 +960,8 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 sorted_models = sorted(
                     models_list, key=lambda x: x["filename"], reverse=True
                 )
-                selected_model = next(
+                # Prefer safe/sfw models
+                candidate_model = next(
                     (
                         model_data
                         for model_data in sorted_models
@@ -970,11 +971,27 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     ),
                     sorted_models[0],
                 )
+                
+                # Validate download URL accessibility (check first file only)
+                try:
+                    # Since models requiring authentication do not return results, there is no need to determine their status via status codes.
+                    _resp = requests.head(
+                        candidate_model["download_url"],
+                        headers=headers,
+                        timeout=2,
+                        allow_redirects=True
+                    )
+                    selected_model = candidate_model
+                    logger.info(f"Validated download URL: {candidate_model['download_url']}")
+                    break  # Exit the version loop if a valid model is found
+                except requests.exceptions.RequestException as e:
+                    logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
+                    continue
 
-                break
-        else:
-            continue
-        break
+        # If we found a valid model in this repo, exit outer repo loop
+        if selected_model:
+            break
+
 
     # Exception handling when search candidates are not found
     if not selected_model:
@@ -1228,6 +1245,7 @@ class AutoConfig:
         self,
         pretrained_model_name_or_path_or_dict: Union[str, Dict[str, torch.Tensor]],
         adapter_name=None,
+        base_model: Optional[Union[str, List[str]]] = None,
         **kwargs,
     ):
         r"""
@@ -1251,6 +1269,9 @@ class AutoConfig:
             adapter_name (`str`, *optional*):
                 Adapter name to be used for referencing the loaded adapter model. If not specified, it will use
                 `default_{i}` where i is the total number of adapters being loaded.
+            base_model (`str` or `List[str]`, *optional*):
+                Base model tag(s) to filter LoRA models (e.g., "SD 1.5", "SDXL 1.0"). Used when searching Civitai
+                to ensure LoRA compatibility with the current pipeline's base model.
             low_cpu_mem_usage (`bool`, *optional*):
                 Speed up model loading by only loading the pretrained LoRA weights and not initializing the random
                 weights.
@@ -1265,6 +1286,8 @@ class AutoConfig:
                 "skip_error": False,
                 "model_type": "LORA",
             }
+            if base_model is not None:
+                _status["base_model"] = base_model if isinstance(base_model, list) else [base_model]
             kwargs.update(_status)
             # Search for the model on Civitai and get the model status
             lora_path = search_civitai(pretrained_model_name_or_path_or_dict, **kwargs)

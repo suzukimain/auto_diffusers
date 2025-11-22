@@ -4,9 +4,23 @@ name: Version Update and Upload Python Package
 # https://github.com/pypa/gh-action-pypi-publish/issues/283
 
 on:
-  workflow_dispatch:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: 'Branch, tag, or SHA to build/test (default: event ref)'
+        required: false
+        default: ''
+      release_version:
+        description: 'Version to use when manually testing (omit to use current package version)'
+        required: false
+        default: ''
+      publish_to_pypi:
+        description: 'Publish to PyPI (only for manual runs)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -18,26 +32,50 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v4
       with:
-        ref: master
+        # Use provided ref for manual run, else use the event ref
+        ref: ${{ inputs.target_ref || github.ref }}
 
-    - name: Get the version of the release and the current version
+    - name: Determine release/base versions
       id: set_version
       run: |
-        echo "release_version=${GITHUB_REF##refs/tags/v}" >> $GITHUB_ENV
+        CURRENT_TAG_VERSION="${GITHUB_REF##refs/tags/v}"
+        INPUT_VERSION="${{ inputs.release_version }}"
+        if [ "${{ github.event_name }}" = "release" ]; then
+          USE_VERSION="$CURRENT_TAG_VERSION"
+        elif [ -n "$INPUT_VERSION" ]; then
+          USE_VERSION="$INPUT_VERSION"
+        else
+          USE_VERSION=$(python -c 'from utils.release import get_version; print(get_version())')
+        fi
+        echo "release_version=$USE_VERSION" >> $GITHUB_ENV
         echo "base_version=$(python -c 'from utils.release import get_version; print(get_version())')" >> $GITHUB_ENV
+        echo "release_version=$USE_VERSION" >> $GITHUB_OUTPUT
+        echo "base_version=$(python -c 'from utils.release import get_version; print(get_version())')" >> $GITHUB_OUTPUT
 
-    - name: Commit the version update
+    - name: Update version (idempotent)
+      if: github.event_name == 'release' || inputs.publish_to_pypi == 'true'
       run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git pull origin master
-        python utils/release.py --update_version ${{ env.release_version }}
-        git add .
-        git commit -m "Update version from ${{ env.base_version }} to ${{ env.release_version }}"
-        git push origin master
+        if [ "${{ env.release_version }}" = "${{ env.base_version }}" ]; then
+          echo "Version already ${env.release_version}; skipping bump.";
+        else
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          python utils/release.py --update_version ${{ env.release_version }}
+          if git diff --quiet; then
+            echo "No changes after version update.";
+          else
+            git add .
+            git commit -m "Update version from ${{ env.base_version }} to ${{ env.release_version }}"
+            # Only push to master/default branch on release event
+            if [ "${{ github.event_name }}" = "release" ]; then
+              git pull --rebase origin $(git rev-parse --abbrev-ref HEAD)
+              git push origin HEAD:master
+            fi
+          fi
+        fi
         
   release-build:
-    name: Build the release
+    name: Build / Test / Publish
     runs-on: ubuntu-22.04
     needs: update-version
     
@@ -53,7 +91,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ inputs.target_ref || github.ref }}
       
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -67,27 +105,37 @@ jobs:
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
           pip install -U diffusers transformers
 
-      - name: Build release distributions
+      - name: Build distributions
         run: |
           python -m build
+          ls -l dist
 
-      - name: Publish release distributions to test PyPI
+      - name: Publish to Test PyPI
+        if: github.event_name == 'release' || inputs.publish_to_pypi == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
           attestations: false
           repository-url: https://test.pypi.org/legacy/
 
-      - name: Test installing auto_diffusers and importing
+      - name: Test install from built artifacts (wheel)
         run: |
-          pip install auto_diffusers && pip uninstall auto_diffusers -y
-          pip install -i https://test.pypi.org/simple/ auto-diffusers
-          python -c "from auto_diffusers import *"
+          python -c "import glob,sys; print('dist:',glob.glob('dist/*'))" || true
+          pip install --no-cache-dir dist/*.whl
+          python -c "from auto_diffusers import *" 
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
           rm -rf ~/.cache/huggingface/hub/*
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
 
-      - name: Publish release distributions to PyPI
+      - name: Test install from Test PyPI (exact version)
+        if: github.event_name == 'release' || inputs.publish_to_pypi == 'true'
+        run: |
+          pip uninstall -y auto-diffusers || true
+          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple auto-diffusers==${{ env.release_version }}
+          python -c "import pkg_resources; import sys; v=pkg_resources.get_distribution('auto-diffusers').version; print('Installed TestPyPI version:', v); assert v=='${{ env.release_version }}'"
+
+      - name: Publish to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true

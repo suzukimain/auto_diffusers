@@ -1,0 +1,48 @@
+name: Operation Debug (Source)
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: 'Branch/tag/SHA to test (default: ref)'
+        required: false
+        default: ''
+      python_version:
+        description: 'Python version'
+        required: false
+        default: '3.8'
+
+jobs:
+  debug-check:
+    name: Debug pipeline (source, no issue)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref || github.ref }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install (editable)
+        run: |
+          pip install -U pip
+          pip install -U torch --index-url https://download.pytorch.org/whl/cpu
+          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+          pip install -e .
+
+      - name: Smoke import
+        run: python -c "from auto_diffusers import *"
+
+      - name: HuggingFace test
+        run: python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
+
+      - name: Civitai test (non-fatal)
+        continue-on-error: true
+        run: python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
