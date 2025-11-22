@@ -988,10 +988,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
                     continue
 
-            if selected_model:
-                break
-        else:
-            continue
+        # If we found a valid model in this repo, exit outer repo loop
+        if selected_model:
+            break
 
 
     # Exception handling when search candidates are not found
