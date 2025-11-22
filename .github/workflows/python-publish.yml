@@ -55,12 +55,18 @@ jobs:
     - name: Update version (idempotent)
       if: github.event_name == 'release' || inputs.publish_to_pypi == 'true'
       run: |
+        # Guard: ensure release_version is set; if not, skip to avoid calling release.py with empty arg
+        if [ -z "${{ env.release_version }}" ]; then
+          echo "release_version is empty; skipping version update.";
+          exit 0
+        fi
+
         if [ "${{ env.release_version }}" = "${{ env.base_version }}" ]; then
           echo "Version already ${env.release_version}; skipping bump.";
         else
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          python utils/release.py --update_version ${{ env.release_version }}
+          python utils/release.py --update_version "${{ env.release_version }}"
           if git diff --quiet; then
             echo "No changes after version update.";
           else
