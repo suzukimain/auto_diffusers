@@ -4,24 +4,50 @@ permissions:
   contents: read
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron:  '0 22 * * *'
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: 'Branch/tag/SHA to test (empty => PyPI package)'
+        required: false
+        default: ''
+      test_mode:
+        description: 'Test mode: pypi or source'
+        required: false
+        default: 'pypi'
 
 jobs:      
   operation-check:
     name: Check pipeline operation
     runs-on: ubuntu-22.04
     steps:      
+      - name: Checkout (source mode only)
+        if: github.event_name == 'workflow_dispatch' && inputs.test_mode == 'source'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref || github.ref }}
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
 
-      - name: Install dependencies
+      - name: Install dependencies (mode-aware)
         run: |
-          pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -U auto_diffusers
+          set -e
+          pip install -U pip
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.test_mode }}" = "source" ]; then
+            echo "[maintenance] Source mode: installing from repository.";
+            pip install -U torch --index-url https://download.pytorch.org/whl/cpu
+            # Attempt to install build helpers if present
+            if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+            pip install -e .
+          else
+            echo "[maintenance] PyPI mode: installing released package.";
+            pip install -U torch --index-url https://download.pytorch.org/whl/cpu
+            pip install -U auto_diffusers
+          fi
 
       - name: Testing Import
         run: |
@@ -32,11 +58,47 @@ jobs:
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
 
       - name: Clean Hugging Face cache
-        run: rm -rf ~/.cache/huggingface/hub/*
+        run: rm -rf ~/.cache/huggingface/hub/* || true
 
       - name: Check from_civitai and LoRa/TextualInversion loading
         # Note: pipeline.auto_load_lora_weights() and pipeline.auto_load_textual_inversion() may not work properly at the moment due to a bug in the Civitai API.
         
         # pipe.auto_load_lora_weights('Detail Tweaker'); pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')
         run: |  
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('DreamShaper')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Stable Diffusion')"
+
+  report-failure:
+    name: Report Failure (single issue)
+    needs: operation-check
+    if: needs.operation-check.result == 'failure' && ((github.event_name == 'schedule') || (github.event_name == 'workflow_dispatch' && inputs.test_mode == 'pypi'))
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Create issue if none exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const ISSUE_TITLE = '[Bot] Operation Check Failure';
+            // List open issues and check for existing title
+            const issues = await github.paginate(github.rest.issues.listForRepo, {owner, repo, state: 'open', per_page: 100});
+            const existing = issues.find(i => i.title === ISSUE_TITLE);
+            if (existing) {
+              core.info(`Existing failure issue (#${existing.number}) found; skipping creation.`);
+              return;
+            }
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              '自動メンテナンスチェックが失敗しました。',
+              '',
+              `イベント種別: ${context.eventName}`,
+              `ブランチ/リファレンス: ${context.ref}`,
+              `コミット: ${context.sha}`,
+              `ワークフロー Run: ${runUrl}`,
+              '',
+              'この Issue は最初の失敗のみ自動生成されます。既存の問題が解決された後、再度失敗した場合は新しい Issue が生成されます。',
+            ].join('\n');
+            await github.rest.issues.create({owner, repo, title: ISSUE_TITLE, body});
+            core.info('Failure issue created.');
