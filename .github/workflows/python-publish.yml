@@ -123,6 +123,7 @@ jobs:
           verbose: true
           attestations: false
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
 
       - name: Test install from built artifacts (wheel)
         run: |
@@ -146,3 +147,4 @@ jobs:
         with:
           verbose: true
           attestations: false
+          skip-existing: true
