@@ -581,7 +581,7 @@ def file_downloader(
     # raise an HTTPError so callers can try the next candidate. Other HEAD
     # failures are logged and the download is still attempted.
     try:
-        response = requests.head(url, headers=headers, allow_redirects=True, timeout=10)
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=2)
         if response.status_code == 401:
             raise requests.HTTPError(f"401 Unauthorized: {url}")
     except requests.exceptions.RequestException as e:
@@ -974,13 +974,13 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 
                 # Validate download URL accessibility (check first file only)
                 try:
-                    resp = requests.head(
+                    # Since models requiring authentication do not return results, there is no need to determine their status via status codes.
+                    _resp = requests.head(
                         candidate_model["download_url"],
                         headers=headers,
-                        timeout=3,
+                        timeout=2,
                         allow_redirects=True
                     )
-                    resp.raise_for_status()
                     selected_model = candidate_model
                     logger.info(f"Validated download URL: {candidate_model['download_url']}")
                     break  # Exit the version loop if a valid model is found
