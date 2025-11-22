@@ -125,7 +125,7 @@ jobs:
           python -c "from auto_diffusers import *" 
           python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
           rm -rf ~/.cache/huggingface/hub/*
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Stable Diffusion')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
 
       - name: Test install from Test PyPI (exact version)
         if: github.event_name == 'release' || inputs.publish_to_pypi == 'true'

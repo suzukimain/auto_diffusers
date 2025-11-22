@@ -65,7 +65,7 @@ jobs:
         
         # pipe.auto_load_lora_weights('Detail Tweaker'); pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')
         run: |  
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Stable Diffusion')"
+          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
 
   report-failure:
     name: Report Failure (single issue)

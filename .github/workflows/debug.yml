@@ -45,4 +45,4 @@ jobs:
 
       - name: Civitai test (non-fatal)
         continue-on-error: true
-        run: python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Stable Diffusion ')"
+        run: python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
