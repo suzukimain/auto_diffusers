@@ -19,8 +19,6 @@ jobs:
       - name: Checkout source
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -32,7 +30,6 @@ jobs:
           set -e
           python -m pip install --upgrade pip setuptools wheel
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             pip install -e .
           else
@@ -40,13 +37,14 @@ jobs:
           fi
 
       - name: Test import
-        run: python -c "from auto_diffusers import *"
+        run: |
+          python -c "from auto_diffusers import *" 2>&1 | tee import.log
 
       - name: Test from_huggingface
         id: hf_test
         continue-on-error: true
         run: |
-          python - <<'EOF'
+          python - <<'EOF' 2>&1 | tee hf.log
           from auto_diffusers import EasyPipelineForText2Image
           EasyPipelineForText2Image.from_huggingface("Stable Diffusion")
           EOF
@@ -55,22 +53,41 @@ jobs:
         id: civitai_test
         continue-on-error: true
         run: |
-          python - <<'EOF'
+          python - <<'EOF' 2>&1 | tee civitai.log
           from auto_diffusers import EasyPipelineForText2Image
           EasyPipelineForText2Image.from_civitai("Anything", base_model="SD 1.5")
           EOF
 
       - name: Evaluate results
         run: |
+          {
+            echo "HF_TEST=${{ steps.hf_test.outcome }}"
+            echo "CIVITAI_TEST=${{ steps.civitai_test.outcome }}"
+            echo
+            echo "===== import.log ====="
+            cat import.log || true
+            echo
+            echo "===== hf.log ====="
+            cat hf.log || true
+            echo
+            echo "===== civitai.log ====="
+            cat civitai.log || true
+          } > failure.log
+
           if [ "${{ steps.hf_test.outcome }}" = "failure" ] || \
              [ "${{ steps.civitai_test.outcome }}" = "failure" ]; then
-            echo "::error::Operation check failed"
             exit 1
           fi
-          echo "::notice::All tests passed"
+
+      - name: Upload failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operation-check-log
+          path: failure.log
 
   create-issue-for-copilot:
-    name: Create issue and assign Copilot
+    name: Create or update issue and assign Copilot
     needs: operation-check
     if: needs.operation-check.result == 'failure'
     runs-on: ubuntu-22.04
@@ -81,24 +98,55 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Create issue and assign Copilot
+      - name: Download failure log
+        uses: actions/download-artifact@v4
+        with:
+          name: operation-check-log
+
+      - name: Authenticate gh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api \
-            --method POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/issues \
-            --input - <<'EOF'
-          {
-            "title": "Operation Check failed (auto)",
-            "body": "The scheduled operation check failed.\n\nPlease analyze the failure and create a pull request that fixes the root cause.",
-            "assignees": ["copilot-swe-agent[bot]"],
-            "agent_assignment": {
-              "target_repo": "${{ github.repository }}",
-              "base_branch": "main",
-              "custom_instructions": "Fix the failing operation check. Focus on Hugging Face / Civitai pipeline robustness and add regression safety if needed."
-            }
-          }
+          echo "$GH_TOKEN" | gh auth login --with-token
+
+      - name: Create or update issue (deduplicated)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FAIL_HASH=$(sha256sum failure.log | cut -d' ' -f1)
+
+          TITLE="Operation Check failed [hash:${FAIL_HASH}]"
+
+          BODY=$(cat <<EOF
+          Operation Check failed.
+
+          **Failure hash:** \`${FAIL_HASH}\`
+
+          <details>
+          <summary>Failure log</summary>
+
+          \`\`\`
+          $(cat failure.log)
+          \`\`\`
+          </details>
+
+          Please analyze this failure and open a pull request fixing the root cause.
           EOF
+          )
+
+          EXISTING_ISSUE=$(gh issue list \
+            --search "Operation Check failed hash:${FAIL_HASH}" \
+            --state open \
+            --json number \
+            -q '.[0].number')
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Existing issue found: #$EXISTING_ISSUE"
+            gh issue comment "$EXISTING_ISSUE" --body "$BODY"
+          else
+            echo "Creating new issue"
+            gh issue create \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --assignee "copilot-swe-agent[bot]"
+          fi
