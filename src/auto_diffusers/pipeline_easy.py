@@ -65,7 +65,7 @@ from diffusers import (
     StableDiffusionXLControlNetImg2ImgPipeline,
 )
 
-from huggingface_hub import hf_api, hf_hub_download
+from huggingface_hub import hf_api, hf_hub_download, hf_hub_url
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
 
@@ -551,9 +551,8 @@ def validate_url_with_head(
     
     try:
         response = requests.head(url, headers=headers, allow_redirects=True, timeout=timeout)
-        if response.status_code == 401:
-            # Raise HTTPError with proper response object for 401
-            response.raise_for_status()
+        # Raise HTTPError for any 4xx/5xx status codes (including 401)
+        response.raise_for_status()
     except requests.HTTPError:
         # Re-raise HTTPError (primarily for 401, but also other 4xx/5xx from raise_for_status)
         raise
@@ -847,7 +846,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 if download:
                     # Validate URL accessibility before downloading
                     # Check if model_index.json is accessible
-                    model_index_url = f"https://huggingface.co/{repo_id}/resolve/main/model_index.json"
+                    model_index_url = hf_hub_url(
+                        repo_id=repo_id,
+                        filename="model_index.json",
+                        revision=revision
+                    )
                     validate_url_with_head(model_index_url, token=token)
                     
                     model_path = DiffusionPipeline.download(
@@ -869,8 +872,12 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 
                 if download:
                     # Validate URL accessibility before downloading
-                    # Construct the download URL for validation
-                    file_url = f"https://huggingface.co/{repo_id}/resolve/{revision or 'main'}/{file_name}"
+                    # Construct the download URL for validation using hf_hub_url
+                    file_url = hf_hub_url(
+                        repo_id=repo_id,
+                        filename=file_name,
+                        revision=revision
+                    )
                     validate_url_with_head(file_url, token=token)
                     
                     model_path = hf_hub_download(
