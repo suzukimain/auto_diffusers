@@ -540,10 +540,13 @@ def validate_url_with_head(
     """
     if headers is None:
         headers = {}
+    else:
+        # Create a copy to avoid modifying the original
+        headers = dict(headers)
     
     # If token is provided and authorization not already in headers, add it
     # Check case-insensitively since HTTP headers are case-insensitive
-    if token and not any(k.lower() == "authorization" for k in headers.keys()):
+    if token and not any(k.lower() == "authorization" for k in headers):
         headers["Authorization"] = f"Bearer {token}"
     
     try:
@@ -552,10 +555,10 @@ def validate_url_with_head(
             # Raise HTTPError with proper response object for 401
             response.raise_for_status()
     except requests.HTTPError:
-        # Re-raise 401 errors so caller can retry with next candidate
+        # Re-raise HTTPError (primarily for 401, but also other 4xx/5xx from raise_for_status)
         raise
     except requests.exceptions.RequestException as e:
-        # Log other errors but don't fail - the actual download may still succeed
+        # Log other request errors but don't fail - the actual download may still succeed
         logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
 
 
