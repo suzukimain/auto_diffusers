@@ -709,13 +709,19 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
         )
         model_dicts = [asdict(value) for value in list(hf_models)]
 
-        # Loop through models to find a suitable candidate
+        # Collect all valid candidates first
+        candidates = []
         for repo_info in model_dicts:
             repo_id = repo_info["id"]
             file_list = []
-            hf_repo_info = asdict(
-                hf_api.model_info(repo_id=repo_id, securityStatus=True)
-            )
+            try:
+                hf_repo_info = asdict(
+                    hf_api.model_info(repo_id=repo_id, securityStatus=True)
+                )
+            except Exception as e:
+                logger.info(f"Failed to get repo info for {repo_id}: {e}")
+                continue
+                
             # Lists files with security issues.
             hf_security_info = hf_repo_info["security_repo_status"]
             exclusion = [issue["path"] for issue in hf_security_info["filesWithIssues"]]
@@ -728,7 +734,12 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         "diffusers",
                         "all",
                     ]:
-                        diffusers_model_exists = True
+                        # Found diffusers model
+                        candidates.append({
+                            "type": "diffusers",
+                            "repo_id": repo_id,
+                            "repo_info": hf_repo_info,
+                        })
                         break
 
                     elif (
@@ -743,11 +754,26 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         )
                     ):
                         file_list.append(file_path)
+                
+                # Add single file candidates
+                if file_list:
+                    # Sort and find the safest model
+                    file_name = next(
+                        (
+                            model
+                            for model in sorted(file_list, reverse=True)
+                            if re.search(r"(?i)[-_](safe|sfw)", model)
+                        ),
+                        file_list[0],
+                    )
+                    candidates.append({
+                        "type": "single_file",
+                        "repo_id": repo_id,
+                        "file_name": file_name,
+                        "repo_info": hf_repo_info,
+                    })
 
-            # Exit from the loop if a multi-folder diffusers model or valid file is found
-            if diffusers_model_exists or file_list:
-                break
-        else:
+        if not candidates:
             # Handle case where no models match the criteria
             if skip_error:
                 return None
@@ -756,37 +782,102 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                     "No models matching your criteria were found on huggingface."
                 )
 
-        if diffusers_model_exists:
-            if download:
-                model_path = DiffusionPipeline.download(
-                    repo_id,
-                    token=token,
-                    cache_dir=cache_dir,
-                    **kwargs,
+        # Try each candidate until one succeeds
+        last_error = None
+        unauthorized_count = 0
+        for idx, candidate in enumerate(candidates):
+            try:
+                if candidate["type"] == "diffusers":
+                    repo_id = candidate["repo_id"]
+                    hf_repo_info = candidate["repo_info"]
+                    diffusers_model_exists = True
+                    
+                    if download:
+                        # Validate URL before downloading
+                        validate_url = f"https://huggingface.co/{repo_id}/resolve/main/model_index.json"
+                        try:
+                            head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
+                            if head_response.status_code == 401:
+                                unauthorized_count += 1
+                                logger.info(f"401 Unauthorized for {repo_id}, trying next candidate ({idx+1}/{len(candidates)})")
+                                continue
+                        except requests.exceptions.RequestException as e:
+                            logger.info(f"HEAD check failed for {repo_id} (continuing): {e}")
+                        
+                        model_path = DiffusionPipeline.download(
+                            repo_id,
+                            token=token,
+                            cache_dir=cache_dir,
+                            **kwargs,
+                        )
+                    else:
+                        model_path = repo_id
+                    
+                    file_name = ""
+                    break
+                    
+                elif candidate["type"] == "single_file":
+                    repo_id = candidate["repo_id"]
+                    file_name = candidate["file_name"]
+                    hf_repo_info = candidate["repo_info"]
+                    diffusers_model_exists = False
+                    
+                    if download:
+                        # Validate URL before downloading
+                        validate_url = f"https://huggingface.co/{repo_id}/resolve/main/{file_name}"
+                        try:
+                            head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
+                            if head_response.status_code == 401:
+                                unauthorized_count += 1
+                                logger.info(f"401 Unauthorized for {repo_id}/{file_name}, trying next candidate ({idx+1}/{len(candidates)})")
+                                continue
+                        except requests.exceptions.RequestException as e:
+                            logger.info(f"HEAD check failed for {repo_id}/{file_name} (continuing): {e}")
+                        
+                        model_path = hf_hub_download(
+                            repo_id=repo_id,
+                            filename=file_name,
+                            revision=revision,
+                            token=token,
+                            force_download=force_download,
+                            cache_dir=cache_dir,
+                        )
+                    else:
+                        model_path = f"https://huggingface.co/{repo_id}/blob/main/{file_name}"
+                    
+                    break
+                    
+            except requests.HTTPError as e:
+                if "401" in str(e):
+                    unauthorized_count += 1
+                logger.info(f"Candidate {idx+1}/{len(candidates)} failed with error: {e}")
+                last_error = e
+                continue
+            except Exception as e:
+                logger.info(f"Failed to download candidate {idx+1}/{len(candidates)}: {e}")
+                last_error = e
+                continue
+        else:
+            # All candidates failed
+            if unauthorized_count > 0:
+                logger.warning(
+                    f"Warning: {unauthorized_count} model(s) were rejected due to access restrictions. "
+                    f"To access gated models, provide a valid token via the 'token' parameter."
                 )
+            if skip_error:
+                return None
             else:
-                model_path = repo_id
-
-        elif file_list:
-            # Sort and find the safest model
-            file_name = next(
-                (
-                    model
-                    for model in sorted(file_list, reverse=True)
-                    if re.search(r"(?i)[-_](safe|sfw)", model)
-                ),
-                file_list[0],
+                error_msg = "All model candidates failed to download."
+                if last_error:
+                    error_msg += f" Last error: {last_error}"
+                raise ValueError(error_msg)
+        
+        # Show warning if some models were skipped due to 401 errors
+        if unauthorized_count > 0:
+            logger.warning(
+                f"Note: {unauthorized_count} model(s) skipped due to 401 Unauthorized. "
+                f"To access these models, provide a token via the 'token' parameter."
             )
-
-            if download:
-                model_path = hf_hub_download(
-                    repo_id=repo_id,
-                    filename=file_name,
-                    revision=revision,
-                    token=token,
-                    force_download=force_download,
-                    cache_dir=cache_dir,
-                )
 
     # `pathlib.PosixPath` may be returned
     if model_path:
