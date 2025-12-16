@@ -19,9 +19,8 @@ jobs:
     steps:
       # ---------------- Checkout ----------------
       - name: Checkout source
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || '' }}
 
       # ---------------- Python ----------------
       - name: Setup Python
