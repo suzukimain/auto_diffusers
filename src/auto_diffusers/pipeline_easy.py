@@ -549,7 +549,8 @@ def validate_url_with_head(
     try:
         response = requests.head(url, headers=headers, allow_redirects=True, timeout=timeout)
         if response.status_code == 401:
-            raise requests.HTTPError(f"401 Unauthorized: {url}")
+            # Raise HTTPError with proper response object for 401
+            response.raise_for_status()
     except requests.HTTPError:
         # Re-raise 401 errors so caller can retry with next candidate
         raise
