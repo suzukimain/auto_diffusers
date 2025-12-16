@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           set -e
-          pip install -U pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.test_mode }}" = "source" ]; then
             pip install -e .
