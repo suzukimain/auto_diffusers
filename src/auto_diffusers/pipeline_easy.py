@@ -1497,6 +1497,7 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         # Get candidate index from kwargs, default to 0
         candidate_index = kwargs.pop('_candidate_index', 0)
         max_retries = kwargs.pop('_max_retries', 10)
+        failed_count = kwargs.pop('_failed_count', 0)
         
         # Search for the model on Hugging Face and get the model status
         try:
@@ -1509,11 +1510,17 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
                 logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
+                kwargs['_failed_count'] = failed_count + 1
                 return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
             else:
+                if failed_count > 0:
+                    logger.warning(
+                        f"Note: {failed_count} model(s) skipped due to errors. "
+                        f"To access gated models, provide a token via the 'token' parameter."
+                    )
                 raise
         
-        logger.warning(
+        logger.info(
             f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
         checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
@@ -1529,16 +1536,30 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
                 )
             else:
                 pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+            
+            # Show warning if some candidates were skipped
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            
             return add_methods(pipeline)
         except Exception as e:
             # If loading fails and we haven't exceeded max retries, try next candidate
-            logger.warning(f"Failed to load pipeline: {e}")
+            logger.info(f"Failed to load pipeline: {e}")
             if candidate_index < max_retries:
                 logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
+                kwargs['_failed_count'] = failed_count + 1
                 return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
             else:
+                if failed_count > 0:
+                    logger.warning(
+                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
+                        f"To access gated models, provide a token via the 'token' parameter."
+                    )
                 raise
 
     @classmethod
@@ -1785,6 +1806,7 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         # Get candidate index from kwargs, default to 0
         candidate_index = kwargs.pop('_candidate_index', 0)
         max_retries = kwargs.pop('_max_retries', 10)
+        failed_count = kwargs.pop('_failed_count', 0)
         
         # Search for the model on Hugging Face and get the model status
         try:
@@ -1797,11 +1819,17 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
                 logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
+                kwargs['_failed_count'] = failed_count + 1
                 return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
             else:
+                if failed_count > 0:
+                    logger.warning(
+                        f"Note: {failed_count} model(s) skipped due to errors. "
+                        f"To access gated models, provide a token via the 'token' parameter."
+                    )
                 raise
         
-        logger.warning(
+        logger.info(
             f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
         checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
@@ -1817,16 +1845,30 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
                 )
             else:
                 pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+            
+            # Show warning if some candidates were skipped
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            
             return add_methods(pipeline)
         except Exception as e:
             # If loading fails and we haven't exceeded max retries, try next candidate
-            logger.warning(f"Failed to load pipeline: {e}")
+            logger.info(f"Failed to load pipeline: {e}")
             if candidate_index < max_retries:
                 logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...") 
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
+                kwargs['_failed_count'] = failed_count + 1
                 return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
             else:
+                if failed_count > 0:
+                    logger.warning(
+                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
+                        f"To access gated models, provide a token via the 'token' parameter."
+                    )
                 raise
 
     @classmethod
@@ -2073,6 +2115,7 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         # Get candidate index from kwargs, default to 0
         candidate_index = kwargs.pop('_candidate_index', 0)
         max_retries = kwargs.pop('_max_retries', 10)
+        failed_count = kwargs.pop('_failed_count', 0)
         
         # Search for the model on Hugging Face and get the model status
         try:
@@ -2085,11 +2128,17 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
                 logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
+                kwargs['_failed_count'] = failed_count + 1
                 return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
             else:
+                if failed_count > 0:
+                    logger.warning(
+                        f"Note: {failed_count} model(s) skipped due to errors. "
+                        f"To access gated models, provide a token via the 'token' parameter."
+                    )
                 raise
         
-        logger.warning(
+        logger.info(
             f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
         )
         checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
@@ -2105,16 +2154,30 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
                 )
             else:
                 pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+            
+            # Show warning if some candidates were skipped
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            
             return add_methods(pipeline)
         except Exception as e:
             # If loading fails and we haven't exceeded max retries, try next candidate
-            logger.warning(f"Failed to load pipeline: {e}")
+            logger.info(f"Failed to load pipeline: {e}")
             if candidate_index < max_retries:
                 logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
+                kwargs['_failed_count'] = failed_count + 1
                 return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
             else:
+                if failed_count > 0:
+                    logger.warning(
+                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
+                        f"To access gated models, provide a token via the 'token' parameter."
+                    )
                 raise
 
     @classmethod
