@@ -2,6 +2,8 @@ name: Operation Check
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 on:
   schedule:
@@ -17,11 +19,11 @@ on:
         required: false
         default: 'pypi'
 
-jobs:      
+jobs:
   operation-check:
     name: Check pipeline operation
     runs-on: ubuntu-22.04
-    steps:      
+    steps:
       - name: Checkout (source mode only)
         if: github.event_name == 'workflow_dispatch' && inputs.test_mode == 'source'
         uses: actions/checkout@v4
@@ -33,72 +35,112 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Install dependencies (mode-aware)
+      - name: Install dependencies
         run: |
           set -e
           pip install -U pip
+          pip install -U torch --index-url https://download.pytorch.org/whl/cpu
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.test_mode }}" = "source" ]; then
-            echo "[maintenance] Source mode: installing from repository.";
-            pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-            # Attempt to install build helpers if present
-            if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
             pip install -e .
           else
-            echo "[maintenance] PyPI mode: installing released package.";
-            pip install -U torch --index-url https://download.pytorch.org/whl/cpu
             pip install -U auto_diffusers
           fi
 
       - name: Testing Import
-        run: |
-          python -c "from auto_diffusers import *"
+        run: python -c "from auto_diffusers import *"
 
+      # ---------------- HF ----------------
       - name: Check from_huggingface
+        id: hf_test
+        continue-on-error: true
         run: |
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
+          python - <<'EOF'
+          from auto_diffusers import EasyPipelineForText2Image
+          EasyPipelineForText2Image.from_huggingface("Stable Diffusion")
+          EOF
+
+      - name: Record HF result
+        run: |
+          if [ "${{ steps.hf_test.outcome }}" = "success" ]; then
+            echo "HF_RESULT=success" >> $GITHUB_ENV
+          else
+            echo "HF_RESULT=failure" >> $GITHUB_ENV
+          fi
 
       - name: Clean Hugging Face cache
         run: rm -rf ~/.cache/huggingface/hub/* || true
 
-      - name: Check from_civitai and LoRa/TextualInversion loading
-        # Note: pipeline.auto_load_lora_weights() and pipeline.auto_load_textual_inversion() may not work properly at the moment due to a bug in the Civitai API.
-        
-        # pipe.auto_load_lora_weights('Detail Tweaker'); pipe.auto_load_textual_inversion('EasyNegative', token='EasyNegative')
-        run: |  
-          python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
+      # ---------------- Civitai ----------------
+      - name: Check from_civitai
+        id: civitai_test
+        continue-on-error: true
+        run: |
+          python - <<'EOF'
+          from auto_diffusers import EasyPipelineForText2Image
+          EasyPipelineForText2Image.from_civitai("Anything", base_model="SD 1.5")
+          EOF
 
-  report-failure:
-    name: Report Failure (single issue)
+      - name: Record Civitai result
+        run: |
+          if [ "${{ steps.civitai_test.outcome }}" = "success" ]; then
+            echo "CIVITAI_RESULT=success" >> $GITHUB_ENV
+          else
+            echo "CIVITAI_RESULT=failure" >> $GITHUB_ENV
+          fi
+
+      # ---------------- Final judgment ----------------
+      - name: Final evaluation
+        run: |
+          echo "HF_RESULT=${HF_RESULT}"
+          echo "CIVITAI_RESULT=${CIVITAI_RESULT}"
+
+          if [ "$HF_RESULT" = "failure" ] || [ "$CIVITAI_RESULT" = "failure" ]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+
+  # ---------------- Copilot Auto Fix ----------------
+  copilot-auto-fix:
+    name: Copilot Auto Fix & Summary PR
     needs: operation-check
-    if: needs.operation-check.result == 'failure' && ((github.event_name == 'schedule') || (github.event_name == 'workflow_dispatch' && inputs.test_mode == 'pypi'))
+    if: needs.operation-check.result == 'failure'
     runs-on: ubuntu-22.04
     permissions:
-      contents: read
-      issues: write
+      contents: write
+      pull-requests: write
+
     steps:
-      - name: Create issue if none exists
-        uses: actions/github-script@v7
+      - uses: actions/checkout@v4
+
+      - name: Run Copilot Coding Agent
+        uses: github/copilot-coding-agent@v1
         with:
-          script: |
-            const {owner, repo} = context.repo;
-            const ISSUE_TITLE = '[Bot] Operation Check Failure';
-            // List open issues and check for existing title
-            const issues = await github.paginate(github.rest.issues.listForRepo, {owner, repo, state: 'open', per_page: 100});
-            const existing = issues.find(i => i.title === ISSUE_TITLE);
-            if (existing) {
-              core.info(`Existing failure issue (#${existing.number}) found; skipping creation.`);
-              return;
-            }
-            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const body = [
-              '自動メンテナンスチェックが失敗しました。',
-              '',
-              `イベント種別: ${context.eventName}`,
-              `ブランチ/リファレンス: ${context.ref}`,
-              `コミット: ${context.sha}`,
-              `ワークフロー Run: ${runUrl}`,
-              '',
-              'この Issue は最初の失敗のみ自動生成されます。既存の問題が解決された後、再度失敗した場合は新しい Issue が生成されます。',
-            ].join('\n');
-            await github.rest.issues.create({owner, repo, title: ISSUE_TITLE, body});
-            core.info('Failure issue created.');
+          task: |
+            The operation check workflow failed, but all tests were executed.
+
+            Test summary:
+            - HuggingFace: ${{ env.HF_RESULT }}
+            - Civitai: ${{ env.CIVITAI_RESULT }}
+
+            Please:
+            1. Identify whether failures are caused by external services (HF / Civitai)
+            2. Add robust guards (retry, timeout, skip-on-API-error)
+            3. Keep all tests enabled (do not remove coverage)
+            4. Produce a single consolidated fix
+
+            The goal is a stable nightly workflow, not hiding real regressions.
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "[Copilot] Fix Operation Check failure (summary)"
+          commit-message: "fix: stabilize operation check workflow"
+          body: |
+            This PR was automatically generated by GitHub Copilot Coding Agent.
+
+            Test results:
+            - HuggingFace: ${{ env.HF_RESULT }}
+            - Civitai: ${{ env.CIVITAI_RESULT }}
+
+            The fix focuses on robustness against external API instability.
+          branch: copilot/operation-check-fix
