@@ -65,7 +65,7 @@ from diffusers import (
     StableDiffusionXLControlNetImg2ImgPipeline,
 )
 
-from huggingface_hub import hf_api, hf_hub_download
+from huggingface_hub import hf_api, hf_hub_download, hf_hub_url
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
 
@@ -429,6 +429,7 @@ def load_pipeline_from_single_file(
         )
 
     else:
+        # Load the pipeline from the checkpoint
         return pipeline_class.from_single_file(pretrained_model_or_path, **kwargs)
 
 
@@ -512,6 +513,54 @@ def get_keyword_types(keyword):
     return status
 
 
+def validate_url_with_head(
+    url: str, 
+    token: Optional[str] = None, 
+    headers: Optional[Dict] = None,
+    timeout: int = 2
+) -> None:
+    """
+    Validates a URL is accessible by performing a HEAD request.
+    Raises HTTPError for any 4xx/5xx status codes (including 401 Unauthorized).
+    Logs and continues for other errors.
+    
+    Parameters:
+        url (`str`):
+            The URL to validate.
+        token (`str`, *optional*):
+            Authentication token for the request.
+        headers (`dict`, *optional*):
+            Dictionary of HTTP Headers to send with the request.
+            If provided, takes precedence over token.
+        timeout (`int`, *optional*, defaults to `2`):
+            Timeout in seconds for the HEAD request.
+    
+    Raises:
+        requests.HTTPError: If the URL returns any 4xx or 5xx status code.
+    """
+    if headers is None:
+        headers = {}
+    else:
+        # Create a copy to avoid modifying the original
+        headers = dict(headers)
+    
+    # If token is provided and authorization not already in headers, add it
+    # Check case-insensitively since HTTP headers are case-insensitive
+    if token and not any(k.lower() == "authorization" for k in headers):
+        headers["Authorization"] = f"Bearer {token}"
+    
+    try:
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=timeout)
+        # Raise HTTPError for any 4xx/5xx status codes (including 401)
+        response.raise_for_status()
+    except requests.HTTPError:
+        # Re-raise HTTPError (primarily for 401, but also other 4xx/5xx from raise_for_status)
+        raise
+    except requests.exceptions.RequestException as e:
+        # Log other request errors but don't fail - the actual download may still succeed
+        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
+
+
 def file_downloader(
     url,
     save_path,
@@ -577,15 +626,10 @@ def file_downloader(
             mode = "ab"
             file_size = os.path.getsize(save_path)
 
-    # Check if the URL is accessible before downloading. If HEAD returns 401,
-    # raise an HTTPError so callers can try the next candidate. Other HEAD
-    # failures are logged and the download is still attempted.
-    try:
-        response = requests.head(url, headers=headers, allow_redirects=True, timeout=2)
-        if response.status_code == 401:
-            raise requests.HTTPError(f"401 Unauthorized: {url}")
-    except requests.exceptions.RequestException as e:
-        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
+    # Check if the URL is accessible before downloading. If the HEAD request returns any
+    # 4xx or 5xx status code, an HTTPError is raised so callers can try the next candidate.
+    # Only successful (2xx) responses will proceed to download.
+    validate_url_with_head(url, headers=headers)
 
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
@@ -654,7 +698,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     hf_security_info = {}
     model_path = ""
     repo_id, file_name = "", ""
-    diffusers_model_exists = False
+    candidate_index = kwargs.pop("candidate_index", 0)
 
     # Get the type and loading method for the keyword
     search_word_status = get_keyword_types(search_word)
@@ -782,102 +826,74 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                     "No models matching your criteria were found on huggingface."
                 )
 
-        # Try each candidate until one succeeds
-        last_error = None
-        unauthorized_count = 0
-        for idx, candidate in enumerate(candidates):
-            try:
-                if candidate["type"] == "diffusers":
-                    repo_id = candidate["repo_id"]
-                    hf_repo_info = candidate["repo_info"]
-                    diffusers_model_exists = True
-                    
-                    if download:
-                        # Validate URL before downloading
-                        validate_url = f"https://huggingface.co/{repo_id}/resolve/main/model_index.json"
-                        try:
-                            head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
-                            if head_response.status_code == 401:
-                                unauthorized_count += 1
-                                logger.info(f"401 Unauthorized for {repo_id}, trying next candidate ({idx+1}/{len(candidates)})")
-                                continue
-                        except requests.exceptions.RequestException as e:
-                            logger.info(f"HEAD check failed for {repo_id} (continuing): {e}")
-                        
-                        model_path = DiffusionPipeline.download(
-                            repo_id,
-                            token=token,
-                            cache_dir=cache_dir,
-                            **kwargs,
-                        )
-                    else:
-                        model_path = repo_id
-                    
-                    file_name = ""
-                    break
-                    
-                elif candidate["type"] == "single_file":
-                    repo_id = candidate["repo_id"]
-                    file_name = candidate["file_name"]
-                    hf_repo_info = candidate["repo_info"]
-                    diffusers_model_exists = False
-                    
-                    if download:
-                        # Validate URL before downloading
-                        validate_url = f"https://huggingface.co/{repo_id}/resolve/main/{file_name}"
-                        try:
-                            head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
-                            if head_response.status_code == 401:
-                                unauthorized_count += 1
-                                logger.info(f"401 Unauthorized for {repo_id}/{file_name}, trying next candidate ({idx+1}/{len(candidates)})")
-                                continue
-                        except requests.exceptions.RequestException as e:
-                            logger.info(f"HEAD check failed for {repo_id}/{file_name} (continuing): {e}")
-                        
-                        model_path = hf_hub_download(
-                            repo_id=repo_id,
-                            filename=file_name,
-                            revision=revision,
-                            token=token,
-                            force_download=force_download,
-                            cache_dir=cache_dir,
-                        )
-                    else:
-                        model_path = f"https://huggingface.co/{repo_id}/blob/main/{file_name}"
-                    
-                    break
-                    
-            except requests.HTTPError as e:
-                if "401" in str(e):
-                    unauthorized_count += 1
-                logger.info(f"Candidate {idx+1}/{len(candidates)} failed with error: {e}")
-                last_error = e
-                continue
-            except Exception as e:
-                logger.info(f"Failed to download candidate {idx+1}/{len(candidates)}: {e}")
-                last_error = e
-                continue
-        else:
-            # All candidates failed
-            if unauthorized_count > 0:
-                logger.warning(
-                    f"Warning: {unauthorized_count} model(s) were rejected due to access restrictions. "
-                    f"To access gated models, provide a valid token via the 'token' parameter."
-                )
+        # Check if candidate_index is valid
+        if candidate_index >= len(candidates):
             if skip_error:
                 return None
             else:
-                error_msg = "All model candidates failed to download."
-                if last_error:
-                    error_msg += f" Last error: {last_error}"
-                raise ValueError(error_msg)
+                raise ValueError(f"No more candidates available (requested index {candidate_index}, total {len(candidates)})")
         
-        # Show warning if some models were skipped due to 401 errors
-        if unauthorized_count > 0:
-            logger.warning(
-                f"Note: {unauthorized_count} model(s) skipped due to 401 Unauthorized. "
-                f"To access these models, provide a token via the 'token' parameter."
-            )
+        # Get the candidate at the specified index
+        candidate = candidates[candidate_index]
+        repo_id = candidate["repo_id"]
+        hf_repo_info = candidate["repo_info"]
+        
+        try:
+            if candidate["type"] == "diffusers":
+                # Validate URL early to detect 401 errors
+                if download:
+                    # Validate URL accessibility before downloading
+                    # Check if model_index.json is accessible
+                    model_index_url = hf_hub_url(
+                        repo_id=repo_id,
+                        filename="model_index.json",
+                        revision=revision
+                    )
+                    validate_url_with_head(model_index_url, token=token)
+                    
+                    model_path = DiffusionPipeline.download(
+                        repo_id,
+                        token=token,
+                        cache_dir=cache_dir,
+                        **kwargs,
+                    )
+                else:
+                    model_path = repo_id
+                
+                file_name = ""
+                
+            elif candidate["type"] == "single_file":
+                file_name = candidate["file_name"]
+                
+                # Validate URL early to detect 401 errors
+                if download:
+                    # Validate URL accessibility before downloading
+                    # Construct the download URL for validation using hf_hub_url
+                    file_url = hf_hub_url(
+                        repo_id=repo_id,
+                        filename=file_name,
+                        revision=revision
+                    )
+                    validate_url_with_head(file_url, token=token)
+                    
+                    model_path = hf_hub_download(
+                        repo_id=repo_id,
+                        filename=file_name,
+                        revision=revision,
+                        token=token,
+                        force_download=force_download,
+                        cache_dir=cache_dir,
+                    )
+                else:
+                    model_path = f"https://huggingface.co/{repo_id}/blob/main/{file_name}"
+                    
+        except Exception as e:
+            # Log the error and let the caller decide whether to retry
+            logger.info(f"Candidate {candidate_index+1}/{len(candidates)} ({repo_id}) failed: {e}")
+            if skip_error:
+                return None
+            else:
+                raise
 
     # `pathlib.PosixPath` may be returned
     if model_path:
@@ -1163,6 +1179,93 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             ),
             extra_status=ExtraStatus(trained_words=trainedWords or None),
         )
+
+
+def _load_pipeline_with_retries(cls, pretrained_model_link_or_path, pipeline_mapping, **kwargs):
+    """
+    Helper function to load a pipeline with retry logic using an iterative loop.
+    Handles candidate selection, retries, and error tracking.
+    
+    Parameters:
+        cls: The pipeline class
+        pretrained_model_link_or_path: Model identifier or path
+        pipeline_mapping: Pipeline mapping for single file checkpoints
+        **kwargs: Additional arguments
+        
+    Returns:
+        Loaded pipeline with methods added
+    """
+    # Extract retry parameters from kwargs
+    max_retries = kwargs.pop('_max_retries', 9)
+    failed_count = 0
+    
+    # Update kwargs to ensure the model is downloaded and parameters are included
+    _status = {
+        "download": True,
+        "include_params": True,
+        "skip_error": False,
+        "pipeline_tag": kwargs.pop('_pipeline_tag', None),
+    }
+    kwargs.update(_status)
+    
+    # Try each candidate up to max_retries times
+    for attempt in range(max_retries + 1):
+        # Search for the model on Hugging Face
+        try:
+            hf_checkpoint_status = search_huggingface(
+                pretrained_model_link_or_path, candidate_index=attempt, **kwargs
+            )
+        except Exception as e:
+            logger.info(f"Candidate {attempt + 1}/{max_retries + 1} search failed: {e}")
+            failed_count += 1
+            if attempt < max_retries:
+                logger.info(f"Trying next candidate (attempt {attempt + 2}/{max_retries + 1})...")
+                continue
+            else:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+                raise
+        
+        logger.warning(
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+        )
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
+        
+        # Check the format of the model checkpoint and load pipeline
+        try:
+            if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
+                # Load the pipeline from a single file checkpoint
+                pipeline = load_pipeline_from_single_file(
+                    pretrained_model_or_path=checkpoint_path,
+                    pipeline_mapping=pipeline_mapping,
+                    **kwargs,
+                )
+            else:
+                pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+            
+            # Success - show warning if some candidates were skipped
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            
+            return add_methods(pipeline)
+            
+        except Exception as e:
+            logger.info(f"Failed to load pipeline: {e}")
+            failed_count += 1
+            if attempt < max_retries:
+                logger.info(f"Trying next candidate (attempt {attempt + 2}/{max_retries + 1})...")
+                continue
+            else:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+                raise
 
 
 def add_methods(pipeline):
@@ -1535,26 +1638,15 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         }
         kwargs.update(_status)
 
-        # Search for the model on Hugging Face and get the model status
-        hf_checkpoint_status = search_huggingface(
-            pretrained_model_link_or_path, **kwargs
+        # Use the helper function to load the pipeline with retries
+        kwargs['_max_retries'] = 9
+        kwargs['_pipeline_tag'] = 'text-to-image'
+        return _load_pipeline_with_retries(
+            cls, 
+            pretrained_model_link_or_path, 
+            SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
+            **kwargs
         )
-        logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
-        )
-        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-
-        # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-            # Load the pipeline from a single file checkpoint
-            pipeline = load_pipeline_from_single_file(
-                pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
-                **kwargs,
-            )
-        else:
-            pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-        return add_methods(pipeline)
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
@@ -1788,36 +1880,15 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         >>> image = pipeline(prompt, image).images[0]
         ```
         """
-        # Update kwargs to ensure the model is downloaded and parameters are included
-        _parmas = {
-            "download": True,
-            "include_params": True,
-            "skip_error": False,
-            "pipeline_tag": "image-to-image",
-        }
-        kwargs.update(_parmas)
-
-        # Search for the model on Hugging Face and get the model status
-        hf_checkpoint_status = search_huggingface(
-            pretrained_model_link_or_path, **kwargs
+        # Use the helper function to load the pipeline with retries
+        kwargs['_max_retries'] = 9
+        kwargs['_pipeline_tag'] = 'image-to-image'
+        return _load_pipeline_with_retries(
+            cls, 
+            pretrained_model_link_or_path, 
+            SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
+            **kwargs
         )
-        logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
-        )
-        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-
-        # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-            # Load the pipeline from a single file checkpoint
-            pipeline = load_pipeline_from_single_file(
-                pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
-                **kwargs,
-            )
-        else:
-            pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-
-        return add_methods(pipeline)
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
@@ -2051,35 +2122,15 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         >>> image = pipeline(prompt, image=init_image, mask_image=mask_image).images[0]
         ```
         """
-        # Update kwargs to ensure the model is downloaded and parameters are included
-        _status = {
-            "download": True,
-            "include_params": True,
-            "skip_error": False,
-            "pipeline_tag": "image-to-image",
-        }
-        kwargs.update(_status)
-
-        # Search for the model on Hugging Face and get the model status
-        hf_checkpoint_status = search_huggingface(
-            pretrained_model_link_or_path, **kwargs
+        # Use the helper function to load the pipeline with retries
+        kwargs['_max_retries'] = 9
+        kwargs['_pipeline_tag'] = 'inpainting'
+        return _load_pipeline_with_retries(
+            cls, 
+            pretrained_model_link_or_path, 
+            SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
+            **kwargs
         )
-        logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
-        )
-        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-
-        # Check the format of the model checkpoint
-        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-            # Load the pipeline from a single file checkpoint
-            pipeline = load_pipeline_from_single_file(
-                pretrained_model_or_path=checkpoint_path,
-                pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
-                **kwargs,
-            )
-        else:
-            pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-        return add_methods(pipeline)
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
