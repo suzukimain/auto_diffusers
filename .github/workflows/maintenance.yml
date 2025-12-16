@@ -21,6 +21,8 @@ jobs:
       - name: Checkout source
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
       # ---------------- Python ----------------
       - name: Setup Python
@@ -35,6 +37,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
 
+          echo "Event name: ${{ github.event_name }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Installing auto_diffusers from source: ${{ github.ref }}"
             pip install -e .
