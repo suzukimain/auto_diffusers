@@ -8,16 +8,13 @@ permissions:
 on:
   schedule:
     - cron: '0 22 * * *'
+
   workflow_dispatch:
     inputs:
-      target_ref:
-        description: 'Branch/tag/SHA to test (empty => PyPI package)'
+      ref:
+        description: 'Branch / tag / SHA to test (empty => PyPI package)'
         required: false
         default: ''
-      test_mode:
-        description: 'Test mode: pypi or source'
-        required: false
-        default: 'pypi'
       break_yaml:
         description: 'INTENTIONAL break for testing (none|hf|civitai|final)'
         required: false
@@ -27,29 +24,37 @@ jobs:
   operation-check:
     name: Check pipeline operation
     runs-on: ubuntu-22.04
+
     steps:
-      - name: Checkout (source mode only)
-        if: github.event_name == 'workflow_dispatch' && inputs.test_mode == 'source'
+      # ---------------- Checkout (source only) ----------------
+      - name: Checkout source
+        if: github.event_name == 'workflow_dispatch' && inputs.ref != ''
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.target_ref || github.ref }}
+          ref: ${{ inputs.ref }}
 
+      # ---------------- Python ----------------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.11"
 
+      # ---------------- Dependencies ----------------
       - name: Install dependencies
         run: |
           set -e
           python -m pip install --upgrade pip setuptools wheel
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.test_mode }}" = "source" ]; then
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.ref }}" != "" ]; then
+            echo "Installing auto_diffusers from source: ${{ inputs.ref }}"
             pip install -e .
           else
+            echo "Installing auto_diffusers from PyPI"
             pip install -U auto_diffusers
           fi
 
+      # ---------------- Sanity ----------------
       - name: Testing Import
         run: python -c "from auto_diffusers import *"
 
@@ -102,7 +107,7 @@ jobs:
             echo "CIVITAI_RESULT=failure" >> $GITHUB_ENV
           fi
 
-      # ---------------- Final judgment ----------------
+      # ---------------- Final ----------------
       - name: Final evaluation
         run: |
           echo "HF_RESULT=${HF_RESULT}"
@@ -124,6 +129,7 @@ jobs:
     needs: operation-check
     if: needs.operation-check.result == 'failure'
     runs-on: ubuntu-22.04
+
     permissions:
       contents: write
       pull-requests: write
