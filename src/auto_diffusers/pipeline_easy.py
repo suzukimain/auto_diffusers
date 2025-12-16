@@ -1515,7 +1515,7 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
             else:
                 if failed_count > 0:
                     logger.warning(
-                        f"Note: {failed_count} model(s) skipped due to errors. "
+                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
                         f"To access gated models, provide a token via the 'token' parameter."
                     )
                 raise
