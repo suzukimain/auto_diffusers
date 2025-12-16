@@ -626,9 +626,9 @@ def file_downloader(
             mode = "ab"
             file_size = os.path.getsize(save_path)
 
-    # Check if the URL is accessible before downloading. If HEAD returns 401,
-    # raise an HTTPError so callers can try the next candidate. Other HEAD
-    # failures are logged and the download is still attempted.
+    # Check if the URL is accessible before downloading. If the HEAD request returns any
+    # 4xx or 5xx status code, an HTTPError is raised so callers can try the next candidate.
+    # Only successful (2xx) responses will proceed to download.
     validate_url_with_head(url, headers=headers)
 
     # Open the file in the appropriate mode (write or append)
