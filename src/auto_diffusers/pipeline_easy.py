@@ -513,6 +513,39 @@ def get_keyword_types(keyword):
     return status
 
 
+def validate_url_with_head(url: str, token: Optional[str] = None, timeout: int = 2) -> None:
+    """
+    Validates a URL is accessible by performing a HEAD request.
+    Raises HTTPError if the URL returns 401 Unauthorized.
+    Logs and continues for other errors.
+    
+    Parameters:
+        url (`str`):
+            The URL to validate.
+        token (`str`, *optional*):
+            Authentication token for the request.
+        timeout (`int`, *optional*, defaults to 2):
+            Timeout in seconds for the HEAD request.
+    
+    Raises:
+        requests.HTTPError: If the URL returns 401 Unauthorized.
+    """
+    headers = {}
+    if token:
+        headers["authorization"] = f"Bearer {token}"
+    
+    try:
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=timeout)
+        if response.status_code == 401:
+            raise requests.HTTPError(f"401 Unauthorized: {url}")
+    except requests.HTTPError:
+        # Re-raise 401 errors so caller can retry with next candidate
+        raise
+    except requests.exceptions.RequestException as e:
+        # Log other errors but don't fail - the actual download may still succeed
+        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
+
+
 def file_downloader(
     url,
     save_path,
@@ -801,6 +834,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 diffusers_model_exists = True
                 
                 if download:
+                    # Validate URL accessibility before downloading
+                    # Check if model_index.json is accessible
+                    model_index_url = f"https://huggingface.co/{repo_id}/resolve/main/model_index.json"
+                    validate_url_with_head(model_index_url, token=token)
+                    
                     model_path = DiffusionPipeline.download(
                         repo_id,
                         token=token,
@@ -819,6 +857,13 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 diffusers_model_exists = False
                 
                 if download:
+                    # Validate URL accessibility before downloading
+                    # Construct the download URL for validation
+                    file_url = f"https://huggingface.co/{repo_id}/resolve/main/{file_name}"
+                    if revision:
+                        file_url = f"https://huggingface.co/{repo_id}/resolve/{revision}/{file_name}"
+                    validate_url_with_head(file_url, token=token)
+                    
                     model_path = hf_hub_download(
                         repo_id=repo_id,
                         filename=file_name,
