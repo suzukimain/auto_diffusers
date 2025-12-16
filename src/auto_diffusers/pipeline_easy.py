@@ -1210,53 +1210,52 @@ def _load_pipeline_with_retries(cls, pretrained_model_link_or_path, pipeline_map
     
     # Try each candidate up to max_retries times
     for attempt in range(max_retries + 1):
+        # Search for the model on Hugging Face
         try:
-            # Search for the model on Hugging Face
             hf_checkpoint_status = search_huggingface(
                 pretrained_model_link_or_path, candidate_index=attempt, **kwargs
             )
-            
-            logger.warning(
-                f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
-            )
-            checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-            
-            # Check the format of the model checkpoint
-            try:
-                if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-                    # Load the pipeline from a single file checkpoint
-                    pipeline = load_pipeline_from_single_file(
-                        pretrained_model_or_path=checkpoint_path,
-                        pipeline_mapping=pipeline_mapping,
-                        **kwargs,
-                    )
-                else:
-                    pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-                
-                # Success - show warning if some candidates were skipped
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                
-                return add_methods(pipeline)
-                
-            except Exception as e:
-                logger.info(f"Failed to load pipeline: {e}")
-                failed_count += 1
-                if attempt < max_retries:
-                    logger.info(f"Trying next candidate (attempt {attempt + 2}/{max_retries + 1})...")
-                    continue
-                else:
-                    logger.warning(
-                        f"Note: {failed_count} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                    raise
-                    
         except Exception as e:
             logger.info(f"Candidate {attempt + 1}/{max_retries + 1} search failed: {e}")
+            failed_count += 1
+            if attempt < max_retries:
+                logger.info(f"Trying next candidate (attempt {attempt + 2}/{max_retries + 1})...")
+                continue
+            else:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+                raise
+        
+        logger.warning(
+            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+        )
+        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
+        
+        # Check the format of the model checkpoint and load pipeline
+        try:
+            if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
+                # Load the pipeline from a single file checkpoint
+                pipeline = load_pipeline_from_single_file(
+                    pretrained_model_or_path=checkpoint_path,
+                    pipeline_mapping=pipeline_mapping,
+                    **kwargs,
+                )
+            else:
+                pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+            
+            # Success - show warning if some candidates were skipped
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            
+            return add_methods(pipeline)
+            
+        except Exception as e:
+            logger.info(f"Failed to load pipeline: {e}")
             failed_count += 1
             if attempt < max_retries:
                 logger.info(f"Trying next candidate (attempt {attempt + 2}/{max_retries + 1})...")
