@@ -75,7 +75,6 @@ jobs:
             cat import.log || true
           } > failure.log
 
-          # 🔴 ここが「確実」のポイント
           if [ "$HF_EXIT" != "0" ] || [ "$CIV_EXIT" != "0" ]; then
             exit 1
           fi
