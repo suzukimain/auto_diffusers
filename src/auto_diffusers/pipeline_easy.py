@@ -542,7 +542,8 @@ def validate_url_with_head(
         headers = {}
     
     # If token is provided and authorization not already in headers, add it
-    if token and "Authorization" not in headers:
+    # Check case-insensitively since HTTP headers are case-insensitive
+    if token and not any(k.lower() == "authorization" for k in headers.keys()):
         headers["Authorization"] = f"Bearer {token}"
     
     try:
@@ -865,9 +866,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 if download:
                     # Validate URL accessibility before downloading
                     # Construct the download URL for validation
-                    file_url = f"https://huggingface.co/{repo_id}/resolve/main/{file_name}"
-                    if revision:
-                        file_url = f"https://huggingface.co/{repo_id}/resolve/{revision}/{file_name}"
+                    file_url = f"https://huggingface.co/{repo_id}/resolve/{revision or 'main'}/{file_name}"
                     validate_url_with_head(file_url, token=token)
                     
                     model_path = hf_hub_download(
