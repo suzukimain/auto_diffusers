@@ -887,7 +887,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 else:
                     model_path = f"https://huggingface.co/{repo_id}/blob/main/{file_name}"
                     
-        except (requests.HTTPError, Exception) as e:
+        except Exception as e:
             # Log the error and let the caller decide whether to retry
             logger.info(f"Candidate {candidate_index+1}/{len(candidates)} ({repo_id}) failed: {e}")
             if skip_error:
