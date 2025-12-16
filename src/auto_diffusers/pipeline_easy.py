@@ -1166,7 +1166,7 @@ def _load_pipeline_with_retry(
         else:
             if failed_count > 0:
                 logger.warning(
-                    f"Note: {failed_count + 1} model(s) skipped due to errors. "
+                    f"Note: {failed_count} model(s) skipped due to errors. "
                     f"To access gated models, provide a token via the 'token' parameter."
                 )
             raise
@@ -1206,10 +1206,9 @@ def _load_pipeline_with_retry(
             kwargs['_failed_count'] = failed_count + 1
             return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
         else:
-            failed_count += 1
             if failed_count > 0:
                 logger.warning(
-                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"Note: {failed_count + 1} model(s) skipped due to errors. "
                     f"To access gated models, provide a token via the 'token' parameter."
                 )
             raise
