@@ -513,7 +513,12 @@ def get_keyword_types(keyword):
     return status
 
 
-def validate_url_with_head(url: str, token: Optional[str] = None, timeout: int = 2) -> None:
+def validate_url_with_head(
+    url: str, 
+    token: Optional[str] = None, 
+    headers: Optional[Dict] = None,
+    timeout: int = 2
+) -> None:
     """
     Validates a URL is accessible by performing a HEAD request.
     Raises HTTPError if the URL returns 401 Unauthorized.
@@ -524,14 +529,20 @@ def validate_url_with_head(url: str, token: Optional[str] = None, timeout: int =
             The URL to validate.
         token (`str`, *optional*):
             Authentication token for the request.
-        timeout (`int`, *optional*, defaults to 2):
+        headers (`dict`, *optional*):
+            Dictionary of HTTP Headers to send with the request.
+            If provided, takes precedence over token.
+        timeout (`int`, *optional*, defaults to `2`):
             Timeout in seconds for the HEAD request.
     
     Raises:
         requests.HTTPError: If the URL returns 401 Unauthorized.
     """
-    headers = {}
-    if token:
+    if headers is None:
+        headers = {}
+    
+    # If token is provided and authorization not already in headers, add it
+    if token and "authorization" not in headers:
         headers["authorization"] = f"Bearer {token}"
     
     try:
@@ -614,12 +625,7 @@ def file_downloader(
     # Check if the URL is accessible before downloading. If HEAD returns 401,
     # raise an HTTPError so callers can try the next candidate. Other HEAD
     # failures are logged and the download is still attempted.
-    try:
-        response = requests.head(url, headers=headers, allow_redirects=True, timeout=2)
-        if response.status_code == 401:
-            raise requests.HTTPError(f"401 Unauthorized: {url}")
-    except requests.exceptions.RequestException as e:
-        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
+    validate_url_with_head(url, headers=headers)
 
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
