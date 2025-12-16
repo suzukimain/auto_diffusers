@@ -1124,6 +1124,97 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         )
 
 
+def _load_pipeline_with_retry(
+    cls,
+    pretrained_model_link_or_path,
+    pipeline_mapping,
+    **kwargs
+):
+    r"""
+    Helper function to load a pipeline from Hugging Face with retry logic.
+    
+    This function handles the common retry logic for searching and loading models
+    from Hugging Face, including candidate iteration and error handling.
+    
+    Parameters:
+        cls: The pipeline class to instantiate
+        pretrained_model_link_or_path (`str`): The model identifier or path
+        pipeline_mapping: The pipeline mapping to use for single file checkpoints
+        **kwargs: Additional keyword arguments passed to search and loading functions
+        
+    Returns:
+        The loaded pipeline with added methods
+    """
+    # Get candidate index from kwargs, default to 0
+    candidate_index = kwargs.pop('_candidate_index', 0)
+    max_retries = kwargs.pop('_max_retries', 10)
+    failed_count = kwargs.pop('_failed_count', 0)
+    
+    # Search for the model on Hugging Face and get the model status
+    try:
+        hf_checkpoint_status = search_huggingface(
+            pretrained_model_link_or_path, candidate_index=candidate_index, **kwargs
+        )
+    except Exception as e:
+        # If search fails and we haven't exceeded max retries, try next candidate
+        if candidate_index < max_retries:
+            logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
+            kwargs['_candidate_index'] = candidate_index + 1
+            kwargs['_max_retries'] = max_retries
+            kwargs['_failed_count'] = failed_count + 1
+            return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
+        else:
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count + 1} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            raise
+    
+    logger.info(
+        f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+    )
+    checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
+
+    # Check the format of the model checkpoint
+    try:
+        if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
+            # Load the pipeline from a single file checkpoint
+            pipeline = load_pipeline_from_single_file(
+                pretrained_model_or_path=checkpoint_path,
+                pipeline_mapping=pipeline_mapping,
+                **kwargs,
+            )
+        else:
+            pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+        
+        # Show warning if some candidates were skipped
+        if failed_count > 0:
+            logger.warning(
+                f"Note: {failed_count} model(s) skipped due to errors. "
+                f"To access gated models, provide a token via the 'token' parameter."
+            )
+        
+        return add_methods(pipeline)
+    except Exception as e:
+        # If loading fails and we haven't exceeded max retries, try next candidate
+        logger.info(f"Failed to load pipeline: {e}")
+        if candidate_index < max_retries:
+            logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
+            kwargs['_candidate_index'] = candidate_index + 1
+            kwargs['_max_retries'] = max_retries
+            kwargs['_failed_count'] = failed_count + 1
+            return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
+        else:
+            failed_count += 1
+            if failed_count > 0:
+                logger.warning(
+                    f"Note: {failed_count} model(s) skipped due to errors. "
+                    f"To access gated models, provide a token via the 'token' parameter."
+                )
+            raise
+
+
 def add_methods(pipeline):
     r"""
     Add methods from `AutoConfig` to the pipeline.
@@ -1494,74 +1585,12 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
         }
         kwargs.update(_status)
 
-        # Get candidate index from kwargs, default to 0
-        candidate_index = kwargs.pop('_candidate_index', 0)
-        max_retries = kwargs.pop('_max_retries', 10)
-        failed_count = kwargs.pop('_failed_count', 0)
-        
-        # Search for the model on Hugging Face and get the model status
-        try:
-            hf_checkpoint_status = search_huggingface(
-                pretrained_model_link_or_path, candidate_index=candidate_index, **kwargs
-            )
-        except Exception as e:
-            # If search fails and we haven't exceeded max retries, try next candidate
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
-                kwargs['_candidate_index'] = candidate_index + 1
-                kwargs['_max_retries'] = max_retries
-                kwargs['_failed_count'] = failed_count + 1
-                return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
-            else:
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                raise
-        
-        logger.info(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+        return _load_pipeline_with_retry(
+            cls,
+            pretrained_model_link_or_path,
+            SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
+            **kwargs
         )
-        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-
-        # Check the format of the model checkpoint
-        try:
-            if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-                # Load the pipeline from a single file checkpoint
-                pipeline = load_pipeline_from_single_file(
-                    pretrained_model_or_path=checkpoint_path,
-                    pipeline_mapping=SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING,
-                    **kwargs,
-                )
-            else:
-                pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-            
-            # Show warning if some candidates were skipped
-            if failed_count > 0:
-                logger.warning(
-                    f"Note: {failed_count} model(s) skipped due to errors. "
-                    f"To access gated models, provide a token via the 'token' parameter."
-                )
-            
-            return add_methods(pipeline)
-        except Exception as e:
-            # If loading fails and we haven't exceeded max retries, try next candidate
-            logger.info(f"Failed to load pipeline: {e}")
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
-                kwargs['_candidate_index'] = candidate_index + 1
-                kwargs['_max_retries'] = max_retries
-                kwargs['_failed_count'] = failed_count + 1
-                return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
-            else:
-                failed_count += 1
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                raise
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
@@ -1804,73 +1833,12 @@ class EasyPipelineForImage2Image(AutoPipelineForImage2Image):
         }
         kwargs.update(_parmas)
 
-        # Get candidate index from kwargs, default to 0
-        candidate_index = kwargs.pop('_candidate_index', 0)
-        max_retries = kwargs.pop('_max_retries', 10)
-        failed_count = kwargs.pop('_failed_count', 0)
-        
-        # Search for the model on Hugging Face and get the model status
-        try:
-            hf_checkpoint_status = search_huggingface(
-                pretrained_model_link_or_path, candidate_index=candidate_index, **kwargs
-            )
-        except Exception as e:
-            # If search fails and we haven't exceeded max retries, try next candidate
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
-                kwargs['_candidate_index'] = candidate_index + 1
-                kwargs['_max_retries'] = max_retries
-                kwargs['_failed_count'] = failed_count + 1
-                return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
-            else:
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                raise
-        
-        logger.info(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+        return _load_pipeline_with_retry(
+            cls,
+            pretrained_model_link_or_path,
+            SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
+            **kwargs
         )
-        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-
-        # Check the format of the model checkpoint
-        try:
-            if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-                # Load the pipeline from a single file checkpoint
-                pipeline = load_pipeline_from_single_file(
-                    pretrained_model_or_path=checkpoint_path,
-                    pipeline_mapping=SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING,
-                    **kwargs,
-                )
-            else:
-                pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-            
-            # Show warning if some candidates were skipped
-            if failed_count > 0:
-                logger.warning(
-                    f"Note: {failed_count} model(s) skipped due to errors. "
-                    f"To access gated models, provide a token via the 'token' parameter."
-                )
-            
-            return add_methods(pipeline)
-        except Exception as e:
-            # If loading fails and we haven't exceeded max retries, try next candidate
-            logger.info(f"Failed to load pipeline: {e}")
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
-                kwargs['_candidate_index'] = candidate_index + 1
-                kwargs['_max_retries'] = max_retries
-                kwargs['_failed_count'] = failed_count + 1
-                return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
-            else:
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                raise
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
@@ -2113,73 +2081,12 @@ class EasyPipelineForInpainting(AutoPipelineForInpainting):
         }
         kwargs.update(_status)
 
-        # Get candidate index from kwargs, default to 0
-        candidate_index = kwargs.pop('_candidate_index', 0)
-        max_retries = kwargs.pop('_max_retries', 10)
-        failed_count = kwargs.pop('_failed_count', 0)
-        
-        # Search for the model on Hugging Face and get the model status
-        try:
-            hf_checkpoint_status = search_huggingface(
-                pretrained_model_link_or_path, candidate_index=candidate_index, **kwargs
-            )
-        except Exception as e:
-            # If search fails and we haven't exceeded max retries, try next candidate
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
-                kwargs['_candidate_index'] = candidate_index + 1
-                kwargs['_max_retries'] = max_retries
-                kwargs['_failed_count'] = failed_count + 1
-                return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
-            else:
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                raise
-        
-        logger.info(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+        return _load_pipeline_with_retry(
+            cls,
+            pretrained_model_link_or_path,
+            SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
+            **kwargs
         )
-        checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
-
-        # Check the format of the model checkpoint
-        try:
-            if hf_checkpoint_status.loading_method == "from_single_file":  # type: ignore
-                # Load the pipeline from a single file checkpoint
-                pipeline = load_pipeline_from_single_file(
-                    pretrained_model_or_path=checkpoint_path,
-                    pipeline_mapping=SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING,
-                    **kwargs,
-                )
-            else:
-                pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
-            
-            # Show warning if some candidates were skipped
-            if failed_count > 0:
-                logger.warning(
-                    f"Note: {failed_count} model(s) skipped due to errors. "
-                    f"To access gated models, provide a token via the 'token' parameter."
-                )
-            
-            return add_methods(pipeline)
-        except Exception as e:
-            # If loading fails and we haven't exceeded max retries, try next candidate
-            logger.info(f"Failed to load pipeline: {e}")
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
-                kwargs['_candidate_index'] = candidate_index + 1
-                kwargs['_max_retries'] = max_retries
-                kwargs['_failed_count'] = failed_count + 1
-                return cls.from_huggingface(pretrained_model_link_or_path, **kwargs)
-            else:
-                if failed_count > 0:
-                    logger.warning(
-                        f"Note: {failed_count + 1} model(s) skipped due to errors. "
-                        f"To access gated models, provide a token via the 'token' parameter."
-                    )
-                raise
 
     @classmethod
     def from_civitai(cls, pretrained_model_link_or_path, **kwargs):
