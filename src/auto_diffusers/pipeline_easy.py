@@ -542,8 +542,8 @@ def validate_url_with_head(
         headers = {}
     
     # If token is provided and authorization not already in headers, add it
-    if token and "authorization" not in headers:
-        headers["authorization"] = f"Bearer {token}"
+    if token and "Authorization" not in headers:
+        headers["Authorization"] = f"Bearer {token}"
     
     try:
         response = requests.head(url, headers=headers, allow_redirects=True, timeout=timeout)
