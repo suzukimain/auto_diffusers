@@ -1216,7 +1216,7 @@ def _load_pipeline_with_retries(cls, pretrained_model_link_or_path, pipeline_map
                 pretrained_model_link_or_path, candidate_index=attempt, **kwargs
             )
             
-            logger.info(
+            logger.warning(
                 f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
             )
             checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
