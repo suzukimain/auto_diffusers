@@ -521,7 +521,7 @@ def validate_url_with_head(
 ) -> None:
     """
     Validates a URL is accessible by performing a HEAD request.
-    Raises HTTPError if the URL returns 401 Unauthorized.
+    Raises HTTPError for any 4xx/5xx status codes (including 401 Unauthorized).
     Logs and continues for other errors.
     
     Parameters:
@@ -536,7 +536,7 @@ def validate_url_with_head(
             Timeout in seconds for the HEAD request.
     
     Raises:
-        requests.HTTPError: If the URL returns 401 Unauthorized.
+        requests.HTTPError: If the URL returns any 4xx or 5xx status code.
     """
     if headers is None:
         headers = {}
