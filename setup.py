@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 _deps = [
     "diffusers>=0.36.0",
-    "transformers>=4.57.3",
+    "transformers>=4.46.3",
 ]
 
 version_range_max = max(sys.version_info[1], 10) + 1
