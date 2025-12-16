@@ -10,11 +10,6 @@ on:
     - cron: '0 22 * * *'
 
   workflow_dispatch:
-    inputs:
-      break_yaml:
-        description: 'INTENTIONAL break for testing (none|hf|civitai|final)'
-        required: false
-        default: 'none'
 
 jobs:
   operation-check:
@@ -22,7 +17,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # ---------------- Checkout (source only) ----------------
+      # ---------------- Checkout ----------------
       - name: Checkout source
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
@@ -54,16 +49,11 @@ jobs:
       - name: Testing Import
         run: python -c "from auto_diffusers import *"
 
-      # ---------------- HF ----------------
+      # ---------------- HuggingFace ----------------
       - name: Check from_huggingface
         id: hf_test
         continue-on-error: true
         run: |
-          if [ "${{ inputs.break_yaml }}" = "hf" ]; then
-            echo "::error::INTENTIONAL BREAK: HuggingFace step forced failure"
-            exit 42
-          fi
-
           python - <<'EOF'
           from auto_diffusers import EasyPipelineForText2Image
           EasyPipelineForText2Image.from_huggingface("Stable Diffusion")
@@ -85,11 +75,6 @@ jobs:
         id: civitai_test
         continue-on-error: true
         run: |
-          if [ "${{ inputs.break_yaml }}" = "civitai" ]; then
-            echo "::error::INTENTIONAL BREAK: Civitai step forced failure"
-            exit 43
-          fi
-
           python - <<'EOF'
           from auto_diffusers import EasyPipelineForText2Image
           EasyPipelineForText2Image.from_civitai("Anything", base_model="SD 1.5")
@@ -108,11 +93,6 @@ jobs:
         run: |
           echo "HF_RESULT=${HF_RESULT}"
           echo "CIVITAI_RESULT=${CIVITAI_RESULT}"
-
-          if [ "${{ inputs.break_yaml }}" = "final" ]; then
-            echo "::error::INTENTIONAL BREAK: Final evaluation forced failure"
-            exit 44
-          fi
 
           if [ "$HF_RESULT" = "failure" ] || [ "$CIVITAI_RESULT" = "failure" ]; then
             echo "One or more checks failed"
@@ -139,16 +119,11 @@ jobs:
           task: |
             The workflow failed.
 
-            IMPORTANT:
-            If logs contain "INTENTIONAL BREAK",
-            this failure was introduced on purpose to test the workflow.
-            Do NOT attempt to fix intentional breaks.
-
             Test summary:
             - HuggingFace: ${{ env.HF_RESULT }}
             - Civitai: ${{ env.CIVITAI_RESULT }}
 
-            Only report whether detection and aggregation behaved correctly.
+            Analyze whether the failure is caused by environment or code issues.
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
@@ -161,8 +136,4 @@ jobs:
             Test results:
             - HuggingFace: ${{ env.HF_RESULT }}
             - Civitai: ${{ env.CIVITAI_RESULT }}
-
-            Note:
-            If logs contain "INTENTIONAL BREAK", this PR should be reviewed
-            only for workflow behavior, not for fixing code.
           branch: copilot/operation-check-fix
