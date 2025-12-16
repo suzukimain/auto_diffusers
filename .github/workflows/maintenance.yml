@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Checkout source for workflow_dispatch, use PyPI for scheduled runs
       - name: Checkout source
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
@@ -33,7 +32,7 @@ jobs:
           set -e
           python -m pip install --upgrade pip setuptools wheel
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
-          
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             pip install -e .
           else
@@ -63,30 +62,43 @@ jobs:
 
       - name: Evaluate results
         run: |
-          echo "HF_TEST=${{ steps.hf_test.outcome }}" >> $GITHUB_ENV
-          echo "CIVITAI_TEST=${{ steps.civitai_test.outcome }}" >> $GITHUB_ENV
-          if [ "${{ steps.hf_test.outcome }}" = "failure" ] || [ "${{ steps.civitai_test.outcome }}" = "failure" ]; then
-            echo "::warning::One or more tests failed. HF: ${{ steps.hf_test.outcome }}, Civitai: ${{ steps.civitai_test.outcome }}"
+          if [ "${{ steps.hf_test.outcome }}" = "failure" ] || \
+             [ "${{ steps.civitai_test.outcome }}" = "failure" ]; then
+            echo "::error::Operation check failed"
             exit 1
           fi
-          echo "::notice::All tests passed successfully"
+          echo "::notice::All tests passed"
 
-  # This job only runs when operation-check fails
-  # If all tests pass, this job will be skipped
-  copilot-auto-fix:
-    name: Copilot Auto Fix
+  create-issue-for-copilot:
+    name: Create issue and assign Copilot
     needs: operation-check
-    if: always() && needs.operation-check.result == 'failure'
+    if: needs.operation-check.result == 'failure'
     runs-on: ubuntu-22.04
+
     permissions:
-      contents: write
+      issues: write
+      contents: read
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Copilot Coding Agent
-        uses: github/copilot-coding-agent@v1
-        with:
-          task: |
-            The operation check failed. Analyze the failure and fix any code or configuration issues.
+      - name: Create issue and assign Copilot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/issues \
+            --input - <<'EOF'
+          {
+            "title": "Operation Check failed (auto)",
+            "body": "The scheduled operation check failed.\n\nPlease analyze the failure and create a pull request that fixes the root cause.",
+            "assignees": ["copilot-swe-agent[bot]"],
+            "agent_assignment": {
+              "target_repo": "${{ github.repository }}",
+              "base_branch": "main",
+              "custom_instructions": "Fix the failing operation check. Focus on Hugging Face / Civitai pipeline robustness and add regression safety if needed."
+            }
+          }
+          EOF
