@@ -11,10 +11,6 @@ on:
 
   workflow_dispatch:
     inputs:
-      ref:
-        description: 'Branch / tag / SHA to test (empty => PyPI package)'
-        required: false
-        default: ''
       break_yaml:
         description: 'INTENTIONAL break for testing (none|hf|civitai|final)'
         required: false
@@ -28,10 +24,10 @@ jobs:
     steps:
       # ---------------- Checkout (source only) ----------------
       - name: Checkout source
-        if: github.event_name == 'workflow_dispatch' && inputs.ref != ''
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
 
       # ---------------- Python ----------------
       - name: Setup Python
@@ -46,8 +42,8 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -U torch --index-url https://download.pytorch.org/whl/cpu
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.ref }}" != "" ]; then
-            echo "Installing auto_diffusers from source: ${{ inputs.ref }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Installing auto_diffusers from source: ${{ github.ref }}"
             pip install -e .
           else
             echo "Installing auto_diffusers from PyPI"
