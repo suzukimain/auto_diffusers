@@ -27,7 +27,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
@@ -42,12 +42,12 @@ jobs:
 
       - name: Initialize result flags
         run: |
-          echo "HF_OK=true" >> $GITHUB_ENV
-          echo "CIVITAI_OK=true" >> $GITHUB_ENV
+          echo "HF_OK=true" >> "$GITHUB_ENV"
+          echo "CIVITAI_OK=true" >> "$GITHUB_ENV"
 
       - name: Test import
         run: |
-          python -c "from auto_diffusers import *" 2>&1 | tee import.log
+          python -c "import auto_diffusers" 2>&1 | tee import.log
 
       - name: Test from_huggingface
         continue-on-error: true
@@ -59,7 +59,7 @@ jobs:
           except Exception as e:
               print("HF ERROR:", e)
               raise
-          EOF || echo "HF_OK=false" >> $GITHUB_ENV
+          EOF || echo "HF_OK=false" >> "$GITHUB_ENV"
 
       - name: Test from_civitai
         continue-on-error: true
@@ -67,11 +67,14 @@ jobs:
           python - <<'EOF' 2>&1 | tee civitai.log
           from auto_diffusers import EasyPipelineForText2Image
           try:
-              EasyPipelineForText2Image.from_civitai("Anything", base_model="SD 1.5")
+              EasyPipelineForText2Image.from_civitai(
+                  "Anything",
+                  base_model="SD 1.5",
+              )
           except Exception as e:
               print("CIVITAI ERROR:", e)
               raise
-          EOF || echo "CIVITAI_OK=false" >> $GITHUB_ENV
+          EOF || echo "CIVITAI_OK=false" >> "$GITHUB_ENV"
 
       - name: Collect logs
         run: |
@@ -92,9 +95,8 @@ jobs:
       - name: Judge result
         id: judge
         run: |
-          echo "hf_ok=${HF_OK}" >> $GITHUB_OUTPUT
-          echo "civitai_ok=${CIVITAI_OK}" >> $GITHUB_OUTPUT
-
+          echo "hf_ok=${HF_OK}" >> "$GITHUB_OUTPUT"
+          echo "civitai_ok=${CIVITAI_OK}" >> "$GITHUB_OUTPUT"
 
       - name: Upload operation log
         uses: actions/upload-artifact@v4
@@ -102,10 +104,10 @@ jobs:
           name: operation-check-log
           path: operation.log
 
-  create-issue-for-copilot:
+  create-issue-on-failure:
     name: Create or update issue
     needs: operation-check
-    if: always()
+    if: needs.operation-check.outputs.hf_ok == 'false' || needs.operation-check.outputs.civitai_ok == 'false'
     runs-on: ubuntu-22.04
 
     permissions:
@@ -119,50 +121,22 @@ jobs:
           name: operation-check-log
 
       - name: Create or update issue (deduplicated)
-        if: needs.operation-check.outputs.hf_ok == 'false' || needs.operation-check.outputs.civitai_ok == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |-
+          HF_OK: ${{ needs.operation-check.outputs.hf_ok }}
+          CIVITAI_OK: ${{ needs.operation-check.outputs.civitai_ok }}
+        run: |
           set -e
 
-          FAIL_HASH=$(sha256sum operation.log | cut -d' ' -f1)
-
+          FAIL_HASH=$(echo "${HF_OK}:${CIVITAI_OK}" | sha256sum | cut -d' ' -f1)
           TITLE="Operation Check failed [hash:${FAIL_HASH}]"
 
-          cat > body.md <<'EOF'
-Operation Check detected failure.
+          BODY=$(cat <<'EOF'
+          Operation Check detected failure.
 
-- HF_OK: ${{ needs.operation-check.outputs.hf_ok }}
-- CIVITAI_OK: ${{ needs.operation-check.outputs.civitai_ok }}
+          HF_OK: __HF_OK__
+          CIVITAI_OK: __CIVITAI_OK__
 
-**Failure hash:** `${FAIL_HASH}`
+          <details>
+          <summary>Operation log</summary>
 
-<details>
-<summary>Operation log</summary>
-
-```
-$(cat operation.log)
-```
-</details>
-
-Please analyze this failure and open a pull request fixing the root cause.
-EOF
-
-          BODY="$(cat body.md)"
-
-          EXISTING=$(gh issue list \
-            --state open \
-            --search "hash:${FAIL_HASH}" \
-            --json number \
-            -q '.[0].number')
-
-          if [ -n "$EXISTING" ]; then
-            echo "Reusing existing issue #$EXISTING"
-            gh issue comment "$EXISTING" --body "$BODY"
-          else
-            echo "Creating new issue"
-            gh issue create \
-              --title "$TITLE" \
-              --body "$BODY" \
-              --assignee "copilot-swe-agent[bot]"
-          fi
