@@ -1228,9 +1228,6 @@ def _load_pipeline_with_retries(cls, pretrained_model_link_or_path, pipeline_map
                 )
                 raise
         
-        logger.warning(
-            f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
-        )
         checkpoint_path = hf_checkpoint_status.model_path  # type: ignore
         
         # Check the format of the model checkpoint and load pipeline
@@ -1244,6 +1241,10 @@ def _load_pipeline_with_retries(cls, pretrained_model_link_or_path, pipeline_map
                 )
             else:
                 pipeline = cls.from_pretrained(checkpoint_path, **kwargs)
+            
+            logger.info(
+                f"checkpoint_path: {hf_checkpoint_status.model_status.download_url}"  # type: ignore
+            )
             
             # Success - show warning if some candidates were skipped
             if failed_count > 0:
