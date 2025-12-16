@@ -784,6 +784,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
 
         # Try each candidate until one succeeds
         last_error = None
+        unauthorized_count = 0
         for idx, candidate in enumerate(candidates):
             try:
                 if candidate["type"] == "diffusers":
@@ -797,6 +798,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         try:
                             head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
                             if head_response.status_code == 401:
+                                unauthorized_count += 1
                                 logger.info(f"401 Unauthorized for {repo_id}, trying next candidate ({idx+1}/{len(candidates)})")
                                 continue
                         except requests.exceptions.RequestException as e:
@@ -826,6 +828,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         try:
                             head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
                             if head_response.status_code == 401:
+                                unauthorized_count += 1
                                 logger.info(f"401 Unauthorized for {repo_id}/{file_name}, trying next candidate ({idx+1}/{len(candidates)})")
                                 continue
                         except requests.exceptions.RequestException as e:
@@ -845,6 +848,8 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                     break
                     
             except requests.HTTPError as e:
+                if "401" in str(e):
+                    unauthorized_count += 1
                 logger.info(f"Candidate {idx+1}/{len(candidates)} failed with error: {e}")
                 last_error = e
                 continue
@@ -854,6 +859,11 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 continue
         else:
             # All candidates failed
+            if unauthorized_count > 0:
+                logger.warning(
+                    f"Warning: {unauthorized_count} model(s) were rejected due to access restrictions. "
+                    f"To access gated models, provide a valid token via the 'token' parameter."
+                )
             if skip_error:
                 return None
             else:
@@ -861,6 +871,13 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 if last_error:
                     error_msg += f" Last error: {last_error}"
                 raise ValueError(error_msg)
+        
+        # Show warning if some models were skipped due to 401 errors
+        if unauthorized_count > 0:
+            logger.warning(
+                f"Note: {unauthorized_count} model(s) skipped due to 401 Unauthorized. "
+                f"To access these models, provide a token via the 'token' parameter."
+            )
 
     # `pathlib.PosixPath` may be returned
     if model_path:
