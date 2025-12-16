@@ -63,10 +63,7 @@ jobs:
 
       - name: Evaluate results
         if: steps.hf_test.outcome == 'failure' || steps.civitai_test.outcome == 'failure'
-        run: |
-          echo "HF_TEST=${{ steps.hf_test.outcome }}" >> $GITHUB_ENV
-          echo "CIVITAI_TEST=${{ steps.civitai_test.outcome }}" >> $GITHUB_ENV
-          exit 1
+        run: exit 1
 
   copilot-auto-fix:
     name: Copilot Auto Fix
