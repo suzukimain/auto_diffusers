@@ -65,7 +65,7 @@ from diffusers import (
     StableDiffusionXLControlNetImg2ImgPipeline,
 )
 
-from huggingface_hub import hf_api, hf_hub_download
+from huggingface_hub import hf_api, hf_hub_download, hf_hub_url
 from huggingface_hub.file_download import http_get
 from huggingface_hub.utils import validate_hf_hub_args
 
@@ -513,6 +513,54 @@ def get_keyword_types(keyword):
     return status
 
 
+def validate_url_with_head(
+    url: str, 
+    token: Optional[str] = None, 
+    headers: Optional[Dict] = None,
+    timeout: int = 2
+) -> None:
+    """
+    Validates a URL is accessible by performing a HEAD request.
+    Raises HTTPError if the URL returns 401 Unauthorized.
+    Logs and continues for other errors.
+    
+    Parameters:
+        url (`str`):
+            The URL to validate.
+        token (`str`, *optional*):
+            Authentication token for the request.
+        headers (`dict`, *optional*):
+            Dictionary of HTTP Headers to send with the request.
+            If provided, takes precedence over token.
+        timeout (`int`, *optional*, defaults to `2`):
+            Timeout in seconds for the HEAD request.
+    
+    Raises:
+        requests.HTTPError: If the URL returns 401 Unauthorized.
+    """
+    if headers is None:
+        headers = {}
+    else:
+        # Create a copy to avoid modifying the original
+        headers = dict(headers)
+    
+    # If token is provided and authorization not already in headers, add it
+    # Check case-insensitively since HTTP headers are case-insensitive
+    if token and not any(k.lower() == "authorization" for k in headers):
+        headers["Authorization"] = f"Bearer {token}"
+    
+    try:
+        response = requests.head(url, headers=headers, allow_redirects=True, timeout=timeout)
+        # Raise HTTPError for any 4xx/5xx status codes (including 401)
+        response.raise_for_status()
+    except requests.HTTPError:
+        # Re-raise HTTPError (primarily for 401, but also other 4xx/5xx from raise_for_status)
+        raise
+    except requests.exceptions.RequestException as e:
+        # Log other request errors but don't fail - the actual download may still succeed
+        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
+
+
 def file_downloader(
     url,
     save_path,
@@ -581,12 +629,7 @@ def file_downloader(
     # Check if the URL is accessible before downloading. If HEAD returns 401,
     # raise an HTTPError so callers can try the next candidate. Other HEAD
     # failures are logged and the download is still attempted.
-    try:
-        response = requests.head(url, headers=headers, allow_redirects=True, timeout=2)
-        if response.status_code == 401:
-            raise requests.HTTPError(f"401 Unauthorized: {url}")
-    except requests.exceptions.RequestException as e:
-        logger.info(f"HEAD check failed (continuing to download): {url} -> {e}")
+    validate_url_with_head(url, headers=headers)
 
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
@@ -799,16 +842,15 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             if candidate["type"] == "diffusers":
                 # Validate URL early to detect 401 errors
                 if download:
-                    validate_url = f"https://huggingface.co/{repo_id}/resolve/main/model_index.json"
-                    try:
-                        head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
-                        if head_response.status_code == 401:
-                            raise requests.HTTPError("401 Unauthorized: Access denied to gated model")
-                    except requests.exceptions.RequestException as e:
-                        if isinstance(e, requests.HTTPError) and "401" in str(e):
-                            raise
-                        logger.info(f"HEAD check failed for {repo_id} (continuing): {e}")
-                
+                    # Validate URL accessibility before downloading
+                    # Check if model_index.json is accessible
+                    model_index_url = hf_hub_url(
+                        repo_id=repo_id,
+                        filename="model_index.json",
+                        revision=revision
+                    )
+                    validate_url_with_head(model_index_url, token=token)
+                    
                     model_path = DiffusionPipeline.download(
                         repo_id,
                         token=token,
@@ -825,16 +867,15 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                 
                 # Validate URL early to detect 401 errors
                 if download:
-                    validate_url = f"https://huggingface.co/{repo_id}/resolve/main/{file_name}"
-                    try:
-                        head_response = requests.head(validate_url, timeout=5, allow_redirects=True)
-                        if head_response.status_code == 401:
-                            raise requests.HTTPError("401 Unauthorized: Access denied to gated model")
-                    except requests.exceptions.RequestException as e:
-                        if isinstance(e, requests.HTTPError) and "401" in str(e):
-                            raise
-                        logger.info(f"HEAD check failed for {repo_id}/{file_name} (continuing): {e}")
-                
+                    # Validate URL accessibility before downloading
+                    # Construct the download URL for validation using hf_hub_url
+                    file_url = hf_hub_url(
+                        repo_id=repo_id,
+                        filename=file_name,
+                        revision=revision
+                    )
+                    validate_url_with_head(file_url, token=token)
+                    
                     model_path = hf_hub_download(
                         repo_id=repo_id,
                         filename=file_name,
