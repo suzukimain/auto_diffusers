@@ -1506,8 +1506,8 @@ class EasyPipelineForText2Image(AutoPipelineForText2Image):
             )
         except Exception as e:
             # If search fails and we haven't exceeded max retries, try next candidate
-            if candidate_index < max_retries:
-                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries + 1})...")
+            if candidate_index < max_retries - 1:
+                logger.info(f"Trying next candidate (attempt {candidate_index + 2}/{max_retries})...")
                 kwargs['_candidate_index'] = candidate_index + 1
                 kwargs['_max_retries'] = max_retries
                 kwargs['_failed_count'] = failed_count + 1
