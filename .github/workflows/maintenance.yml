@@ -62,16 +62,21 @@ jobs:
           EOF
 
       - name: Evaluate results
-        if: steps.hf_test.outcome == 'failure' || steps.civitai_test.outcome == 'failure'
         run: |
           echo "HF_TEST=${{ steps.hf_test.outcome }}" >> $GITHUB_ENV
           echo "CIVITAI_TEST=${{ steps.civitai_test.outcome }}" >> $GITHUB_ENV
-          exit 1
+          if [ "${{ steps.hf_test.outcome }}" = "failure" ] || [ "${{ steps.civitai_test.outcome }}" = "failure" ]; then
+            echo "::warning::One or more tests failed. HF: ${{ steps.hf_test.outcome }}, Civitai: ${{ steps.civitai_test.outcome }}"
+            exit 1
+          fi
+          echo "::notice::All tests passed successfully"
 
+  # This job only runs when operation-check fails
+  # If all tests pass, this job will be skipped
   copilot-auto-fix:
     name: Copilot Auto Fix
     needs: operation-check
-    if: failure()
+    if: always() && needs.operation-check.result == 'failure'
     runs-on: ubuntu-22.04
     permissions:
       contents: write
