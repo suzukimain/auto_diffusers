@@ -18,6 +18,10 @@ on:
         description: 'Test mode: pypi or source'
         required: false
         default: 'pypi'
+      break_yaml:
+        description: 'INTENTIONAL break for testing (none|hf|civitai|final)'
+        required: false
+        default: 'none'
 
 jobs:
   operation-check:
@@ -54,6 +58,11 @@ jobs:
         id: hf_test
         continue-on-error: true
         run: |
+          if [ "${{ inputs.break_yaml }}" = "hf" ]; then
+            echo "::error::INTENTIONAL BREAK: HuggingFace step forced failure"
+            exit 42
+          fi
+
           python - <<'EOF'
           from auto_diffusers import EasyPipelineForText2Image
           EasyPipelineForText2Image.from_huggingface("Stable Diffusion")
@@ -75,6 +84,11 @@ jobs:
         id: civitai_test
         continue-on-error: true
         run: |
+          if [ "${{ inputs.break_yaml }}" = "civitai" ]; then
+            echo "::error::INTENTIONAL BREAK: Civitai step forced failure"
+            exit 43
+          fi
+
           python - <<'EOF'
           from auto_diffusers import EasyPipelineForText2Image
           EasyPipelineForText2Image.from_civitai("Anything", base_model="SD 1.5")
@@ -93,6 +107,11 @@ jobs:
         run: |
           echo "HF_RESULT=${HF_RESULT}"
           echo "CIVITAI_RESULT=${CIVITAI_RESULT}"
+
+          if [ "${{ inputs.break_yaml }}" = "final" ]; then
+            echo "::error::INTENTIONAL BREAK: Final evaluation forced failure"
+            exit 44
+          fi
 
           if [ "$HF_RESULT" = "failure" ] || [ "$CIVITAI_RESULT" = "failure" ]; then
             echo "One or more checks failed"
@@ -116,19 +135,18 @@ jobs:
         uses: github/copilot-coding-agent@v1
         with:
           task: |
-            The operation check workflow failed, but all tests were executed.
+            The workflow failed.
+
+            IMPORTANT:
+            If logs contain "INTENTIONAL BREAK",
+            this failure was introduced on purpose to test the workflow.
+            Do NOT attempt to fix intentional breaks.
 
             Test summary:
             - HuggingFace: ${{ env.HF_RESULT }}
             - Civitai: ${{ env.CIVITAI_RESULT }}
 
-            Please:
-            1. Identify whether failures are caused by external services (HF / Civitai)
-            2. Add robust guards (retry, timeout, skip-on-API-error)
-            3. Keep all tests enabled (do not remove coverage)
-            4. Produce a single consolidated fix
-
-            The goal is a stable nightly workflow, not hiding real regressions.
+            Only report whether detection and aggregation behaved correctly.
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
@@ -142,5 +160,7 @@ jobs:
             - HuggingFace: ${{ env.HF_RESULT }}
             - Civitai: ${{ env.CIVITAI_RESULT }}
 
-            The fix focuses on robustness against external API instability.
+            Note:
+            If logs contain "INTENTIONAL BREAK", this PR should be reviewed
+            only for workflow behavior, not for fixing code.
           branch: copilot/operation-check-fix
