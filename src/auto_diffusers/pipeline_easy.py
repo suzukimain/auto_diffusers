@@ -1184,9 +1184,17 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                         timeout=2,
                         allow_redirects=True
                     )
+                    _resp.raise_for_status()
                     selected_model = candidate_model
                     logger.info(f"Validated download URL: {candidate_model['download_url']}")
                     break  # Exit the version loop if a valid model is found
+                except requests.HTTPError as e:
+                    if "403" in str(e) or "401" in str(e):
+                        logger.info(f"Access denied ({e.response.status_code}) for {candidate_model['download_url']}, trying next version...")
+                        continue
+                    else:
+                        logger.info(f"HTTP error for {candidate_model['download_url']}: {e}, trying next version...")
+                        continue
                 except requests.exceptions.RequestException as e:
                     logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
                     continue
@@ -1211,7 +1219,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
 
     # Handle file download and setting model information
     if download:
-        # Try downloading from the models list, retrying on 401 errors
+        # Try downloading from the models list, retrying on 401/403 errors
         download_success = False
         # Create a sorted list of all available models to try
         sorted_models = sorted(
@@ -1242,14 +1250,18 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 logger.info(f"Successfully downloaded model from: {download_url}")
                 break
             except requests.HTTPError as e:
-                if "401" in str(e):
-                    logger.info(f"401 error for {download_url}, trying next candidate...")
+                if "401" in str(e) or "403" in str(e):
+                    logger.info(f"Access denied ({e.response.status_code if hasattr(e, 'response') else 'unknown'}) for {download_url}, trying next candidate...")
                     continue
                 else:
-                    raise
+                    logger.info(f"HTTP error for {download_url}: {e}, trying next candidate...")
+                    continue
         
         if not download_success:
-            raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned 401 errors.")
+            if skip_error:
+                return None
+            else:
+                raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned access denied or other errors.")
 
     else:
         model_path = download_url
