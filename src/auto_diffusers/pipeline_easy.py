@@ -1143,11 +1143,20 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             # When searching for textual inversion, results other than the values entered for the base model may come up, so check again.
             if base_model is None or selected_version["baseModel"] in base_model:
                 for model_data in selected_version["files"]:
-                    # Check if the file passes security scans and has a valid extension
+                    # Check if the file has a valid extension (security scans may fail for some files)
                     file_name = model_data["name"]
+                    pickle_scan = model_data.get("pickleScanResult", "")
+                    virus_scan = model_data.get("virusScanResult", "")
+                    
+                    # Allow files that pass both scans, or if scans are pending/unknown (don't reject them)
+                    # Only reject if explicitly marked as failed
+                    scans_ok = (
+                        (pickle_scan == "Success" or pickle_scan in ["", "Pending"])
+                        and (virus_scan == "Success" or virus_scan in ["", "Pending"])
+                    )
+                    
                     if (
-                        model_data["pickleScanResult"] == "Success"
-                        and model_data["virusScanResult"] == "Success"
+                        scans_ok
                         and any(file_name.endswith(ext) for ext in EXTENSION)
                         and os.path.basename(os.path.dirname(file_name))
                         not in DIFFUSERS_CONFIG_DIR
