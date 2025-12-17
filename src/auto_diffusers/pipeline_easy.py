@@ -480,6 +480,12 @@ def get_keyword_types(keyword):
         if not os.path.exists(os.path.join(keyword, "model_index.json")):
             status["extra_type"]["missing_model_index"] = True
 
+    # Check if the keyword is a Civitai API download URL
+    elif keyword.startswith("https://civitai.com/api/download/"):
+        status["type"]["civitai_url"] = True
+        status["checkpoint_format"] = "single_file"
+        status["loading_method"] = "from_single_file"
+
     # Check if the keyword is a Civitai URL
     elif keyword.startswith("https://civitai.com/"):
         status["type"]["civitai_url"] = True
@@ -983,6 +989,96 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     selected_model = {}
     selected_version = {}
     civitai_cache_dir = cache_dir or os.path.join(CACHE_HOME, "Civitai")
+
+    # Handle direct Civitai API download URLs
+    if search_word.startswith("https://civitai.com/api/download/"):
+        # Extract model version ID from URL
+        match = re.search(r'/models/(\d+)', search_word)
+        if match:
+            version_id = match.group(1)
+            # Try to get model info from API
+            headers = {}
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            
+            try:
+                # Get version info to extract model name and ID
+                response = requests.get(
+                    f"https://civitai.com/api/v1/model-versions/{version_id}",
+                    headers=headers
+                )
+                response.raise_for_status()
+                version_data = response.json()
+                
+                repo_name = version_data.get("model", {}).get("name", f"model_{version_id}")
+                repo_id = str(version_data.get("modelId", ""))
+                trainedWords = version_data.get("trainedWords", [])
+                
+                # Get primary file info
+                files = version_data.get("files", [])
+                if files:
+                    primary_file = files[0]
+                    file_name = primary_file.get("name", f"model_{version_id}.safetensors")
+                else:
+                    file_name = f"model_{version_id}.safetensors"
+                    
+            except Exception as e:
+                logger.info(f"Could not fetch model info from API: {e}. Using fallback values.")
+                repo_name = f"model_{version_id}"
+                repo_id = ""
+                file_name = f"model_{version_id}.safetensors"
+                trainedWords = []
+            
+            download_url = search_word
+            
+            if download:
+                # Download from the direct URL
+                local_path = os.path.join(civitai_cache_dir, file_name)
+                
+                try:
+                    file_downloader(
+                        url=download_url,
+                        save_path=local_path,
+                        resume=resume,
+                        force_download=force_download,
+                        displayed_filename=file_name,
+                        headers=headers,
+                    )
+                    model_path = local_path
+                except Exception as e:
+                    if skip_error:
+                        return None
+                    else:
+                        raise ValueError(f"Failed to download from direct URL: {e}")
+            else:
+                model_path = download_url
+            
+            output_info = get_keyword_types(model_path)
+            
+            if not include_params:
+                return model_path
+            else:
+                return SearchResult(
+                    model_path=model_path,
+                    loading_method=output_info["loading_method"],
+                    checkpoint_format=output_info["checkpoint_format"],
+                    repo_status=RepoStatus(
+                        repo_id=repo_name, repo_hash=repo_id, version=version_id
+                    ),
+                    model_status=ModelStatus(
+                        search_word=search_word,
+                        site_url=f"https://civitai.com/models/{repo_id}?modelVersionId={version_id}" if repo_id else download_url,
+                        download_url=download_url,
+                        file_name=file_name,
+                        local=output_info["type"]["local"],
+                    ),
+                    extra_status=ExtraStatus(trained_words=trainedWords or None),
+                )
+        else:
+            if skip_error:
+                return None
+            else:
+                raise ValueError("Could not extract model version ID from Civitai API URL")
 
     # Set up parameters and headers for the CivitAI API request
     params = {
