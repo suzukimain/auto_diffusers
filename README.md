@@ -42,6 +42,17 @@ Enhance the functionality of diffusers.
 
 </details>
 
+## Regarding the Civitai API bug
+
+Due to recent specification changes in the Civitai API, we are aware of the following issues:
+- Reduced search accuracy
+- Some search results not being returned
+A temporary workaround has been implemented for the above issues, but since certain search results are still not returned, there is a possibility that some models may not be found.
+
+link： [civitai/civitai#1757](https://github.com/civitai/civitai/issues/1757)
+
+
+
 ##  How to use<a name = "How_to_use"></a>
 
 ```python
