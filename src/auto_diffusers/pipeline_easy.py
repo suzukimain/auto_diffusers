@@ -1532,7 +1532,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             if skip_error:
                 return None
             else:
-                raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned access denied or other errors.")
+                raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned access denied or other errors.{download_url}")
 
     else:
         model_path = download_url
