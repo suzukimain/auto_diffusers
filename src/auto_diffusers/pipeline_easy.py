@@ -908,10 +908,14 @@ def file_downloader(
             mode = "ab"
             file_size = os.path.getsize(save_path)
 
-    # Check if the URL is accessible before downloading. If the HEAD request returns any
-    # 4xx or 5xx status code, an HTTPError is raised so callers can try the next candidate.
-    # Only successful (2xx) responses will proceed to download.
-    validate_url_with_head(url, headers=headers)
+    # Try HEAD validation but don't fail if it returns errors (Cloudflare R2 blocks HEAD requests)
+    # The actual download attempt will reveal if the URL is truly inaccessible
+    try:
+        validate_url_with_head(url, headers=headers)
+    except requests.HTTPError as e:
+        # Log but continue - HEAD requests may fail even when GET succeeds
+        status_code = e.response.status_code if hasattr(e, 'response') else 'unknown'
+        logger.info(f"HEAD request returned {status_code} for {url}, attempting download anyway...")
 
     # Open the file in the appropriate mode (write or append)
     with open(save_path, mode) as model_file:
@@ -1416,6 +1420,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     # Since the Civitai API is broken, I will temporarily sort by name.
     sorted_repos = sorted(data["items"], key=lambda x: x["name"], reverse=True)
 
+    # Collect all valid candidates instead of selecting one
+    all_candidates = []
+
     for selected_repo in sorted_repos:
         repo_name = selected_repo["name"]
         repo_id = selected_repo["id"]
@@ -1463,43 +1470,20 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     sorted_models[0],
                 )
                 
-                # Validate download URL accessibility with token support
-                # Token is already included in headers for authentication
-                try:
-                    # Since models requiring authentication do not return results, there is no need to determine their status via status codes.
-                    _resp = requests.head(
-                        candidate_model["download_url"],
-                        headers=headers,
-                        timeout=5,  # Increased timeout to handle slow servers
-                        allow_redirects=True
-                    )
-                    _resp.raise_for_status()
-                    selected_model = candidate_model
-                    logger.info(f"Validated download URL: {candidate_model['download_url']}")
-                    break  # Exit the version loop if a valid model is found
-                except requests.HTTPError as e:
-                    if "403" in str(e) or "401" in str(e):
-                        logger.info(f"Access denied ({e.response.status_code}) for {candidate_model['download_url']}, trying next version...")
-                        continue
-                    else:
-                        logger.info(f"HTTP error for {candidate_model['download_url']}: {e}, trying next version...")
-                        continue
-                except requests.exceptions.Timeout:
-                    # Accept timeout as URL might still be valid but slow
-                    logger.info(f"Timeout validating {candidate_model['download_url']}, accepting model...")
-                    selected_model = candidate_model
-                    break
-                except requests.exceptions.RequestException as e:
-                    logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
-                    continue
-
-        # If we found a valid model in this repo, exit outer repo loop
-        if selected_model:
-            break
+                # Add to candidates list (skip URL validation which causes 403 errors)
+                # Actual download will be attempted and retried recursively
+                all_candidates.append({
+                    'model': candidate_model,
+                    'repo_name': repo_name,
+                    'repo_id': repo_id,
+                    'version_id': version_id,
+                    'trainedWords': trainedWords,
+                })
+                logger.info(f"Added candidate: {candidate_model['filename']} from {repo_name}")
 
 
-    # Exception handling when search candidates are not found
-    if not selected_model:
+    # Exception handling when no candidates are found
+    if not all_candidates:
         if skip_error:
             return None
         else:
@@ -1518,27 +1502,37 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                 )
             raise ValueError(error_msg)
 
-    # Define model file status
+    # Select first candidate for initial metadata
+    selected = all_candidates[0]
+    selected_model = selected['model']
+    repo_name = selected['repo_name']
+    repo_id = selected['repo_id']
+    version_id = selected['version_id']
+    trainedWords = selected['trainedWords']
+    
     file_name = selected_model["filename"]
     download_url = selected_model["download_url"]
 
     # Handle file download and setting model information
     if download:
-        # Try downloading from the models list, retrying on 401/403 errors
+        # Try downloading from all candidates recursively
         download_success = False
-        # Create a sorted list of all available models to try
-        sorted_models = sorted(
-            models_list, key=lambda x: x["filename"], reverse=True
-        )
         
-        for model_candidate in sorted_models:
+        logger.info(f"Attempting to download from {len(all_candidates)} candidate(s)...")
+        
+        for idx, candidate in enumerate(all_candidates):
             try:
-                file_name = model_candidate["filename"]
-                download_url = model_candidate["download_url"]
+                candidate_model = candidate['model']
+                file_name = candidate_model["filename"]
+                download_url = candidate_model["download_url"]
+                candidate_repo_id = candidate['repo_id']
+                candidate_version_id = candidate['version_id']
                 
-                # The path where the model is to be saved.
+                logger.info(f"Attempt {idx + 1}/{len(all_candidates)}: {file_name} from {candidate['repo_name']}")
+                
+                # The path where the model is to be saved
                 model_path = os.path.join(
-                    str(civitai_cache_dir), str(repo_id), str(version_id), str(file_name)
+                    str(civitai_cache_dir), str(candidate_repo_id), str(candidate_version_id), str(file_name)
                 )
                 
                 # Download Model File
@@ -1551,22 +1545,44 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     headers=headers,
                     **kwargs,
                 )
+                
+                # Update selected metadata on success
                 download_success = True
-                logger.info(f"Successfully downloaded model from: {download_url}")
+                selected_model = candidate_model
+                repo_name = candidate['repo_name']
+                repo_id = candidate_repo_id
+                version_id = candidate_version_id
+                trainedWords = candidate['trainedWords']
+                file_name = candidate_model["filename"]
+                download_url = candidate_model["download_url"]
+                
+                logger.info(f"Successfully downloaded: {file_name} from {repo_name}")
                 break
+                
             except requests.HTTPError as e:
-                if "401" in str(e) or "403" in str(e):
-                    logger.info(f"Access denied ({e.response.status_code if hasattr(e, 'response') else 'unknown'}) for {download_url}, trying next candidate...")
-                    continue
-                else:
-                    logger.info(f"HTTP error for {download_url}: {e}, trying next candidate...")
-                    continue
+                status_code = e.response.status_code if hasattr(e, 'response') else 'unknown'
+                logger.info(f"HTTP error {status_code} for {download_url}, trying next candidate...")
+                continue
+            except Exception as e:
+                logger.info(f"Download failed for {download_url}: {e}, trying next candidate...")
+                continue
         
         if not download_success:
             if skip_error:
                 return None
             else:
-                raise ValueError(f"Failed to download any model file from {repo_name}. All URLs returned access denied or other errors.")
+                # Show helpful error message based on token availability
+                if token:
+                    error_msg = (
+                        f"Failed to download any model file after trying {len(all_candidates)} candidate(s). "
+                        "All downloads returned errors. Please check your CivitAI token permissions or try different search criteria."
+                    )
+                else:
+                    error_msg = (
+                        f"Failed to download any model file after trying {len(all_candidates)} candidate(s). "
+                        "If models require authentication, provide a CivitAI token: search_civitai(search_word, token='your_token')"
+                    )
+                raise ValueError(error_msg)
 
     else:
         model_path = download_url
