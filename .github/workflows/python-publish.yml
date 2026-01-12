@@ -130,6 +130,7 @@ jobs:
           python -c "import glob,sys; print('dist:',glob.glob('dist/*'))" || true
           pip install --no-cache-dir dist/*.whl
           python -c "from auto_diffusers import *" 
+      #  Due to a bug on the Civitai API side that prevents a fundamental fix, we will skip the operation check in order to apply the mitigation measures.
       #    python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_huggingface('Stable Diffusion')"
       #    rm -rf ~/.cache/huggingface/hub/*
       #    python -c "from auto_diffusers import EasyPipelineForText2Image; pipe = EasyPipelineForText2Image.from_civitai('Anything', base_model='SD 1.5')"
