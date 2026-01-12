@@ -1439,8 +1439,6 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                         model_data["pickleScanResult"] == "Success"
                         and model_data["virusScanResult"] == "Success"
                         and any(file_name.endswith(ext) for ext in allowed_extensions)
-                        and os.path.basename(os.path.dirname(file_name))
-                        not in DIFFUSERS_CONFIG_DIR
                     ):
                         file_status = {
                             "filename": file_name,
