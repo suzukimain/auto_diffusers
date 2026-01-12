@@ -436,24 +436,6 @@ SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
     ]
 )
 
-AUTO_TEXT2VIDEO_PIPELINES_MAPPING = OrderedDict(
-    [
-        ("wan", WanPipeline),
-    ]
-)
-
-AUTO_IMAGE2VIDEO_PIPELINES_MAPPING = OrderedDict(
-    [
-        ("wan", WanImageToVideoPipeline),
-    ]
-)
-
-AUTO_VIDEO2VIDEO_PIPELINES_MAPPING = OrderedDict(
-    [
-        ("wan", WanVideoToVideoPipeline),
-    ]
-)
-
 CONFIG_FILE_LIST = [
     "pytorch_model.bin",
     "pytorch_model.fp16.bin",
