@@ -267,12 +267,6 @@ EXTENSION = [".safetensors", ".ckpt", ".bin"]
 CACHE_HOME = os.path.expanduser("~/.cache")
 
 
-# Set up pipeline mappings
-AUTO_TEXT2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionPipeline
-AUTO_IMAGE2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionImg2ImgPipeline
-AUTO_INPAINT_PIPELINES_MAPPING["v1"] = StableDiffusionInpaintPipeline
-
-
 @dataclass
 class RepoStatus:
     r"""
