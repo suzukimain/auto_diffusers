@@ -151,6 +151,9 @@ try:
         StableDiffusionXLControlNetUnionImg2ImgPipeline,
         StableDiffusionXLControlNetUnionInpaintPipeline,
         StableDiffusionXLControlNetUnionPipeline,
+        WanImageToVideoPipeline,
+        WanPipeline,
+        WanVideoToVideoPipeline,
         ZImageControlNetInpaintPipeline,
         ZImageControlNetPipeline,
         ZImageImg2ImgPipeline,
@@ -200,6 +203,9 @@ except ImportError:
     StableDiffusionXLControlNetUnionImg2ImgPipeline = None
     StableDiffusionXLControlNetUnionInpaintPipeline = None
     StableDiffusionXLControlNetUnionPipeline = None
+    WanImageToVideoPipeline = None
+    WanPipeline = None
+    WanVideoToVideoPipeline = None
     ZImageControlNetInpaintPipeline = None
     ZImageControlNetPipeline = None
     ZImageImg2ImgPipeline = None
@@ -288,11 +294,11 @@ SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionPipeline),
         ("v2", StableDiffusionPipeline),
-        ("wan-i2v-14B", None),
-        ("wan-t2v-1.3B", None),
-        ("wan-t2v-14B", None),
-        ("wan-vace-1.3B", None),
-        ("wan-vace-14B", None),
+        ("wan-i2v-14B", WanImageToVideoPipeline),
+        ("wan-t2v-1.3B", WanPipeline),
+        ("wan-t2v-14B", WanPipeline),
+        ("wan-vace-1.3B", WanVideoToVideoPipeline),
+        ("wan-vace-14B", WanVideoToVideoPipeline),
         ("xl_base", StableDiffusionXLPipeline),
         ("xl_refiner", StableDiffusionXLPipeline),
         ("z-image", ZImagePipeline),
@@ -376,11 +382,11 @@ SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionImg2ImgPipeline),
         ("v2", StableDiffusionImg2ImgPipeline),
-        ("wan-i2v-14B", None),
+        ("wan-i2v-14B", WanImageToVideoPipeline),
         ("wan-t2v-1.3B", None),
         ("wan-t2v-14B", None),
-        ("wan-vace-1.3B", None),
-        ("wan-vace-14B", None),
+        ("wan-vace-1.3B", WanVideoToVideoPipeline),
+        ("wan-vace-14B", WanVideoToVideoPipeline),
         ("xl_base", StableDiffusionXLImg2ImgPipeline),
         ("xl_refiner", StableDiffusionXLImg2ImgPipeline),
         ("z-image", ZImageImg2ImgPipeline),
@@ -466,6 +472,24 @@ SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
         ("z-image-turbo-controlnet", None),
         ("z-image-turbo-controlnet-2.0", None),
         ("z-image-turbo-controlnet-2.1", None),
+    ]
+)
+
+AUTO_TEXT2VIDEO_PIPELINES_MAPPING = OrderedDict(
+    [
+        ("wan", WanPipeline),
+    ]
+)
+
+AUTO_IMAGE2VIDEO_PIPELINES_MAPPING = OrderedDict(
+    [
+        ("wan", WanImageToVideoPipeline),
+    ]
+)
+
+AUTO_VIDEO2VIDEO_PIPELINES_MAPPING = OrderedDict(
+    [
+        ("wan", WanVideoToVideoPipeline),
     ]
 )
 
