@@ -13,75 +13,108 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard library imports
 import os
 import re
 import types
+from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
-from collections import OrderedDict
 
-
+# Third-party imports
 import requests
 import torch
 
+# Diffusers core imports
 from diffusers.loaders.single_file_utils import (
     VALID_URL_PREFIXES,
     _extract_repo_id_and_weights_name,
     infer_diffusers_model_type,
     load_single_file_checkpoint,
 )
-
-from diffusers import (
-    StableDiffusionPipeline,
-    StableDiffusionImg2ImgPipeline,
-    StableDiffusionInpaintPipeline,
-)
 from diffusers.pipelines.auto_pipeline import (
+    AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
+    AUTO_INPAINT_PIPELINES_MAPPING,
+    AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
-    AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
-    AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
-    AUTO_INPAINT_PIPELINES_MAPPING,
 )
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.utils import logging
 
+# Stable Diffusion v1/v2 pipelines
+from diffusers import (
+    StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionPipeline,
+    StableDiffusionUpscalePipeline,
+)
+
+# Stable Diffusion XL pipelines
+from diffusers import (
+    StableDiffusionXLControlNetImg2ImgPipeline,
+    StableDiffusionXLControlNetInpaintPipeline,
+    StableDiffusionXLControlNetPipeline,
+    StableDiffusionXLImg2ImgPipeline,
+    StableDiffusionXLInpaintPipeline,
+    StableDiffusionXLPipeline,
+)
+
+# Stable Diffusion 3 pipelines
+from diffusers import (
+    StableDiffusion3Img2ImgPipeline,
+    StableDiffusion3InpaintPipeline,
+    StableDiffusion3Pipeline,
+)
+
+# Flux pipelines (import separately to avoid Flax deprecation warnings)
+try:
+    from diffusers.pipelines.flux import (
+        FluxImg2ImgPipeline,
+        FluxInpaintPipeline,
+        FluxPipeline,
+        FluxControlImg2ImgPipeline,
+        FluxControlInpaintPipeline,
+        FluxControlNetImg2ImgPipeline,
+        FluxControlNetInpaintPipeline,
+        FluxControlNetPipeline,
+        FluxControlPipeline,
+        FluxKontextPipeline,
+    )
+except ImportError:
+    FluxImg2ImgPipeline = None
+    FluxInpaintPipeline = None
+    FluxPipeline = None
+    FluxControlImg2ImgPipeline = None
+    FluxControlInpaintPipeline = None
+    FluxControlNetImg2ImgPipeline = None
+    FluxControlNetInpaintPipeline = None
+    FluxControlNetPipeline = None
+    FluxControlPipeline = None
+    FluxKontextPipeline = None
+
+# ControlNet pipelines
+from diffusers import (
+    StableDiffusionControlNetImg2ImgPipeline,
+    StableDiffusionControlNetInpaintPipeline,
+    StableDiffusionControlNetPipeline,
+)
+
+# AnimateDiff pipelines
 from diffusers import (
     AnimateDiffPipeline,
     AnimateDiffSDXLPipeline,
-    StableDiffusionControlNetPipeline,
-    StableDiffusionControlNetImg2ImgPipeline,
-    StableDiffusionControlNetInpaintPipeline,
-    StableDiffusionXLImg2ImgPipeline,
-    StableDiffusionXLPipeline,
-    StableDiffusionXLInpaintPipeline,
-    StableDiffusionXLControlNetInpaintPipeline,
-    StableDiffusionUpscalePipeline,
-    StableDiffusion3Pipeline,
-    StableDiffusion3Img2ImgPipeline,
-    StableDiffusion3InpaintPipeline,
-    FluxPipeline,
-    FluxImg2ImgPipeline,
-    FluxInpaintPipeline,
-    StableDiffusionXLControlNetPipeline,
-    StableDiffusionXLControlNetImg2ImgPipeline,
 )
 
+# Optional pipelines (newer versions only)
 try:
     from diffusers import (
         AuraFlowPipeline,
         ChromaPipeline,
         CogView3PlusPipeline,
-        CogView4Pipeline,
         CogView4ControlPipeline,
-        FluxControlPipeline,
-        FluxControlImg2ImgPipeline,
-        FluxControlInpaintPipeline,
-        FluxControlNetPipeline,
-        FluxControlNetImg2ImgPipeline,
-        FluxControlNetInpaintPipeline,
-        FluxKontextPipeline,
+        CogView4Pipeline,
         HunyuanDiTPipeline,
         KandinskyCombinedPipeline,
         KandinskyImg2ImgCombinedPipeline,
@@ -99,12 +132,11 @@ try:
         Kandinsky3Pipeline,
         LatentConsistencyModelImg2ImgPipeline,
         LatentConsistencyModelPipeline,
-        LuminaPipeline,
         Lumina2Pipeline,
+        LuminaPipeline,
         OvisImagePipeline,
         PixArtAlphaPipeline,
         PixArtSigmaPipeline,
-        QwenImagePipeline,
         QwenImageControlNetPipeline,
         QwenImageEditInpaintPipeline,
         QwenImageEditPipeline,
@@ -112,32 +144,26 @@ try:
         QwenImageImg2ImgPipeline,
         QwenImageInpaintPipeline,
         QwenImageLayeredPipeline,
+        QwenImagePipeline,
         SanaPipeline,
-        StableDiffusion3ControlNetPipeline,
         StableDiffusion3ControlNetInpaintingPipeline,
-        StableDiffusionXLControlNetUnionPipeline,
+        StableDiffusion3ControlNetPipeline,
         StableDiffusionXLControlNetUnionImg2ImgPipeline,
         StableDiffusionXLControlNetUnionInpaintPipeline,
-        ZImagePipeline,
-        ZImageControlNetPipeline,
+        StableDiffusionXLControlNetUnionPipeline,
         ZImageControlNetInpaintPipeline,
+        ZImageControlNetPipeline,
         ZImageImg2ImgPipeline,
         ZImageOmniPipeline,
+        ZImagePipeline,
     )
 except ImportError:
     # Fallback to None for pipelines not available in older versions
     AuraFlowPipeline = None
     ChromaPipeline = None
     CogView3PlusPipeline = None
-    CogView4Pipeline = None
     CogView4ControlPipeline = None
-    FluxControlPipeline = None
-    FluxControlImg2ImgPipeline = None
-    FluxControlInpaintPipeline = None
-    FluxControlNetPipeline = None
-    FluxControlNetImg2ImgPipeline = None
-    FluxControlNetInpaintPipeline = None
-    FluxKontextPipeline = None
+    CogView4Pipeline = None
     HunyuanDiTPipeline = None
     KandinskyCombinedPipeline = None
     KandinskyImg2ImgCombinedPipeline = None
@@ -155,12 +181,11 @@ except ImportError:
     Kandinsky3Pipeline = None
     LatentConsistencyModelImg2ImgPipeline = None
     LatentConsistencyModelPipeline = None
-    LuminaPipeline = None
     Lumina2Pipeline = None
+    LuminaPipeline = None
     OvisImagePipeline = None
     PixArtAlphaPipeline = None
     PixArtSigmaPipeline = None
-    QwenImagePipeline = None
     QwenImageControlNetPipeline = None
     QwenImageEditInpaintPipeline = None
     QwenImageEditPipeline = None
@@ -168,17 +193,18 @@ except ImportError:
     QwenImageImg2ImgPipeline = None
     QwenImageInpaintPipeline = None
     QwenImageLayeredPipeline = None
+    QwenImagePipeline = None
     SanaPipeline = None
-    StableDiffusion3ControlNetPipeline = None
     StableDiffusion3ControlNetInpaintingPipeline = None
-    StableDiffusionXLControlNetUnionPipeline = None
+    StableDiffusion3ControlNetPipeline = None
     StableDiffusionXLControlNetUnionImg2ImgPipeline = None
     StableDiffusionXLControlNetUnionInpaintPipeline = None
-    ZImagePipeline = None
-    ZImageControlNetPipeline = None
+    StableDiffusionXLControlNetUnionPipeline = None
     ZImageControlNetInpaintPipeline = None
+    ZImageControlNetPipeline = None
     ZImageImg2ImgPipeline = None
     ZImageOmniPipeline = None
+    ZImagePipeline = None
 
 from huggingface_hub import hf_api, hf_hub_download, hf_hub_url
 from huggingface_hub.file_download import http_get
