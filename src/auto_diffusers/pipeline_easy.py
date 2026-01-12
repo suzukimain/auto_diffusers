@@ -1022,7 +1022,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             return None
         else:
             raise ValueError(
-                "The URL for Civitai is invalid with `for_hf`. Please use `for_civitai` instead."
+                "The URL for Civitai is invalid with `from_huggingface`. Please use `from_civitai` instead."
             )
     else:
         # Get model data from HF API
