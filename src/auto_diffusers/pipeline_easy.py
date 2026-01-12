@@ -68,6 +68,32 @@ from diffusers import (
     StableDiffusion3Pipeline,
 )
 
+# Flux pipelines (import separately to avoid Flax deprecation warnings)
+try:
+    from diffusers.pipelines.flux import (
+        FluxImg2ImgPipeline,
+        FluxInpaintPipeline,
+        FluxPipeline,
+        FluxControlImg2ImgPipeline,
+        FluxControlInpaintPipeline,
+        FluxControlNetImg2ImgPipeline,
+        FluxControlNetInpaintPipeline,
+        FluxControlNetPipeline,
+        FluxControlPipeline,
+        FluxKontextPipeline,
+    )
+except ImportError:
+    FluxImg2ImgPipeline = None
+    FluxInpaintPipeline = None
+    FluxPipeline = None
+    FluxControlImg2ImgPipeline = None
+    FluxControlInpaintPipeline = None
+    FluxControlNetImg2ImgPipeline = None
+    FluxControlNetInpaintPipeline = None
+    FluxControlNetPipeline = None
+    FluxControlPipeline = None
+    FluxKontextPipeline = None
+
 # ControlNet pipelines
 from diffusers import (
     StableDiffusionControlNetImg2ImgPipeline,
@@ -92,16 +118,10 @@ try:
         HunyuanDiTPipeline,
         KandinskyCombinedPipeline,
         KandinskyImg2ImgCombinedPipeline,
-        KandinskyImg2ImgPipeline,
         KandinskyInpaintCombinedPipeline,
-        KandinskyInpaintPipeline,
-        KandinskyPipeline,
         KandinskyV22CombinedPipeline,
         KandinskyV22Img2ImgCombinedPipeline,
-        KandinskyV22Img2ImgPipeline,
         KandinskyV22InpaintCombinedPipeline,
-        KandinskyV22InpaintPipeline,
-        KandinskyV22Pipeline,
         Kandinsky3Img2ImgPipeline,
         Kandinsky3Pipeline,
         LatentConsistencyModelImg2ImgPipeline,
@@ -144,16 +164,10 @@ except ImportError:
     HunyuanDiTPipeline = None
     KandinskyCombinedPipeline = None
     KandinskyImg2ImgCombinedPipeline = None
-    KandinskyImg2ImgPipeline = None
     KandinskyInpaintCombinedPipeline = None
-    KandinskyInpaintPipeline = None
-    KandinskyPipeline = None
     KandinskyV22CombinedPipeline = None
     KandinskyV22Img2ImgCombinedPipeline = None
-    KandinskyV22Img2ImgPipeline = None
     KandinskyV22InpaintCombinedPipeline = None
-    KandinskyV22InpaintPipeline = None
-    KandinskyV22Pipeline = None
     Kandinsky3Img2ImgPipeline = None
     Kandinsky3Pipeline = None
     LatentConsistencyModelImg2ImgPipeline = None
@@ -235,6 +249,14 @@ SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("cosmos-2.0-t2i-14B", None),
         ("cosmos-2.0-v2w-2B", None),
         ("cosmos-2.0-v2w-14B", None),
+        ("flux-2-dev", FluxPipeline),
+        ("flux-control", FluxControlPipeline),
+        ("flux-controlnet", FluxControlNetPipeline),
+        ("flux-depth", FluxPipeline),
+        ("flux-dev", FluxPipeline),
+        ("flux-fill", FluxPipeline),
+        ("flux-kontext", FluxKontextPipeline),
+        ("flux-schnell", FluxPipeline),
         ("hidream", None),
         ("hunyuan", HunyuanDiTPipeline),
         ("hunyuan-video", None),
@@ -318,6 +340,14 @@ SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("cosmos-2.0-t2i-14B", None),
         ("cosmos-2.0-v2w-2B", None),
         ("cosmos-2.0-v2w-14B", None),
+        ("flux-2-dev", FluxImg2ImgPipeline),
+        ("flux-control", FluxControlImg2ImgPipeline),
+        ("flux-controlnet", FluxControlNetImg2ImgPipeline),
+        ("flux-depth", FluxImg2ImgPipeline),
+        ("flux-dev", FluxImg2ImgPipeline),
+        ("flux-fill", FluxImg2ImgPipeline),
+        ("flux-kontext", FluxKontextPipeline),
+        ("flux-schnell", FluxImg2ImgPipeline),
         ("hidream", None),
         ("hunyuan-video", None),
         ("inpainting", None),
@@ -391,6 +421,13 @@ SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
         ("cosmos-2.0-t2i-14B", None),
         ("cosmos-2.0-v2w-2B", None),
         ("cosmos-2.0-v2w-14B", None),
+        ("flux-2-dev", FluxInpaintPipeline),
+        ("flux-control", FluxControlInpaintPipeline),
+        ("flux-controlnet", FluxControlNetInpaintPipeline),
+        ("flux-depth", FluxInpaintPipeline),
+        ("flux-dev", FluxInpaintPipeline),
+        ("flux-fill", FluxInpaintPipeline),
+        ("flux-schnell", FluxInpaintPipeline),
         ("hidream", None),
         ("hunyuan-video", None),
         ("inpainting", StableDiffusionInpaintPipeline),
@@ -488,14 +525,14 @@ TOKENIZER_SHAPE_MAP = {
 }
 
 
-def get_allowed_extensions(allow_unsafe_formats: bool = False) -> List[str]:
+def get_allowed_extensions(allow_unsafe_formats: bool = True) -> List[str]:
     r"""
     Get the list of allowed file extensions based on safety preferences.
     
     Parameters:
-        allow_unsafe_formats (`bool`, *optional*, defaults to `False`):
-            If True, allows potentially unsafe formats (.ckpt, .bin) in addition to .safetensors.
-            If False (default), only allows .safetensors format for maximum security.
+        allow_unsafe_formats (`bool`, *optional*, defaults to `True`):
+            If True (default), allows all formats (.safetensors, .ckpt, .bin) for backward compatibility.
+            If False, only allows .safetensors format for maximum security.
     
     Returns:
         `List[str]`: List of allowed file extensions.
