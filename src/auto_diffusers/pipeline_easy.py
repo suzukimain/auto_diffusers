@@ -418,7 +418,7 @@ SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
         ("stable_cascade_stage_b_lite", None),
         ("stable_cascade_stage_c", None),
         ("stable_cascade_stage_c_lite", None),
-        ("upscale", None),
+        ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionInpaintPipeline),
         ("v2", StableDiffusionInpaintPipeline),
         ("wan-i2v-14B", None),
