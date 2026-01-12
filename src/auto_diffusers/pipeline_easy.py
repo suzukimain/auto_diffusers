@@ -1439,8 +1439,6 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                         model_data["pickleScanResult"] == "Success"
                         and model_data["virusScanResult"] == "Success"
                         and any(file_name.endswith(ext) for ext in allowed_extensions)
-                        and os.path.basename(os.path.dirname(file_name))
-                        not in DIFFUSERS_CONFIG_DIR
                     ):
                         file_status = {
                             "filename": file_name,
@@ -1465,13 +1463,14 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     sorted_models[0],
                 )
                 
-                # Validate download URL accessibility (check first file only)
+                # Validate download URL accessibility with token support
+                # Token is already included in headers for authentication
                 try:
                     # Since models requiring authentication do not return results, there is no need to determine their status via status codes.
                     _resp = requests.head(
                         candidate_model["download_url"],
                         headers=headers,
-                        timeout=2,
+                        timeout=5,  # Increased timeout to handle slow servers
                         allow_redirects=True
                     )
                     _resp.raise_for_status()
@@ -1485,6 +1484,11 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     else:
                         logger.info(f"HTTP error for {candidate_model['download_url']}: {e}, trying next version...")
                         continue
+                except requests.exceptions.Timeout:
+                    # Accept timeout as URL might still be valid but slow
+                    logger.info(f"Timeout validating {candidate_model['download_url']}, accepting model...")
+                    selected_model = candidate_model
+                    break
                 except requests.exceptions.RequestException as e:
                     logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
                     continue
@@ -1499,9 +1503,20 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
         if skip_error:
             return None
         else:
-            raise ValueError(
-                "No model found. Please try changing the word you are searching for."
-            )
+            # Provide helpful error message based on token availability
+            if token:
+                error_msg = (
+                    "No model found. Please try changing the search word or filter criteria "
+                    "(e.g., base_model, sort). You can also check if your CivitAI token has "
+                    "access to the models you're searching for."
+                )
+            else:
+                error_msg = (
+                    "No model found. Please try changing the search word or filter criteria. "
+                    "If you're looking for private or exclusive models, provide a CivitAI token: "
+                    "search_civitai(search_word, token='your_civitai_token')"
+                )
+            raise ValueError(error_msg)
 
     # Define model file status
     file_name = selected_model["filename"]
