@@ -17,6 +17,7 @@
 import os
 import re
 import types
+import warnings
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
@@ -24,6 +25,11 @@ from typing import Dict, List, Optional, Union
 # Third-party imports
 import requests
 import torch
+
+# Suppress warnings from dependencies
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=".*flax.*")
+warnings.filterwarnings("ignore", message=".*Flax classes are deprecated.*")
+warnings.filterwarnings("ignore", category=UserWarning, module=".*torchao.*")
 
 # Diffusers core imports
 from diffusers.loaders.single_file_utils import (
@@ -218,6 +224,16 @@ from huggingface_hub.utils import validate_hf_hub_args
 
 
 logger = logging.get_logger(__name__)
+
+# Suppress verbose warnings from dependencies
+logging.set_verbosity_error()
+# Reduce logging level for torchao
+try:
+    import logging as std_logging
+    std_logging.getLogger("torchao").setLevel(std_logging.WARNING)
+    std_logging.getLogger("torchao.kernel.intmm").setLevel(std_logging.ERROR)
+except Exception:
+    pass
 
 
 SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
