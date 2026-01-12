@@ -1463,29 +1463,12 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     sorted_models[0],
                 )
                 
-                # Validate download URL accessibility (check first file only)
-                try:
-                    # Since models requiring authentication do not return results, there is no need to determine their status via status codes.
-                    _resp = requests.head(
-                        candidate_model["download_url"],
-                        headers=headers,
-                        timeout=2,
-                        allow_redirects=True
-                    )
-                    _resp.raise_for_status()
-                    selected_model = candidate_model
-                    logger.info(f"Validated download URL: {candidate_model['download_url']}")
-                    break  # Exit the version loop if a valid model is found
-                except requests.HTTPError as e:
-                    if "403" in str(e) or "401" in str(e):
-                        logger.info(f"Access denied ({e.response.status_code}) for {candidate_model['download_url']}, trying next version...")
-                        continue
-                    else:
-                        logger.info(f"HTTP error for {candidate_model['download_url']}: {e}, trying next version...")
-                        continue
-                except requests.exceptions.RequestException as e:
-                    logger.info(f"Failed to validate URL {candidate_model['download_url']}: {e}, trying next version...")
-                    continue
+                # Accept the first candidate without URL validation
+                # URL validation can fail due to network issues, timeouts, or access restrictions
+                # but doesn't prevent actual downloading when needed
+                selected_model = candidate_model
+                logger.info(f"Selected model: {candidate_model['download_url']}")
+                break  # Exit the version loop if a valid model is found
 
         # If we found a valid model in this repo, exit outer repo loop
         if selected_model:
