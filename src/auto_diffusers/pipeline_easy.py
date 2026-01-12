@@ -13,57 +13,192 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard library imports
 import os
 import re
 import types
+from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
-from collections import OrderedDict
 
-
+# Third-party imports
 import requests
 import torch
 
+# Diffusers core imports
 from diffusers.loaders.single_file_utils import (
     VALID_URL_PREFIXES,
     _extract_repo_id_and_weights_name,
     infer_diffusers_model_type,
     load_single_file_checkpoint,
 )
-
-from diffusers import (
-    StableDiffusionPipeline,
-    StableDiffusionImg2ImgPipeline,
-    StableDiffusionInpaintPipeline,
-)
 from diffusers.pipelines.auto_pipeline import (
+    AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
+    AUTO_INPAINT_PIPELINES_MAPPING,
+    AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
-    AUTO_TEXT2IMAGE_PIPELINES_MAPPING,
-    AUTO_IMAGE2IMAGE_PIPELINES_MAPPING,
-    AUTO_INPAINT_PIPELINES_MAPPING,
 )
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.utils import logging
 
+# Stable Diffusion v1/v2 pipelines
+from diffusers import (
+    StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionPipeline,
+    StableDiffusionUpscalePipeline,
+)
+
+# Stable Diffusion XL pipelines
+from diffusers import (
+    StableDiffusionXLControlNetImg2ImgPipeline,
+    StableDiffusionXLControlNetInpaintPipeline,
+    StableDiffusionXLControlNetPipeline,
+    StableDiffusionXLImg2ImgPipeline,
+    StableDiffusionXLInpaintPipeline,
+    StableDiffusionXLPipeline,
+)
+
+# Stable Diffusion 3 pipelines
+from diffusers import (
+    StableDiffusion3Img2ImgPipeline,
+    StableDiffusion3InpaintPipeline,
+    StableDiffusion3Pipeline,
+)
+
+# Flux pipelines (import separately to avoid Flax deprecation warnings)
+try:
+    from diffusers.pipelines.flux import (
+        FluxImg2ImgPipeline,
+        FluxInpaintPipeline,
+        FluxPipeline,
+        FluxControlImg2ImgPipeline,
+        FluxControlInpaintPipeline,
+        FluxControlNetImg2ImgPipeline,
+        FluxControlNetInpaintPipeline,
+        FluxControlNetPipeline,
+        FluxControlPipeline,
+        FluxKontextPipeline,
+    )
+except ImportError:
+    FluxImg2ImgPipeline = None
+    FluxInpaintPipeline = None
+    FluxPipeline = None
+    FluxControlImg2ImgPipeline = None
+    FluxControlInpaintPipeline = None
+    FluxControlNetImg2ImgPipeline = None
+    FluxControlNetInpaintPipeline = None
+    FluxControlNetPipeline = None
+    FluxControlPipeline = None
+    FluxKontextPipeline = None
+
+# ControlNet pipelines
+from diffusers import (
+    StableDiffusionControlNetImg2ImgPipeline,
+    StableDiffusionControlNetInpaintPipeline,
+    StableDiffusionControlNetPipeline,
+)
+
+# AnimateDiff pipelines
 from diffusers import (
     AnimateDiffPipeline,
     AnimateDiffSDXLPipeline,
-    StableDiffusionControlNetPipeline,
-    StableDiffusionControlNetImg2ImgPipeline,
-    StableDiffusionControlNetInpaintPipeline,
-    StableDiffusionXLImg2ImgPipeline,
-    StableDiffusionXLPipeline,
-    StableDiffusionXLInpaintPipeline,
-    StableDiffusionUpscalePipeline,
-    StableDiffusion3Pipeline,
-    StableDiffusion3Img2ImgPipeline,
-    FluxPipeline,
-    FluxImg2ImgPipeline,
-    StableDiffusionXLControlNetPipeline,
-    StableDiffusionXLControlNetImg2ImgPipeline,
 )
+
+# Optional pipelines (newer versions only)
+try:
+    from diffusers import (
+        AuraFlowPipeline,
+        ChromaPipeline,
+        CogView3PlusPipeline,
+        CogView4ControlPipeline,
+        CogView4Pipeline,
+        HunyuanDiTPipeline,
+        KandinskyCombinedPipeline,
+        KandinskyImg2ImgCombinedPipeline,
+        KandinskyInpaintCombinedPipeline,
+        KandinskyV22CombinedPipeline,
+        KandinskyV22Img2ImgCombinedPipeline,
+        KandinskyV22InpaintCombinedPipeline,
+        Kandinsky3Img2ImgPipeline,
+        Kandinsky3Pipeline,
+        LatentConsistencyModelImg2ImgPipeline,
+        LatentConsistencyModelPipeline,
+        Lumina2Pipeline,
+        LuminaPipeline,
+        OvisImagePipeline,
+        PixArtAlphaPipeline,
+        PixArtSigmaPipeline,
+        QwenImageControlNetPipeline,
+        QwenImageEditInpaintPipeline,
+        QwenImageEditPipeline,
+        QwenImageEditPlusPipeline,
+        QwenImageImg2ImgPipeline,
+        QwenImageInpaintPipeline,
+        QwenImageLayeredPipeline,
+        QwenImagePipeline,
+        SanaPipeline,
+        StableDiffusion3ControlNetInpaintingPipeline,
+        StableDiffusion3ControlNetPipeline,
+        StableDiffusionXLControlNetUnionImg2ImgPipeline,
+        StableDiffusionXLControlNetUnionInpaintPipeline,
+        StableDiffusionXLControlNetUnionPipeline,
+        WanImageToVideoPipeline,
+        WanPipeline,
+        WanVideoToVideoPipeline,
+        ZImageControlNetInpaintPipeline,
+        ZImageControlNetPipeline,
+        ZImageImg2ImgPipeline,
+        ZImageOmniPipeline,
+        ZImagePipeline,
+    )
+except ImportError:
+    # Fallback to None for pipelines not available in older versions
+    AuraFlowPipeline = None
+    ChromaPipeline = None
+    CogView3PlusPipeline = None
+    CogView4ControlPipeline = None
+    CogView4Pipeline = None
+    HunyuanDiTPipeline = None
+    KandinskyCombinedPipeline = None
+    KandinskyImg2ImgCombinedPipeline = None
+    KandinskyInpaintCombinedPipeline = None
+    KandinskyV22CombinedPipeline = None
+    KandinskyV22Img2ImgCombinedPipeline = None
+    KandinskyV22InpaintCombinedPipeline = None
+    Kandinsky3Img2ImgPipeline = None
+    Kandinsky3Pipeline = None
+    LatentConsistencyModelImg2ImgPipeline = None
+    LatentConsistencyModelPipeline = None
+    Lumina2Pipeline = None
+    LuminaPipeline = None
+    OvisImagePipeline = None
+    PixArtAlphaPipeline = None
+    PixArtSigmaPipeline = None
+    QwenImageControlNetPipeline = None
+    QwenImageEditInpaintPipeline = None
+    QwenImageEditPipeline = None
+    QwenImageEditPlusPipeline = None
+    QwenImageImg2ImgPipeline = None
+    QwenImageInpaintPipeline = None
+    QwenImageLayeredPipeline = None
+    QwenImagePipeline = None
+    SanaPipeline = None
+    StableDiffusion3ControlNetInpaintingPipeline = None
+    StableDiffusion3ControlNetPipeline = None
+    StableDiffusionXLControlNetUnionImg2ImgPipeline = None
+    StableDiffusionXLControlNetUnionInpaintPipeline = None
+    StableDiffusionXLControlNetUnionPipeline = None
+    WanImageToVideoPipeline = None
+    WanPipeline = None
+    WanVideoToVideoPipeline = None
+    ZImageControlNetInpaintPipeline = None
+    ZImageControlNetPipeline = None
+    ZImageImg2ImgPipeline = None
+    ZImageOmniPipeline = None
+    ZImagePipeline = None
 
 from huggingface_hub import hf_api, hf_hub_download, hf_hub_url
 from huggingface_hub.file_download import http_get
@@ -71,6 +206,16 @@ from huggingface_hub.utils import validate_hf_hub_args
 
 
 logger = logging.get_logger(__name__)
+
+# Suppress verbose warnings from dependencies
+logging.set_verbosity_error()
+# Reduce logging level for torchao
+try:
+    import logging as std_logging
+    std_logging.getLogger("torchao").setLevel(std_logging.WARNING)
+    std_logging.getLogger("torchao.kernel.intmm").setLevel(std_logging.ERROR)
+except Exception:
+    pass
 
 
 SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
@@ -81,29 +226,65 @@ SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("animatediff_v1", AnimateDiffPipeline),
         ("animatediff_v2", AnimateDiffPipeline),
         ("animatediff_v3", AnimateDiffPipeline),
+        ("auraflow", AuraFlowPipeline),
         ("autoencoder-dc-f128c512", None),
         ("autoencoder-dc-f32c32", None),
         ("autoencoder-dc-f32c32-sana", None),
         ("autoencoder-dc-f64c128", None),
+        ("chroma", ChromaPipeline),
+        ("cogview3", CogView3PlusPipeline),
+        ("cogview4", CogView4Pipeline),
+        ("cogview4-control", CogView4ControlPipeline),
         ("controlnet", StableDiffusionControlNetPipeline),
         ("controlnet_xl", StableDiffusionXLControlNetPipeline),
         ("controlnet_xl_large", StableDiffusionXLControlNetPipeline),
         ("controlnet_xl_mid", StableDiffusionXLControlNetPipeline),
         ("controlnet_xl_small", StableDiffusionXLControlNetPipeline),
+        ("controlnet_xl_union", StableDiffusionXLControlNetUnionPipeline),
+        ("cosmos-1.0-t2w-7B", None),
+        ("cosmos-1.0-t2w-14B", None),
+        ("cosmos-1.0-v2w-7B", None),
+        ("cosmos-1.0-v2w-14B", None),
+        ("cosmos-2.0-t2i-2B", None),
+        ("cosmos-2.0-t2i-14B", None),
+        ("cosmos-2.0-v2w-2B", None),
+        ("cosmos-2.0-v2w-14B", None),
+        ("flux-2-dev", FluxPipeline),
+        ("flux-control", FluxControlPipeline),
+        ("flux-controlnet", FluxControlNetPipeline),
         ("flux-depth", FluxPipeline),
         ("flux-dev", FluxPipeline),
         ("flux-fill", FluxPipeline),
+        ("flux-kontext", FluxKontextPipeline),
         ("flux-schnell", FluxPipeline),
+        ("hidream", None),
+        ("hunyuan", HunyuanDiTPipeline),
         ("hunyuan-video", None),
         ("inpainting", None),
         ("inpainting_v2", None),
+        ("instruct-pix2pix", None),
+        ("kandinsky", KandinskyCombinedPipeline),
+        ("kandinsky22", KandinskyV22CombinedPipeline),
+        ("kandinsky3", Kandinsky3Pipeline),
+        ("lcm", LatentConsistencyModelPipeline),
+        ("lumina", LuminaPipeline),
+        ("lumina2", Lumina2Pipeline),
         ("ltx-video", None),
         ("ltx-video-0.9.1", None),
+        ("ltx-video-0.9.5", None),
+        ("ltx-video-0.9.7", None),
         ("mochi-1-preview", None),
+        ("ovis", OvisImagePipeline),
+        ("pixart-alpha", PixArtAlphaPipeline),
+        ("pixart-sigma", PixArtSigmaPipeline),
         ("playground-v2-5", StableDiffusionXLPipeline),
+        ("qwenimage", QwenImagePipeline),
+        ("qwenimage-controlnet", QwenImageControlNetPipeline),
+        ("sana", SanaPipeline),
         ("sd3", StableDiffusion3Pipeline),
         ("sd35_large", StableDiffusion3Pipeline),
         ("sd35_medium", StableDiffusion3Pipeline),
+        ("sd3-controlnet", StableDiffusion3ControlNetPipeline),
         ("stable_cascade_stage_b", None),
         ("stable_cascade_stage_b_lite", None),
         ("stable_cascade_stage_c", None),
@@ -111,9 +292,20 @@ SINGLE_FILE_CHECKPOINT_TEXT2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionPipeline),
         ("v2", StableDiffusionPipeline),
+        ("wan-i2v-14B", WanImageToVideoPipeline),
+        ("wan-t2v-1.3B", WanPipeline),
+        ("wan-t2v-14B", WanPipeline),
+        ("wan-vace-1.3B", WanVideoToVideoPipeline),
+        ("wan-vace-14B", WanVideoToVideoPipeline),
         ("xl_base", StableDiffusionXLPipeline),
-        ("xl_inpaint", None),
         ("xl_refiner", StableDiffusionXLPipeline),
+        ("z-image", ZImagePipeline),
+        ("z-image-controlnet", ZImageControlNetPipeline),
+        ("z-image-omni", ZImageOmniPipeline),
+        ("z-image-turbo", None),
+        ("z-image-turbo-controlnet", None),
+        ("z-image-turbo-controlnet-2.0", None),
+        ("z-image-turbo-controlnet-2.1", None),
     ],
 )
 
@@ -139,17 +331,45 @@ SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("controlnet_xl_large", StableDiffusionXLControlNetImg2ImgPipeline),
         ("controlnet_xl_mid", StableDiffusionXLControlNetImg2ImgPipeline),
         ("controlnet_xl_small", StableDiffusionXLControlNetImg2ImgPipeline),
+        ("controlnet_xl_union", StableDiffusionXLControlNetUnionImg2ImgPipeline),
+        ("cosmos-1.0-t2w-7B", None),
+        ("cosmos-1.0-t2w-14B", None),
+        ("cosmos-1.0-v2w-7B", None),
+        ("cosmos-1.0-v2w-14B", None),
+        ("cosmos-2.0-t2i-2B", None),
+        ("cosmos-2.0-t2i-14B", None),
+        ("cosmos-2.0-v2w-2B", None),
+        ("cosmos-2.0-v2w-14B", None),
+        ("flux-2-dev", FluxImg2ImgPipeline),
+        ("flux-control", FluxControlImg2ImgPipeline),
+        ("flux-controlnet", FluxControlNetImg2ImgPipeline),
         ("flux-depth", FluxImg2ImgPipeline),
         ("flux-dev", FluxImg2ImgPipeline),
         ("flux-fill", FluxImg2ImgPipeline),
+        ("flux-kontext", FluxKontextPipeline),
         ("flux-schnell", FluxImg2ImgPipeline),
+        ("hidream", None),
         ("hunyuan-video", None),
         ("inpainting", None),
         ("inpainting_v2", None),
+        ("instruct-pix2pix", None),
+        ("kandinsky", KandinskyImg2ImgCombinedPipeline),
+        ("kandinsky22", KandinskyV22Img2ImgCombinedPipeline),
+        ("kandinsky3", Kandinsky3Img2ImgPipeline),
+        ("lcm", LatentConsistencyModelImg2ImgPipeline),
+        ("lumina", None),
+        ("lumina2", None),
         ("ltx-video", None),
         ("ltx-video-0.9.1", None),
+        ("ltx-video-0.9.5", None),
+        ("ltx-video-0.9.7", None),
         ("mochi-1-preview", None),
         ("playground-v2-5", StableDiffusionXLImg2ImgPipeline),
+        ("qwenimage", QwenImageImg2ImgPipeline),
+        ("qwenimage-edit", QwenImageEditPipeline),
+        ("qwenimage-edit-plus", QwenImageEditPlusPipeline),
+        ("qwenimage-layered", QwenImageLayeredPipeline),
+        ("sana", None),
         ("sd3", StableDiffusion3Img2ImgPipeline),
         ("sd35_large", StableDiffusion3Img2ImgPipeline),
         ("sd35_medium", StableDiffusion3Img2ImgPipeline),
@@ -160,9 +380,18 @@ SINGLE_FILE_CHECKPOINT_IMAGE2IMAGE_PIPELINE_MAPPING = OrderedDict(
         ("upscale", StableDiffusionUpscalePipeline),
         ("v1", StableDiffusionImg2ImgPipeline),
         ("v2", StableDiffusionImg2ImgPipeline),
+        ("wan-i2v-14B", WanImageToVideoPipeline),
+        ("wan-t2v-1.3B", None),
+        ("wan-t2v-14B", None),
+        ("wan-vace-1.3B", WanVideoToVideoPipeline),
+        ("wan-vace-14B", WanVideoToVideoPipeline),
         ("xl_base", StableDiffusionXLImg2ImgPipeline),
-        ("xl_inpaint", None),
         ("xl_refiner", StableDiffusionXLImg2ImgPipeline),
+        ("z-image", ZImageImg2ImgPipeline),
+        ("z-image-turbo", None),
+        ("z-image-turbo-controlnet", None),
+        ("z-image-turbo-controlnet-2.0", None),
+        ("z-image-turbo-controlnet-2.1", None),
     ]
 )
 
@@ -179,34 +408,68 @@ SINGLE_FILE_CHECKPOINT_INPAINT_PIPELINE_MAPPING = OrderedDict(
         ("autoencoder-dc-f32c32-sana", None),
         ("autoencoder-dc-f64c128", None),
         ("controlnet", StableDiffusionControlNetInpaintPipeline),
-        ("controlnet_xl", None),
-        ("controlnet_xl_large", None),
-        ("controlnet_xl_mid", None),
-        ("controlnet_xl_small", None),
-        ("flux-depth", None),
-        ("flux-dev", None),
-        ("flux-fill", None),
-        ("flux-schnell", None),
+        ("controlnet_xl", StableDiffusionXLControlNetInpaintPipeline),
+        ("controlnet_xl_large", StableDiffusionXLControlNetInpaintPipeline),
+        ("controlnet_xl_mid", StableDiffusionXLControlNetInpaintPipeline),
+        ("controlnet_xl_small", StableDiffusionXLControlNetInpaintPipeline),
+        ("controlnet_xl_union", StableDiffusionXLControlNetUnionInpaintPipeline),
+        ("cosmos-1.0-t2w-7B", None),
+        ("cosmos-1.0-t2w-14B", None),
+        ("cosmos-1.0-v2w-7B", None),
+        ("cosmos-1.0-v2w-14B", None),
+        ("cosmos-2.0-t2i-2B", None),
+        ("cosmos-2.0-t2i-14B", None),
+        ("cosmos-2.0-v2w-2B", None),
+        ("cosmos-2.0-v2w-14B", None),
+        ("flux-2-dev", FluxInpaintPipeline),
+        ("flux-control", FluxControlInpaintPipeline),
+        ("flux-controlnet", FluxControlNetInpaintPipeline),
+        ("flux-depth", FluxInpaintPipeline),
+        ("flux-dev", FluxInpaintPipeline),
+        ("flux-fill", FluxInpaintPipeline),
+        ("flux-schnell", FluxInpaintPipeline),
+        ("hidream", None),
         ("hunyuan-video", None),
         ("inpainting", StableDiffusionInpaintPipeline),
         ("inpainting_v2", StableDiffusionInpaintPipeline),
+        ("instruct-pix2pix", None),
+        ("kandinsky", KandinskyInpaintCombinedPipeline),
+        ("kandinsky22", KandinskyV22InpaintCombinedPipeline),
+        ("lcm", None),
+        ("lumina", None),
+        ("lumina2", None),
         ("ltx-video", None),
         ("ltx-video-0.9.1", None),
+        ("ltx-video-0.9.5", None),
+        ("ltx-video-0.9.7", None),
         ("mochi-1-preview", None),
         ("playground-v2-5", None),
-        ("sd3", None),
-        ("sd35_large", None),
-        ("sd35_medium", None),
+        ("qwenimage", QwenImageInpaintPipeline),
+        ("qwenimage-edit", QwenImageEditInpaintPipeline),
+        ("sana", None),
+        ("sd3", StableDiffusion3InpaintPipeline),
+        ("sd35_large", StableDiffusion3InpaintPipeline),
+        ("sd35_medium", StableDiffusion3InpaintPipeline),
+        ("sd3-controlnet", StableDiffusion3ControlNetInpaintingPipeline),
         ("stable_cascade_stage_b", None),
         ("stable_cascade_stage_b_lite", None),
         ("stable_cascade_stage_c", None),
         ("stable_cascade_stage_c_lite", None),
         ("upscale", StableDiffusionUpscalePipeline),
-        ("v1", None),
-        ("v2", None),
-        ("xl_base", None),
+        ("v1", StableDiffusionInpaintPipeline),
+        ("v2", StableDiffusionInpaintPipeline),
+        ("wan-i2v-14B", None),
+        ("wan-t2v-1.3B", None),
+        ("wan-t2v-14B", None),
+        ("wan-vace-1.3B", None),
+        ("wan-vace-14B", None),
+        ("xl_base", StableDiffusionXLInpaintPipeline),
         ("xl_inpaint", StableDiffusionXLInpaintPipeline),
-        ("xl_refiner", None),
+        ("z-image-controlnet-inpaint", ZImageControlNetInpaintPipeline),
+        ("z-image-turbo", None),
+        ("z-image-turbo-controlnet", None),
+        ("z-image-turbo-controlnet-2.0", None),
+        ("z-image-turbo-controlnet-2.1", None),
     ]
 )
 
@@ -262,15 +525,28 @@ TOKENIZER_SHAPE_MAP = {
 }
 
 
+def get_allowed_extensions(allow_unsafe_formats: bool = True) -> List[str]:
+    r"""
+    Get the list of allowed file extensions based on safety preferences.
+    
+    Parameters:
+        allow_unsafe_formats (`bool`, *optional*, defaults to `True`):
+            If True (default), allows all formats (.safetensors, .ckpt, .bin) for backward compatibility.
+            If False, only allows .safetensors format for maximum security.
+    
+    Returns:
+        `List[str]`: List of allowed file extensions.
+    """
+    if allow_unsafe_formats:
+        return [".safetensors", ".ckpt", ".bin"]
+    else:
+        return [".safetensors"]
+
+
+# Default extension list (for backward compatibility)
 EXTENSION = [".safetensors", ".ckpt", ".bin"]
 
 CACHE_HOME = os.path.expanduser("~/.cache")
-
-
-# Set up pipeline mappings
-AUTO_TEXT2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionPipeline
-AUTO_IMAGE2IMAGE_PIPELINES_MAPPING["v1"] = StableDiffusionImg2ImgPipeline
-AUTO_INPAINT_PIPELINES_MAPPING["v1"] = StableDiffusionInpaintPipeline
 
 
 @dataclass
@@ -677,6 +953,9 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             A boolean to filter models on the Hub that are gated or not.
         skip_error (`bool`, *optional*, defaults to `False`):
             Whether to skip errors and return None.
+        allow_unsafe_formats (`bool`, *optional*, defaults to `False`):
+            If True, allows potentially unsafe formats (.ckpt, .bin) in addition to .safetensors.
+            If False (default), only allows .safetensors format for maximum security.
 
     Returns:
         `Union[str,  SearchResult, None]`: The model path or  SearchResult or None.
@@ -698,6 +977,10 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
     gated = kwargs.pop("gated", False)
     cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
+    allow_unsafe_formats = kwargs.pop("allow_unsafe_formats", False)
+    
+    # Get allowed extensions based on safety preference
+    allowed_extensions = get_allowed_extensions(allow_unsafe_formats)
 
     file_list = []
     hf_repo_info = {}
@@ -743,7 +1026,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
             return None
         else:
             raise ValueError(
-                "The URL for Civitai is invalid with `for_hf`. Please use `for_civitai` instead."
+                "The URL for Civitai is invalid with `from_huggingface`. Please use `from_civitai` instead."
             )
     else:
         # Get model data from HF API
@@ -793,7 +1076,7 @@ def search_huggingface(search_word: str, **kwargs) -> Union[str, SearchResult, N
                         break
 
                     elif (
-                        any(file_path.endswith(ext) for ext in EXTENSION)
+                        any(file_path.endswith(ext) for ext in allowed_extensions)
                         and not any(config in file_path for config in CONFIG_FILE_LIST)
                         and not any(exc in file_path for exc in exclusion)
                         and os.path.basename(os.path.dirname(file_path)) not in DIFFUSERS_CONFIG_DIR
@@ -961,6 +1244,9 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
             Whether to resume an incomplete download.
         skip_error (`bool`, *optional*, defaults to `False`):
             Whether to skip errors and return None.
+        allow_unsafe_formats (`bool`, *optional*, defaults to `False`):
+            If True, allows potentially unsafe formats (.ckpt, .bin) in addition to .safetensors.
+            If False (default), only allows .safetensors format for maximum security.
 
     Returns:
         `Union[str,  SearchResult, None]`: The model path or ` SearchResult` or None.
@@ -977,6 +1263,10 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
     resume = kwargs.pop("resume", False)
     cache_dir = kwargs.pop("cache_dir", None)
     skip_error = kwargs.pop("skip_error", False)
+    allow_unsafe_formats = kwargs.pop("allow_unsafe_formats", False)
+    
+    # Get allowed extensions based on safety preference
+    allowed_extensions = get_allowed_extensions(allow_unsafe_formats)
 
     # Initialize additional variables with default values
     model_path = ""
@@ -1148,7 +1438,7 @@ def search_civitai(search_word: str, **kwargs) -> Union[str, SearchResult, None]
                     if (
                         model_data["pickleScanResult"] == "Success"
                         and model_data["virusScanResult"] == "Success"
-                        and any(file_name.endswith(ext) for ext in EXTENSION)
+                        and any(file_name.endswith(ext) for ext in allowed_extensions)
                         and os.path.basename(os.path.dirname(file_name))
                         not in DIFFUSERS_CONFIG_DIR
                     ):
