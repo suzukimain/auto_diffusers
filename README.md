@@ -28,7 +28,7 @@
 
 Enhance the functionality of diffusers.  
 * Search models from Hugging Face and Civitai.  
-* Officially listed in the [Hugging Face Diffusers Community Projects](https://huggingface.co/docs/diffusers/community_projects) documentation.
+* Officially listed in the [Hugging Face Diffusers Community Projects](https://huggingface.co/docs/diffusers/v0.42.1/en/community_projects) documentation.
 
 <details>
 <summary>Image of the listing location on Hugging Face</summary>
