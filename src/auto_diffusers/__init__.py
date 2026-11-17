@@ -1,4 +1,4 @@
-__version__ = "2.0.38"
+__version__ = "2.0.39"
 
 from .pipeline_easy import (
     EasyPipelineForImage2Image,
